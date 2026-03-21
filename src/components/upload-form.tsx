@@ -45,7 +45,7 @@ export function UploadForm() {
       onSubmit: uploadFileSchema,
     },
     onSubmit: ({ value }: { value: UploadFileSchema }) => {
-      logClientError({
+      logToDb({
         data: {
           component: 'UploadForm-Client',
           severity: 'info',
@@ -63,7 +63,7 @@ export function UploadForm() {
 
             // Download auslösen
             downloadBlob(result.markdownContent, fileName)
-            await logClientError({
+            await logToDb({
               data: {
                 component: 'UploadForm-Client',
                 severity: 'info',
@@ -75,11 +75,11 @@ export function UploadForm() {
             )
           }
         } catch (error) {
-          await logClientError({
+          await logToDb({
             data: {
               component: 'UploadForm-Client',
-              severity: 'info',
-              message: 'Upload on client finished successful',
+              severity: 'error',
+              message: 'Upload on client failed',
             },
           })
           toast.error('Upload failed')
