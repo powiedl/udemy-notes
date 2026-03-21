@@ -4,4 +4,4 @@ This is a hobby project to work with your notes of your Udemy courses. Right now
 
 If the app gets finished you will be able to import your course notes to the app, edit them inside the app, tag your notes, search your notes (and public notes from other users).
 
-You find the hosted app at
+You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.vercel.app)

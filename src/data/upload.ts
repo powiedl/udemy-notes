@@ -10,11 +10,22 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
   .inputValidator(async (data) => {
     // Validate that data is FormData
+    await logToDb({
+      component: 'UploadHtmlFile-Validator',
+      severity: 'info',
+      message: 'Validator started',
+    })
     if (!(data instanceof FormData)) {
       console.log(
         'uploadHtmlFile, data (should be of type Formdata, but is not)',
         data,
       )
+      await logToDb({
+        component: 'UploadHtmlFile-Validator',
+        severity: 'error',
+        message:
+          'uploadHtmlFile, data (should be of type Formdata, but is not)',
+      })
       throw new Error('Expected FormData')
     }
     // Extract and validate file
@@ -41,10 +52,19 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
         `File size must be less than ${Math.floor(MAX_FILE_SIZE_UPLOAD / 1024 / 1024)} MB`,
       )
     }
-
+    await logToDb({
+      component: 'UploadHtmlFile-Validator',
+      severity: 'info',
+      message: 'Validator finished successful',
+    })
     return { file }
   })
   .handler(async ({ data }) => {
+    await logToDb({
+      component: 'UploadHtmlFile-handler',
+      severity: 'info',
+      message: 'handler started',
+    })
     try {
       const { file } = data
 
@@ -52,20 +72,32 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
       const buffer = Buffer.from(await file.arrayBuffer())
 
       // Setup upload directory
-      const uploadDir = path.join(process.cwd(), 'uploads')
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true })
-      }
+      // const uploadDir = path.join(process.cwd(), 'uploads')
+      // if (!fs.existsSync(uploadDir)) {
+      //   fs.mkdirSync(uploadDir, { recursive: true })
+      // }
 
       // Save HTML file
       const timestamp = Date.now()
-      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-      const htmlFileName = `${timestamp}_${sanitizedFileName}`
-      const htmlFilePath = path.join(uploadDir, htmlFileName)
+      // const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+      // const htmlFileName = `${timestamp}_${sanitizedFileName}`
+      // const htmlFilePath = path.join(uploadDir, htmlFileName)
 
       // Read and convert to Markdown
       const htmlContent = buffer.toString('utf8')
+      await logToDb({
+        component: 'UploadHtmlFile-handler',
+        severity: 'info',
+        message: 'Conversion to Markdown starts now',
+      })
+
       const markdownContent = prepareAndConvertHtmlToMarkdown(htmlContent)
+
+      await logToDb({
+        component: 'UploadHtmlFile-handler',
+        severity: 'info',
+        message: 'Conversion to Markdown finished',
+      })
 
       // Save Markdown file
       // const markdownFileName = htmlFileName.replace(/\.html?$/i, '.md')
@@ -75,7 +107,7 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
       return {
         success: true,
         originalFileName: file.name,
-        htmlFile: htmlFilePath,
+        // htmlFile: htmlFilePath,
         // markdownFile: markdownFilePath,
         size: file.size,
         timestamp,
