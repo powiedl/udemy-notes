@@ -7,7 +7,7 @@ import { authFnMiddleware } from '#/middlewares/auth'
 import { logToDb } from '#/lib/logger'
 
 export const uploadHtmlFile = createServerFn({ method: 'POST' })
-  .middleware([authFnMiddleware])
+  // .middleware([authFnMiddleware])
   .inputValidator(async (data) => {
     // Validate that data is FormData
     await logToDb({
