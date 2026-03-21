@@ -1,4 +1,4 @@
-import { db } from './db' // Dein Prisma Client Import
+import { prisma } from '#/db'
 
 export type LogSeverity = 'info' | 'warning' | 'error' | 'critical'
 
@@ -12,7 +12,7 @@ export async function logToDb({
   message: string
 }) {
   try {
-    return await db.log.create({
+    return await prisma.log.create({
       data: {
         component,
         severity,
