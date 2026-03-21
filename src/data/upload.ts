@@ -4,10 +4,11 @@ import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown' //
 import { createServerFn } from '@tanstack/react-start'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { authFnMiddleware } from '#/middlewares/auth'
+import { logToDb } from '#/lib/logger'
 
 export const uploadHtmlFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
-  .inputValidator((data) => {
+  .inputValidator(async (data) => {
     // Validate that data is FormData
     if (!(data instanceof FormData)) {
       console.log(
@@ -21,11 +22,21 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
 
     // Validate file type
     if (file.type !== 'text/html') {
+      await logToDb({
+        component: 'UploadHtmlFile-Validator',
+        severity: 'error',
+        message: 'Invalid file type: ' + file.type,
+      })
       throw new Error('Only HTML files are allowed. Received: ' + file.type)
     }
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE_UPLOAD) {
+      await logToDb({
+        component: 'UploadHtmlFile-Validator',
+        severity: 'error',
+        message: 'Filesize exceeds allowed maximum filesize',
+      })
       throw new Error(
         `File size must be less than ${Math.floor(MAX_FILE_SIZE_UPLOAD / 1024 / 1024)} MB`,
       )
@@ -72,10 +83,21 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
       }
     } catch (error: unknown) {
       console.error('Upload error:', error)
-      throw new Error(
-        error instanceof Error
-          ? 'Failed to process file upload: ' + error.message
-          : 'Failed to process file upload',
-      )
+      if (error instanceof Error) {
+        await logToDb({
+          component: 'UploadHtmlFile-handler',
+          severity: 'error',
+          message: error.message,
+        })
+        throw new Error('Failed to process file upload: ' + error.message)
+      } else {
+        await logToDb({
+          component: 'UploadHtmlFile-handler',
+          severity: 'error',
+          message: 'Failed to process file upload (no more details available)',
+        })
+
+        throw new Error('Failed to process file upload')
+      }
     }
   })

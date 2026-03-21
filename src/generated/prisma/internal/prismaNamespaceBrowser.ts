@@ -58,7 +58,8 @@ export const ModelName = {
   Course: 'Course',
   Note: 'Note',
   Tag: 'Tag',
-  NoteTag: 'NoteTag'
+  NoteTag: 'NoteTag',
+  Log: 'Log'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -180,6 +181,18 @@ export const NoteTagScalarFieldEnum = {
 } as const
 
 export type NoteTagScalarFieldEnum = (typeof NoteTagScalarFieldEnum)[keyof typeof NoteTagScalarFieldEnum]
+
+
+export const LogScalarFieldEnum = {
+  id: 'id',
+  component: 'component',
+  severity: 'severity',
+  message: 'message',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LogScalarFieldEnum = (typeof LogScalarFieldEnum)[keyof typeof LogScalarFieldEnum]
 
 
 export const SortOrder = {

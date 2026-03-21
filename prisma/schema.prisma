@@ -138,3 +138,15 @@ model NoteTag {
   @@id([noteId, tagId])
   @@map("note_to_tag")
 }
+
+model Log {
+  id        String  @id @default(uuid())
+  component String?
+  severity  String?
+  message   String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("log")
+}
