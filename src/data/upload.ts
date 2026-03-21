@@ -10,11 +10,11 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
   .inputValidator(async (data) => {
     // Validate that data is FormData
-    await logToDb({
-      component: 'UploadHtmlFile-Validator',
-      severity: 'info',
-      message: 'Validator started',
-    })
+    // await logToDb({
+    //   component: 'UploadHtmlFile-Validator',
+    //   severity: 'info',
+    //   message: 'Validator started',
+    // })
     if (!(data instanceof FormData)) {
       console.log(
         'uploadHtmlFile, data (should be of type Formdata, but is not)',
@@ -52,19 +52,19 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
         `File size must be less than ${Math.floor(MAX_FILE_SIZE_UPLOAD / 1024 / 1024)} MB`,
       )
     }
-    await logToDb({
-      component: 'UploadHtmlFile-Validator',
-      severity: 'info',
-      message: 'Validator finished successful',
-    })
+    // await logToDb({
+    //   component: 'UploadHtmlFile-Validator',
+    //   severity: 'info',
+    //   message: 'Validator finished successful',
+    // })
     return { file }
   })
   .handler(async ({ data }) => {
-    await logToDb({
-      component: 'UploadHtmlFile-handler',
-      severity: 'info',
-      message: 'handler started',
-    })
+    // await logToDb({
+    //   component: 'UploadHtmlFile-handler',
+    //   severity: 'info',
+    //   message: 'handler started',
+    // })
     try {
       const { file } = data
 
@@ -85,19 +85,19 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
 
       // Read and convert to Markdown
       const htmlContent = buffer.toString('utf8')
-      await logToDb({
-        component: 'UploadHtmlFile-handler',
-        severity: 'info',
-        message: 'Conversion to Markdown starts now',
-      })
+      // await logToDb({
+      //   component: 'UploadHtmlFile-handler',
+      //   severity: 'info',
+      //   message: 'Conversion to Markdown starts now',
+      // })
 
       const markdownContent = prepareAndConvertHtmlToMarkdown(htmlContent)
 
-      await logToDb({
-        component: 'UploadHtmlFile-handler',
-        severity: 'info',
-        message: 'Conversion to Markdown finished',
-      })
+      // await logToDb({
+      //   component: 'UploadHtmlFile-handler',
+      //   severity: 'info',
+      //   message: 'Conversion to Markdown finished',
+      // })
 
       // Save Markdown file
       // const markdownFileName = htmlFileName.replace(/\.html?$/i, '.md')

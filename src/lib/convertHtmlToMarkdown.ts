@@ -26,7 +26,7 @@ export function prepareAndConvertHtmlToMarkdown(htmlContent: string) {
   const notesContainer = $original(NOTES_CONTAINER_SELECTOR)
 
   if (!notesContainer.length) {
-    return '# Meine Kurs-Notizen\n\nEs wurden keine Notizen gefunden'
+    return '# ${title}\n\nEs wurden keine Notizen gefunden'
   }
 
   // 3. Modifikation: Buttons entfernen

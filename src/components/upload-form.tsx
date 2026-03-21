@@ -45,13 +45,13 @@ export function UploadForm() {
       onSubmit: uploadFileSchema,
     },
     onSubmit: ({ value }: { value: UploadFileSchema }) => {
-      logToDb({
-        data: {
-          component: 'UploadForm-Client',
-          severity: 'info',
-          message: 'Upload on client started',
-        },
-      })
+      // logToDb({
+      //   data: {
+      //     component: 'UploadForm-Client',
+      //     severity: 'info',
+      //     message: 'Upload on client started',
+      //   },
+      // })
       const formData = new FormData()
       formData.append('file', value.file)
       startTransition(async () => {
@@ -63,13 +63,13 @@ export function UploadForm() {
 
             // Download auslösen
             downloadBlob(result.markdownContent, fileName)
-            await logToDb({
-              data: {
-                component: 'UploadForm-Client',
-                severity: 'info',
-                message: 'Upload on client finished successful',
-              },
-            })
+            // await logToDb({
+            //   data: {
+            //     component: 'UploadForm-Client',
+            //     severity: 'info',
+            //     message: 'Upload on client finished successful',
+            //   },
+            // })
             toast.success(
               'Course notes processed successfully (and .MD file downloaded)',
             )
