@@ -21,6 +21,7 @@ import { useTransition } from 'react'
 import { toast } from 'sonner'
 import { uploadFileSchema } from '#/schemas/upload-file'
 import type { UploadFileSchema } from '#/schemas/upload-file'
+import { logClientError } from '#/data/logger'
 
 function downloadBlob(content: string, filename: string) {
   const blob = new Blob([content], { type: 'text/markdown' })
@@ -38,11 +39,19 @@ export function UploadForm() {
   const navigate = useNavigate()
   const [isPending, startTransition] = useTransition()
   const uploadFile = useServerFn(uploadHtmlFile)
+  const logToDb = useServerFn(logClientError)
   const form = useForm({
     validators: {
       onSubmit: uploadFileSchema,
     },
     onSubmit: ({ value }: { value: UploadFileSchema }) => {
+      logClientError({
+        data: {
+          component: 'UploadForm-Client',
+          severity: 'info',
+          message: 'Upload on client started',
+        },
+      })
       const formData = new FormData()
       formData.append('file', value.file)
       startTransition(async () => {
@@ -54,39 +63,30 @@ export function UploadForm() {
 
             // Download auslösen
             downloadBlob(result.markdownContent, fileName)
+            await logClientError({
+              data: {
+                component: 'UploadForm-Client',
+                severity: 'info',
+                message: 'Upload on client finished successful',
+              },
+            })
             toast.success(
               'Course notes processed successfully (and .MD file downloaded)',
             )
           }
         } catch (error) {
+          await logClientError({
+            data: {
+              component: 'UploadForm-Client',
+              severity: 'info',
+              message: 'Upload on client finished successful',
+            },
+          })
           toast.error('Upload failed')
         }
       })
     },
   })
-
-  /*
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formElement = e.currentTarget
-    const formData = new FormData(formElement)
-
-    try {
-      const result = await uploadFile({ data: formData })
-      console.log('Upload successful:', result)
-      alert(
-        `File uploaded successfully! Markdown saved to: ${result.markdownFile}`,
-      )
-    } catch (error: unknown) {
-      console.error('Upload failed:', error)
-      alert(
-        error instanceof Error
-          ? 'Upload failed: ' + error.message
-          : 'Upload failed',
-      )
-    }
-  }
-*/
 
   return (
     <Card className="max-w-md w-full">
