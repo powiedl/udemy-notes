@@ -57,15 +57,15 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
       const markdownContent = prepareAndConvertHtmlToMarkdown(htmlContent)
 
       // Save Markdown file
-      const markdownFileName = htmlFileName.replace(/\.html?$/i, '.md')
-      const markdownFilePath = path.join(uploadDir, markdownFileName)
-      fs.writeFileSync(markdownFilePath, markdownContent, 'utf-8')
+      // const markdownFileName = htmlFileName.replace(/\.html?$/i, '.md')
+      // const markdownFilePath = path.join(uploadDir, markdownFileName)
+      // fs.writeFileSync(markdownFilePath, markdownContent, 'utf-8')
 
       return {
         success: true,
         originalFileName: file.name,
         htmlFile: htmlFilePath,
-        markdownFile: markdownFilePath,
+        // markdownFile: markdownFilePath,
         size: file.size,
         timestamp,
         markdownContent: markdownContent,
