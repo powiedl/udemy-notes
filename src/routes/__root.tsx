@@ -23,6 +23,11 @@ export const Route = createRootRoute({
       {
         title: 'Udemy Notes',
       },
+      {
+        name: 'description',
+        content:
+          'You can upload your Udemy Notes and - for now - you get a clean structured markdown file back. In the future you will be able to manage your notes in this Web Application.',
+      },
     ],
     links: [
       {
