@@ -21,7 +21,6 @@ export function prepareAndConvertHtmlToMarkdown(htmlContent: string) {
   // 1. Original laden
   const $original = cheerio.load(htmlContent)
   const rawTitle = $original('head > title').text() || 'Meine Kurs-Notizen'
-  console.log(`>${rawTitle}<`)
   const title = rawTitle.replace(/^Course:\s*/, '').replace(/\|\s*Udemy$/, '')
 
   // 2. Den gewünschten Container finden

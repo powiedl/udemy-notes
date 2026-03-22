@@ -16,10 +16,10 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
     //   message: 'Validator started',
     // })
     if (!(data instanceof FormData)) {
-      console.log(
-        'uploadHtmlFile, data (should be of type Formdata, but is not)',
-        data,
-      )
+      // console.log(
+      //   'uploadHtmlFile, data (should be of type Formdata, but is not)',
+      //   data,
+      // )
       await logToDb({
         component: 'UploadHtmlFile-Validator',
         severity: 'error',

@@ -8,7 +8,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarRail,
+  SidebarTrigger,
 } from '#/components/ui/sidebar'
 
 import { BookOpenText, CloudUpload, NotebookPen, Bookmark } from 'lucide-react'
@@ -45,15 +45,17 @@ const navItems: NavPrimaryProps['items'] = linkOptions([
 
 export function AppSidebar({ user }: NavUserProps) {
   return (
-    <Sidebar collapsible="icon" className="mt-14">
-      <SidebarHeader></SidebarHeader>
+    <Sidebar collapsible="icon" className="mt-16">
+      <SidebarHeader>
+        <SidebarTrigger className="-ml-1" />
+      </SidebarHeader>
       <SidebarContent>
         <NavPrimary items={navItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />
       </SidebarFooter>
-      <SidebarRail />
+      {/* <SidebarRail /> */}
     </Sidebar>
   )
 }

@@ -42,7 +42,7 @@ export function SignupForm() {
         setError("Passwords don't match")
         return
       }
-      console.log('signup form, passwords are equal')
+      // console.log('signup form, passwords are equal')
       startTransition(async () => {
         await authClient.signUp.email({
           name: value.fullName,

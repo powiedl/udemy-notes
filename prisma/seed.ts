@@ -9,7 +9,7 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  console.log('🌱 Seeding database...')
+  //  console.log('🌱 Seeding database...')
 
   // Clear existing todos
   await prisma.todo.deleteMany()
@@ -23,12 +23,12 @@ async function main() {
     ],
   })
 
-  console.log(`✅ Created ${todos.count} todos`)
+  //  console.log(`✅ Created ${todos.count} todos`)
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error seeding database:', e)
+    //    console.error('❌ Error seeding database:', e)
     process.exit(1)
   })
   .finally(async () => {

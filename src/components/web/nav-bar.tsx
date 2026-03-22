@@ -5,9 +5,9 @@ import { authClient } from '#/lib/auth-client'
 import { toast } from 'sonner'
 import {
   Bookmark,
-  BookmarkIcon,
   BookOpenText,
   CloudUpload,
+  House,
   NotebookPen,
 } from 'lucide-react'
 
@@ -26,8 +26,8 @@ const Navbar = () => {
     })
   }
   return (
-    <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+    <nav className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 h-16 w-full">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 pt-2">
         <h2 className="m-0 shrink-0 text-base font-semibold tracking-tight">
           <Link
             to="/"
@@ -44,7 +44,8 @@ const Navbar = () => {
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
           >
-            Home
+            <House className="size-4 mr-1" />
+            <span className="hidden lg:inline">Home</span>
           </Link>
           <Link
             to="/courses"
@@ -53,7 +54,7 @@ const Navbar = () => {
             activeOptions={{ exact: true }}
           >
             <BookOpenText className="size-4 mr-1" />
-            Courses
+            <span className="hidden lg:inline">Courses</span>
           </Link>
           <Link
             to="/courses/import"
@@ -61,7 +62,7 @@ const Navbar = () => {
             activeProps={{ className: 'nav-link is-active' }}
           >
             <CloudUpload className="size-4 mr-1" />
-            Import course
+            <span className="hidden lg:inline">Import Courses</span>
           </Link>
           <Link
             to="/notes"
@@ -69,7 +70,7 @@ const Navbar = () => {
             activeProps={{ className: 'nav-link is-active' }}
           >
             <NotebookPen className="size-4 mr-1" />
-            Notes
+            <span className="hidden lg:inline">Notes</span>
           </Link>
           <Link
             to="/tags"
@@ -77,7 +78,7 @@ const Navbar = () => {
             activeProps={{ className: 'nav-link is-active' }}
           >
             <Bookmark className="size-4 mr-1" />
-            Tags
+            <span className="hidden lg:inline">Tags</span>
           </Link>
         </div>
         <div className="order-3 flex w-full flex-wrap items-center gap-x-4 gap-y-1 pb-1 text-sm font-semibold sm:order-2 sm:w-auto sm:flex-nowrap sm:pb-0">
