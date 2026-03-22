@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
+    "start:local": "node --env-file=.env.production.local .output/server/index.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint",

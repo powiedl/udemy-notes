@@ -20,7 +20,9 @@ type CheerioSelector = cheerio.Cheerio<any>
 export function prepareAndConvertHtmlToMarkdown(htmlContent: string) {
   // 1. Original laden
   const $original = cheerio.load(htmlContent)
-  const title = $original('title').text() || 'Meine Kurs-Notizen'
+  const rawTitle = $original('head > title').text() || 'Meine Kurs-Notizen'
+  console.log(`>${rawTitle}<`)
+  const title = rawTitle.replace(/^Course:\s*/, '').replace(/\|\s*Udemy$/, '')
 
   // 2. Den gewünschten Container finden
   const notesContainer = $original(NOTES_CONTAINER_SELECTOR)
