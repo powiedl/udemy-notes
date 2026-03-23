@@ -15,7 +15,6 @@ import { BookOpenText, CloudUpload, NotebookPen, Bookmark } from 'lucide-react'
 import { linkOptions } from '@tanstack/react-router'
 import { NavPrimary } from './nav-primary'
 
-// This is sample data.
 const navItems: NavPrimaryProps['items'] = linkOptions([
   {
     title: 'Courses - List',
@@ -45,11 +44,14 @@ const navItems: NavPrimaryProps['items'] = linkOptions([
 
 export function AppSidebar({ user }: NavUserProps) {
   return (
-    <Sidebar collapsible="icon" className="mt-16">
+    <Sidebar
+      collapsible="icon"
+      className="mt-16 flex justify-between h-[calc(100svh-64px)]"
+    >
       <SidebarHeader>
         <SidebarTrigger className="-ml-1" />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="grow">
         <NavPrimary items={navItems} />
       </SidebarContent>
       <SidebarFooter>

@@ -1,4 +1,5 @@
 import { prisma } from '#/db'
+import { getValueFromEnv } from './env'
 
 export type LogSeverity = 'info' | 'warning' | 'error' | 'critical'
 
