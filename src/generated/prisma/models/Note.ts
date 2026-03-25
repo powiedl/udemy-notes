@@ -35,6 +35,7 @@ export type NoteMinAggregateOutputType = {
   editedContent: string | null
   isPublic: boolean | null
   hasConflict: boolean | null
+  isDeleted: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,6 +51,7 @@ export type NoteMaxAggregateOutputType = {
   editedContent: string | null
   isPublic: boolean | null
   hasConflict: boolean | null
+  isDeleted: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -65,6 +67,7 @@ export type NoteCountAggregateOutputType = {
   editedContent: number
   isPublic: number
   hasConflict: number
+  isDeleted: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -82,6 +85,7 @@ export type NoteMinAggregateInputType = {
   editedContent?: true
   isPublic?: true
   hasConflict?: true
+  isDeleted?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -97,6 +101,7 @@ export type NoteMaxAggregateInputType = {
   editedContent?: true
   isPublic?: true
   hasConflict?: true
+  isDeleted?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -112,6 +117,7 @@ export type NoteCountAggregateInputType = {
   editedContent?: true
   isPublic?: true
   hasConflict?: true
+  isDeleted?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -200,6 +206,7 @@ export type NoteGroupByOutputType = {
   editedContent: string
   isPublic: boolean
   hasConflict: boolean
+  isDeleted: boolean
   createdAt: Date
   updatedAt: Date
   _count: NoteCountAggregateOutputType | null
@@ -236,6 +243,7 @@ export type NoteWhereInput = {
   editedContent?: Prisma.StringFilter<"Note"> | string
   isPublic?: Prisma.BoolFilter<"Note"> | boolean
   hasConflict?: Prisma.BoolFilter<"Note"> | boolean
+  isDeleted?: Prisma.BoolFilter<"Note"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Note"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Note"> | Date | string
   course?: Prisma.XOR<Prisma.CourseScalarRelationFilter, Prisma.CourseWhereInput>
@@ -254,6 +262,7 @@ export type NoteOrderByWithRelationInput = {
   editedContent?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
   hasConflict?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   course?: Prisma.CourseOrderByWithRelationInput
@@ -275,6 +284,7 @@ export type NoteWhereUniqueInput = Prisma.AtLeast<{
   editedContent?: Prisma.StringFilter<"Note"> | string
   isPublic?: Prisma.BoolFilter<"Note"> | boolean
   hasConflict?: Prisma.BoolFilter<"Note"> | boolean
+  isDeleted?: Prisma.BoolFilter<"Note"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Note"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Note"> | Date | string
   course?: Prisma.XOR<Prisma.CourseScalarRelationFilter, Prisma.CourseWhereInput>
@@ -293,6 +303,7 @@ export type NoteOrderByWithAggregationInput = {
   editedContent?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
   hasConflict?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.NoteCountOrderByAggregateInput
@@ -314,6 +325,7 @@ export type NoteScalarWhereWithAggregatesInput = {
   editedContent?: Prisma.StringWithAggregatesFilter<"Note"> | string
   isPublic?: Prisma.BoolWithAggregatesFilter<"Note"> | boolean
   hasConflict?: Prisma.BoolWithAggregatesFilter<"Note"> | boolean
+  isDeleted?: Prisma.BoolWithAggregatesFilter<"Note"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Note"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Note"> | Date | string
 }
@@ -327,6 +339,7 @@ export type NoteCreateInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   course: Prisma.CourseCreateNestedOneWithoutNotesInput
@@ -345,6 +358,7 @@ export type NoteUncheckedCreateInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
@@ -359,6 +373,7 @@ export type NoteUpdateInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   course?: Prisma.CourseUpdateOneRequiredWithoutNotesNestedInput
@@ -377,6 +392,7 @@ export type NoteUncheckedUpdateInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
@@ -393,6 +409,7 @@ export type NoteCreateManyInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -406,6 +423,7 @@ export type NoteUpdateManyMutationInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -421,6 +439,7 @@ export type NoteUncheckedUpdateManyInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -446,6 +465,7 @@ export type NoteCountOrderByAggregateInput = {
   editedContent?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
   hasConflict?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -461,6 +481,7 @@ export type NoteMaxOrderByAggregateInput = {
   editedContent?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
   hasConflict?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -476,6 +497,7 @@ export type NoteMinOrderByAggregateInput = {
   editedContent?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
   hasConflict?: Prisma.SortOrder
+  isDeleted?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -592,6 +614,7 @@ export type NoteCreateWithoutUserInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   course: Prisma.CourseCreateNestedOneWithoutNotesInput
@@ -608,6 +631,7 @@ export type NoteUncheckedCreateWithoutUserInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
@@ -653,6 +677,7 @@ export type NoteScalarWhereInput = {
   editedContent?: Prisma.StringFilter<"Note"> | string
   isPublic?: Prisma.BoolFilter<"Note"> | boolean
   hasConflict?: Prisma.BoolFilter<"Note"> | boolean
+  isDeleted?: Prisma.BoolFilter<"Note"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Note"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Note"> | Date | string
 }
@@ -666,6 +691,7 @@ export type NoteCreateWithoutCourseInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutNotesInput
@@ -682,6 +708,7 @@ export type NoteUncheckedCreateWithoutCourseInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.NoteTagUncheckedCreateNestedManyWithoutNoteInput
@@ -722,6 +749,7 @@ export type NoteCreateWithoutTagsInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   course: Prisma.CourseCreateNestedOneWithoutNotesInput
@@ -739,6 +767,7 @@ export type NoteUncheckedCreateWithoutTagsInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -768,6 +797,7 @@ export type NoteUpdateWithoutTagsInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   course?: Prisma.CourseUpdateOneRequiredWithoutNotesNestedInput
@@ -785,6 +815,7 @@ export type NoteUncheckedUpdateWithoutTagsInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -799,6 +830,7 @@ export type NoteCreateManyUserInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -812,6 +844,7 @@ export type NoteUpdateWithoutUserInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   course?: Prisma.CourseUpdateOneRequiredWithoutNotesNestedInput
@@ -828,6 +861,7 @@ export type NoteUncheckedUpdateWithoutUserInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
@@ -843,6 +877,7 @@ export type NoteUncheckedUpdateManyWithoutUserInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -857,6 +892,7 @@ export type NoteCreateManyCourseInput = {
   editedContent: string
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -870,6 +906,7 @@ export type NoteUpdateWithoutCourseInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutNotesNestedInput
@@ -886,6 +923,7 @@ export type NoteUncheckedUpdateWithoutCourseInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.NoteTagUncheckedUpdateManyWithoutNoteNestedInput
@@ -901,6 +939,7 @@ export type NoteUncheckedUpdateManyWithoutCourseInput = {
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   hasConflict?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isDeleted?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -947,6 +986,7 @@ export type NoteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   editedContent?: boolean
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
@@ -966,6 +1006,7 @@ export type NoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   editedContent?: boolean
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
@@ -983,6 +1024,7 @@ export type NoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   editedContent?: boolean
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
@@ -1000,11 +1042,12 @@ export type NoteSelectScalar = {
   editedContent?: boolean
   isPublic?: boolean
   hasConflict?: boolean
+  isDeleted?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type NoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "courseId" | "userId" | "timestamp" | "section" | "lecture" | "originalContent" | "editedContent" | "isPublic" | "hasConflict" | "createdAt" | "updatedAt", ExtArgs["result"]["note"]>
+export type NoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "courseId" | "userId" | "timestamp" | "section" | "lecture" | "originalContent" | "editedContent" | "isPublic" | "hasConflict" | "isDeleted" | "createdAt" | "updatedAt", ExtArgs["result"]["note"]>
 export type NoteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1038,6 +1081,7 @@ export type $NotePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     editedContent: string
     isPublic: boolean
     hasConflict: boolean
+    isDeleted: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["note"]>
@@ -1476,6 +1520,7 @@ export interface NoteFieldRefs {
   readonly editedContent: Prisma.FieldRef<"Note", 'String'>
   readonly isPublic: Prisma.FieldRef<"Note", 'Boolean'>
   readonly hasConflict: Prisma.FieldRef<"Note", 'Boolean'>
+  readonly isDeleted: Prisma.FieldRef<"Note", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Note", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Note", 'DateTime'>
 }

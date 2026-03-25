@@ -108,6 +108,7 @@ model Note {
   // Status
   isPublic    Boolean @default(false) @map("is_public")
   hasConflict Boolean @default(false) @map("has_conflict")
+  isDeleted   Boolean @default(false) @map("is_deleted")
 
   // Tags (Many-to-Many via impliziter Tabelle in Prisma)
   tags NoteTag[]
