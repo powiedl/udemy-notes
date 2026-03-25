@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
-    "build:local": "dotenv -e .env.production pnpm run build",
+    "build:local": "dotenv -e .env.production.local pnpm run build",
     "start:local": "node --env-file=.env.production.local .output/server/index.mjs",
     "preview": "vite preview",
     "test": "vitest run",
@@ -16,11 +16,11 @@
     "format": "prettier --check .",
     "check": "prettier --write . && eslint --fix",
     "post-cta-init": "npx -y create-db@latest --user-agent tanstack/tsrouter",
-    "db:generate": "dotenv -e .env.local -- prisma generate",
-    "db:push": "dotenv -e .env.local -- prisma db push",
-    "db:migrate": "dotenv -e .env.local -- prisma migrate dev",
-    "db:studio": "dotenv -e .env.local -- prisma studio",
-    "db:seed": "dotenv -e .env.local -- prisma db seed"
+    "db:generate": "dotenv -e .env.production.local -- prisma generate",
+    "db:push": "dotenv -e .env.production.local -- prisma db push",
+    "db:migrate": "dotenv -e .env.production.local -- prisma migrate dev",
+    "db:studio": "dotenv -e .env.production.local -- prisma studio",
+    "db:seed": "dotenv -e .env.production.local -- prisma db seed"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
