@@ -103,7 +103,7 @@ model Note {
 
   // Content-Logik
   originalContent String @map("original_content") @db.Text
-  editedContent   String @map("edited_content") @db.Text
+  editedContent   String @default("") @map("edited_content") @db.Text
 
   // Status
   isPublic    Boolean @default(false) @map("is_public")

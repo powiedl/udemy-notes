@@ -336,7 +336,7 @@ export type NoteCreateInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
@@ -355,7 +355,7 @@ export type NoteUncheckedCreateInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
@@ -406,7 +406,7 @@ export type NoteCreateManyInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
@@ -611,7 +611,7 @@ export type NoteCreateWithoutUserInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
@@ -628,7 +628,7 @@ export type NoteUncheckedCreateWithoutUserInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
@@ -688,7 +688,7 @@ export type NoteCreateWithoutCourseInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
@@ -705,7 +705,7 @@ export type NoteUncheckedCreateWithoutCourseInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
@@ -746,7 +746,7 @@ export type NoteCreateWithoutTagsInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
@@ -764,7 +764,7 @@ export type NoteUncheckedCreateWithoutTagsInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
@@ -827,7 +827,7 @@ export type NoteCreateManyUserInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
@@ -889,7 +889,7 @@ export type NoteCreateManyCourseInput = {
   section: string
   lecture: string
   originalContent: string
-  editedContent: string
+  editedContent?: string
   isPublic?: boolean
   hasConflict?: boolean
   isDeleted?: boolean
