@@ -8,7 +8,19 @@ import {
   NOTES_CONTAINER_SELECTOR,
   SECTION_SELECTOR,
 } from './constants'
+import type { ImportCourse, ImportNote } from './types'
+interface ConvertResultSuccess {
+  markdown: string
+  course: ImportCourse
+  status: 'SUCCESS'
+}
 
+interface ConvertResultError {
+  status: 'ERROR'
+  message: string
+}
+
+export type ConvertResult = ConvertResultSuccess | ConvertResultError
 /**
  * In Cheerio 1.2.0 ist 'cheerio.Cheerio<any>' der sicherste Weg,
  * um ein selektiertes Element-Set zu typisieren, ohne auf interne
@@ -17,7 +29,9 @@ import {
 type CheerioAPI = cheerio.CheerioAPI
 type CheerioSelector = cheerio.Cheerio<any>
 
-export function prepareAndConvertHtmlToMarkdown(htmlContent: string) {
+export function prepareAndConvertHtmlToMarkdown(
+  htmlContent: string,
+): ConvertResult {
   // 1. Original laden
   const $original = cheerio.load(htmlContent)
   const rawTitle = $original('head > title').text() || 'Meine Kurs-Notizen'
@@ -27,7 +41,10 @@ export function prepareAndConvertHtmlToMarkdown(htmlContent: string) {
   const notesContainer = $original(NOTES_CONTAINER_SELECTOR)
 
   if (!notesContainer.length) {
-    return '# ${title}\n\nEs wurden keine Notizen gefunden'
+    return {
+      status: 'ERROR',
+      message: '# ${title}\n\nEs wurden keine Notizen gefunden',
+    }
   }
 
   // 3. Modifikation: Buttons entfernen
@@ -37,35 +54,52 @@ export function prepareAndConvertHtmlToMarkdown(htmlContent: string) {
   const $ = cheerio.load(`<!DOCTYPE html><html><body></body></html>`)
   $('body').append(notesContainer)
 
-  return convertToMarkdown($, title)
+  return convertToMarkdown($, title || 'Untitled Course')
 }
 
-export function convertToMarkdown($: CheerioAPI, title: string) {
+export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
   const container = $(NOTES_CONTAINER_SELECTOR)
 
-  if (!container.length) return "Fehler: 'bookmarks-container' nicht gefunden."
+  if (!container.length)
+    return {
+      status: 'ERROR',
+      message: "Fehler: 'bookmarks-container' nicht gefunden.",
+    }
 
   let markdown = `# ${title}\n\n`
+  const course: ImportCourse = { title, notes: [] }
+
   const notes = container.find(NOTE_SELECTOR)
 
   notes.each((_idx1: number, el: any) => {
-    const note = $(el)
-
-    const duration = note.find(DURATION_SELECTOR).text().trim() || '0:00'
-    const section = note.find(SECTION_SELECTOR).text().trim() || ''
-    const lecture = note.find(LECTURE_SELECTOR).text().trim() || ''
-    const bodyContainer = note.find(NOTE_BODY_SELECTOR)
+    const noteElement = $(el)
+    const duration = noteElement.find(DURATION_SELECTOR).text().trim() || '0:00'
+    const section = noteElement.find(SECTION_SELECTOR).text().trim() || ''
+    const lecture = noteElement.find(LECTURE_SELECTOR).text().trim() || ''
+    const bodyContainer = noteElement.find(NOTE_BODY_SELECTOR)
+    const note: ImportNote = {
+      timestamp: duration,
+      section,
+      lecture,
+      content: '',
+    }
 
     markdown += `## Notiz bei ${duration}\n`
     markdown += `* **Zeitpunkt:** ${duration}\n`
     markdown += `* **Sektion:** ${section}\n`
     markdown += `* **Lektion:** ${lecture}\n\n`
 
+    let noteMarkdown = ''
     if (bodyContainer.length) {
-      markdown += processNode(bodyContainer, $)
+      noteMarkdown += processNode(bodyContainer, $)
     }
-
-    markdown += '\n---\n\n'
+    note.content = noteMarkdown
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/\\n\\n$/, '')
+      .replace(/[ \t]+$/gm, '')
+      .trim()
+    course.notes.push(note)
+    markdown = markdown + noteMarkdown + '\n---\n\n'
   })
 
   const cleanMarkdown = markdown
@@ -73,7 +107,7 @@ export function convertToMarkdown($: CheerioAPI, title: string) {
     .replace(/[ \t]+$/gm, '')
     .trim()
 
-  return cleanMarkdown
+  return { status: 'SUCCESS', markdown: cleanMarkdown, course }
 }
 
 function processNode(node: CheerioSelector, $: CheerioAPI) {

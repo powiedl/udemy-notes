@@ -5,6 +5,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { authFnMiddleware } from '#/middlewares/auth'
 import { logToDb } from '#/lib/logger'
+import { prisma } from '#/db'
+import { Course } from '#/generated/prisma/client'
 
 export const uploadHtmlFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
@@ -59,13 +61,16 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
     // })
     return { file }
   })
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     // await logToDb({
     //   component: 'UploadHtmlFile-handler',
     //   severity: 'info',
     //   message: 'handler started',
     // })
     try {
+      const userId = context.session.user.id
+
+      //console.log('User-Info:', JSON.stringify(context.session.user))
       const { file } = data
 
       // Convert file to Buffer
@@ -91,7 +96,10 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
       //   message: 'Conversion to Markdown starts now',
       // })
 
-      const markdownContent = prepareAndConvertHtmlToMarkdown(htmlContent)
+      const conversionResult = prepareAndConvertHtmlToMarkdown(htmlContent)
+      if (conversionResult.status === 'ERROR')
+        throw new Error(conversionResult.message)
+      const { course, markdown } = conversionResult
 
       // await logToDb({
       //   component: 'UploadHtmlFile-handler',
@@ -104,6 +112,44 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
       // const markdownFilePath = path.join(uploadDir, markdownFileName)
       // fs.writeFileSync(markdownFilePath, markdownContent, 'utf-8')
 
+      const existingCourse = await prisma.course.findFirst({
+        where: { userId: userId, title: course.title },
+      })
+      let finishedCourse: Course
+      if (existingCourse) {
+        finishedCourse = await prisma.course.update({
+          where: {
+            id: existingCourse.id,
+          },
+          data: {
+            title: course.title,
+          },
+        })
+      } else {
+        finishedCourse = await prisma.course.create({
+          data: {
+            title: course.title,
+            userId: userId,
+          },
+        })
+      }
+      const createdNotes = []
+      for (let note of course.notes) {
+        createdNotes.push(
+          prisma.note.create({
+            data: {
+              courseId: finishedCourse.id,
+              userId,
+              timestamp: note.timestamp,
+              section: note.section,
+              lecture: note.lecture,
+              originalContent: note.content,
+              editedContent: '',
+            },
+          }),
+        )
+      }
+      await Promise.all(createdNotes)
       return {
         success: true,
         originalFileName: file.name,
@@ -111,7 +157,7 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
         // markdownFile: markdownFilePath,
         size: file.size,
         timestamp,
-        markdownContent: markdownContent,
+        markdownContent: markdown,
       }
     } catch (error: unknown) {
       console.error('Upload error:', error)

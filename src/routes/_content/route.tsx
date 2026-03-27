@@ -21,8 +21,8 @@ function RouteComponent() {
     <>
       <SidebarProvider>
         <AppSidebar user={user} />
-        <SidebarInset className="flex w-full">
-          <div className="flex-1 *:mx-auto mt-4">
+        <SidebarInset className="flex w-full justify-between h-[calc(100svh-64px)]">
+          <div className="*:mx-auto mt-4">
             <Outlet />
           </div>
           <Footer />
