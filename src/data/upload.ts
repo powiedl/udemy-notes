@@ -13,13 +13,13 @@ function checkConflict(
   newNote: ImportNote,
   existingNote: Pick<Note, 'originalContent' | 'editedContent'>,
 ): boolean {
-  if (existingNote.originalContent === newNote.content) return false // der Content auf Udemy ist unverändert - daher kann es keinen Konflikt geben
+  if (newNote.content === existingNote.originalContent) return false // der neue Content und der Originalcontent sind gleich - es kann kein Konflikt sein
 
   // der Content auf Udemy hat sich verändert ...
-  return (
+  const hasConflict =
     existingNote.editedContent !== '' &&
-    existingNote.editedContent.trim() !== ''
-  ) // und es gibt auch einen editedContent --> Konflikt
+    existingNote.editedContent.trim() !== '' // und es gibt auch einen editedContent --> Konflikt
+  return hasConflict
 }
 export const uploadHtmlFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
