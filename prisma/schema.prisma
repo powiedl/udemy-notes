@@ -107,7 +107,7 @@ model Note {
 
   // Status
   isPublic    Boolean @default(false) @map("is_public")
-  hasConflict Boolean @default(false) @map("has_conflict")
+  hasConflict Boolean @default(false) @map("has_conflict") // die Notiz in Udemy hat sich geändert, und der User hat die Notiz auch in der App geändert
   isDeleted   Boolean @default(false) @map("is_deleted")
 
   // Tags (Many-to-Many via impliziter Tabelle in Prisma)

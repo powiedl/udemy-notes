@@ -6,8 +6,21 @@ import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { authFnMiddleware } from '#/middlewares/auth'
 import { logToDb } from '#/lib/logger'
 import { prisma } from '#/db'
-import { Course } from '#/generated/prisma/client'
+import { Course, Note } from '#/generated/prisma/client'
+import { ImportNote } from '#/lib/types'
 
+function checkConflict(
+  newNote: ImportNote,
+  existingNote: Pick<Note, 'originalContent' | 'editedContent'>,
+): boolean {
+  if (existingNote.originalContent === newNote.content) return false // der Content auf Udemy ist unverändert - daher kann es keinen Konflikt geben
+
+  // der Content auf Udemy hat sich verändert ...
+  return (
+    existingNote.editedContent !== '' &&
+    existingNote.editedContent.trim() !== ''
+  ) // und es gibt auch einen editedContent --> Konflikt
+}
 export const uploadHtmlFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
   .inputValidator(async (data) => {
@@ -62,61 +75,34 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
     return { file }
   })
   .handler(async ({ data, context }) => {
-    // await logToDb({
-    //   component: 'UploadHtmlFile-handler',
-    //   severity: 'info',
-    //   message: 'handler started',
-    // })
     try {
       const userId = context.session.user.id
 
-      //console.log('User-Info:', JSON.stringify(context.session.user))
       const { file } = data
 
       // Convert file to Buffer
       const buffer = Buffer.from(await file.arrayBuffer())
 
-      // Setup upload directory
-      // const uploadDir = path.join(process.cwd(), 'uploads')
-      // if (!fs.existsSync(uploadDir)) {
-      //   fs.mkdirSync(uploadDir, { recursive: true })
-      // }
-
       // Save HTML file
       const timestamp = Date.now()
-      // const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-      // const htmlFileName = `${timestamp}_${sanitizedFileName}`
-      // const htmlFilePath = path.join(uploadDir, htmlFileName)
 
       // Read and convert to Markdown
       const htmlContent = buffer.toString('utf8')
-      // await logToDb({
-      //   component: 'UploadHtmlFile-handler',
-      //   severity: 'info',
-      //   message: 'Conversion to Markdown starts now',
-      // })
 
       const conversionResult = prepareAndConvertHtmlToMarkdown(htmlContent)
       if (conversionResult.status === 'ERROR')
         throw new Error(conversionResult.message)
       const { course, markdown } = conversionResult
 
-      // await logToDb({
-      //   component: 'UploadHtmlFile-handler',
-      //   severity: 'info',
-      //   message: 'Conversion to Markdown finished',
-      // })
-
-      // Save Markdown file
-      // const markdownFileName = htmlFileName.replace(/\.html?$/i, '.md')
-      // const markdownFilePath = path.join(uploadDir, markdownFileName)
-      // fs.writeFileSync(markdownFilePath, markdownContent, 'utf-8')
-
       const existingCourse = await prisma.course.findFirst({
         where: { userId: userId, title: course.title },
       })
       let finishedCourse: Course
+      let existingNotes
       if (existingCourse) {
+        existingNotes = await prisma.note.findMany({
+          where: { courseId: existingCourse.id },
+        })
         finishedCourse = await prisma.course.update({
           where: {
             id: existingCourse.id,
@@ -134,30 +120,51 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
         })
       }
       const createdNotes = []
+      let numberOfConflicts = 0
       for (let note of course.notes) {
-        createdNotes.push(
-          prisma.note.create({
-            data: {
-              courseId: finishedCourse.id,
-              userId,
-              timestamp: note.timestamp,
-              section: note.section,
-              lecture: note.lecture,
-              originalContent: note.content,
-              editedContent: '',
-            },
-          }),
-        )
+        const existingNote =
+          existingNotes &&
+          existingNotes.find(
+            (n) =>
+              n.timestamp === note.timestamp &&
+              n.section === note.section &&
+              n.lecture === note.lecture,
+          )
+        if (existingNote) {
+          const conflict = checkConflict(note, existingNote)
+          if (conflict) numberOfConflicts++
+          createdNotes.push(
+            prisma.note.update({
+              where: { id: existingNote.id },
+              data: {
+                hasConflict: conflict,
+                originalContent: note.content,
+              },
+            }),
+          )
+        } else {
+          createdNotes.push(
+            prisma.note.create({
+              data: {
+                courseId: finishedCourse.id,
+                userId,
+                timestamp: note.timestamp,
+                section: note.section,
+                lecture: note.lecture,
+                originalContent: note.content,
+              },
+            }),
+          )
+        }
       }
       await Promise.all(createdNotes)
       return {
         success: true,
         originalFileName: file.name,
-        // htmlFile: htmlFilePath,
-        // markdownFile: markdownFilePath,
         size: file.size,
         timestamp,
         markdownContent: markdown,
+        numberOfConflicts,
       }
     } catch (error: unknown) {
       console.error('Upload error:', error)
