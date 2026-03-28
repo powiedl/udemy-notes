@@ -20,6 +20,7 @@ model User {
   accounts      Account[]
   courses       Course[]
   notes         Note[]
+  tags          Tag[]
 
   @@unique([email])
   @@map("user")
@@ -78,13 +79,14 @@ model Verification {
 // #region Udemy Notes
 
 model Course {
-  id        String   @id @default(uuid())
+  id        String      @id @default(uuid())
   title     String
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String      @map("user_id")
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes     Note[]
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  tags      CourseTag[]
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
 
   @@map("course")
 }
@@ -101,6 +103,7 @@ model Note {
   section   String
   lecture   String
 
+  orderInfo       String @default("0-0-0") @map("order_info") // sectionnumber-lecturenumber-timestampInSeconds (3-23-456)
   // Content-Logik
   originalContent String @map("original_content") @db.Text
   editedContent   String @default("") @map("edited_content") @db.Text
@@ -120,12 +123,16 @@ model Note {
 }
 
 model Tag {
-  id        String    @id @default(uuid())
-  name      String    @unique
+  id        String      @id @default(uuid())
+  name      String      @unique
   notes     NoteTag[]
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  userId    String?     @map("user_id")
+  user      User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  courses   CourseTag[]
 
+  @@unique([name, userId])
   @@map("tag")
 }
 
@@ -138,6 +145,17 @@ model NoteTag {
 
   @@id([noteId, tagId])
   @@map("note_to_tag")
+}
+
+model CourseTag {
+  courseId String @map("course_id")
+  tagId    String @map("tag_id")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, tagId])
+  @@map("course_to_tag")
 }
 
 model Log {

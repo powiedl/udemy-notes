@@ -19,6 +19,7 @@ import { Route as AuthSignupIndexRouteImport } from './routes/_auth/signup.index
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login.index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ContentCoursesImportIndexRouteImport } from './routes/_content/courses/import.index'
+import { Route as ContentCoursesCourseIdIndexRouteImport } from './routes/_content/courses/$courseId.index'
 
 const ContentRouteRoute = ContentRouteRouteImport.update({
   id: '/_content',
@@ -70,6 +71,12 @@ const ContentCoursesImportIndexRoute =
     path: '/courses/import/',
     getParentRoute: () => ContentRouteRoute,
   } as any)
+const ContentCoursesCourseIdIndexRoute =
+  ContentCoursesCourseIdIndexRouteImport.update({
+    id: '/courses/$courseId/',
+    path: '/courses/$courseId/',
+    getParentRoute: () => ContentRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/courses/': typeof ContentCoursesIndexRoute
   '/notes/': typeof ContentNotesIndexRoute
   '/tags/': typeof ContentTagsIndexRoute
+  '/courses/$courseId/': typeof ContentCoursesCourseIdIndexRoute
   '/courses/import/': typeof ContentCoursesImportIndexRoute
 }
 export interface FileRoutesByTo {
@@ -91,6 +99,7 @@ export interface FileRoutesByTo {
   '/courses': typeof ContentCoursesIndexRoute
   '/notes': typeof ContentNotesIndexRoute
   '/tags': typeof ContentTagsIndexRoute
+  '/courses/$courseId': typeof ContentCoursesCourseIdIndexRoute
   '/courses/import': typeof ContentCoursesImportIndexRoute
 }
 export interface FileRoutesById {
@@ -104,6 +113,7 @@ export interface FileRoutesById {
   '/_content/courses/': typeof ContentCoursesIndexRoute
   '/_content/notes/': typeof ContentNotesIndexRoute
   '/_content/tags/': typeof ContentTagsIndexRoute
+  '/_content/courses/$courseId/': typeof ContentCoursesCourseIdIndexRoute
   '/_content/courses/import/': typeof ContentCoursesImportIndexRoute
 }
 export interface FileRouteTypes {
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/courses/'
     | '/notes/'
     | '/tags/'
+    | '/courses/$courseId/'
     | '/courses/import/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/notes'
     | '/tags'
+    | '/courses/$courseId'
     | '/courses/import'
   id:
     | '__root__'
@@ -140,6 +152,7 @@ export interface FileRouteTypes {
     | '/_content/courses/'
     | '/_content/notes/'
     | '/_content/tags/'
+    | '/_content/courses/$courseId/'
     | '/_content/courses/import/'
   fileRoutesById: FileRoutesById
 }
@@ -224,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContentCoursesImportIndexRouteImport
       parentRoute: typeof ContentRouteRoute
     }
+    '/_content/courses/$courseId/': {
+      id: '/_content/courses/$courseId/'
+      path: '/courses/$courseId'
+      fullPath: '/courses/$courseId/'
+      preLoaderRoute: typeof ContentCoursesCourseIdIndexRouteImport
+      parentRoute: typeof ContentRouteRoute
+    }
   }
 }
 
@@ -231,6 +251,7 @@ interface ContentRouteRouteChildren {
   ContentCoursesIndexRoute: typeof ContentCoursesIndexRoute
   ContentNotesIndexRoute: typeof ContentNotesIndexRoute
   ContentTagsIndexRoute: typeof ContentTagsIndexRoute
+  ContentCoursesCourseIdIndexRoute: typeof ContentCoursesCourseIdIndexRoute
   ContentCoursesImportIndexRoute: typeof ContentCoursesImportIndexRoute
 }
 
@@ -238,6 +259,7 @@ const ContentRouteRouteChildren: ContentRouteRouteChildren = {
   ContentCoursesIndexRoute: ContentCoursesIndexRoute,
   ContentNotesIndexRoute: ContentNotesIndexRoute,
   ContentTagsIndexRoute: ContentTagsIndexRoute,
+  ContentCoursesCourseIdIndexRoute: ContentCoursesCourseIdIndexRoute,
   ContentCoursesImportIndexRoute: ContentCoursesImportIndexRoute,
 }
 

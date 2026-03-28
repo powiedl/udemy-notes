@@ -18,6 +18,7 @@
     "post-cta-init": "npx -y create-db@latest --user-agent tanstack/tsrouter",
     "db:generate": "dotenv -e .env.production.local -- prisma generate",
     "db:push": "dotenv -e .env.production.local -- prisma db push",
+    "db:push:force": "dotenv -e .env.production.local -- prisma db push --force-reset",
     "db:migrate": "dotenv -e .env.production.local -- prisma migrate dev",
     "db:studio": "dotenv -e .env.production.local -- prisma studio",
     "db:seed": "dotenv -e .env.production.local -- prisma db seed"

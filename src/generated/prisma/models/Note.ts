@@ -31,6 +31,7 @@ export type NoteMinAggregateOutputType = {
   timestamp: string | null
   section: string | null
   lecture: string | null
+  orderInfo: string | null
   originalContent: string | null
   editedContent: string | null
   isPublic: boolean | null
@@ -47,6 +48,7 @@ export type NoteMaxAggregateOutputType = {
   timestamp: string | null
   section: string | null
   lecture: string | null
+  orderInfo: string | null
   originalContent: string | null
   editedContent: string | null
   isPublic: boolean | null
@@ -63,6 +65,7 @@ export type NoteCountAggregateOutputType = {
   timestamp: number
   section: number
   lecture: number
+  orderInfo: number
   originalContent: number
   editedContent: number
   isPublic: number
@@ -81,6 +84,7 @@ export type NoteMinAggregateInputType = {
   timestamp?: true
   section?: true
   lecture?: true
+  orderInfo?: true
   originalContent?: true
   editedContent?: true
   isPublic?: true
@@ -97,6 +101,7 @@ export type NoteMaxAggregateInputType = {
   timestamp?: true
   section?: true
   lecture?: true
+  orderInfo?: true
   originalContent?: true
   editedContent?: true
   isPublic?: true
@@ -113,6 +118,7 @@ export type NoteCountAggregateInputType = {
   timestamp?: true
   section?: true
   lecture?: true
+  orderInfo?: true
   originalContent?: true
   editedContent?: true
   isPublic?: true
@@ -202,6 +208,7 @@ export type NoteGroupByOutputType = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo: string
   originalContent: string
   editedContent: string
   isPublic: boolean
@@ -239,6 +246,7 @@ export type NoteWhereInput = {
   timestamp?: Prisma.StringFilter<"Note"> | string
   section?: Prisma.StringFilter<"Note"> | string
   lecture?: Prisma.StringFilter<"Note"> | string
+  orderInfo?: Prisma.StringFilter<"Note"> | string
   originalContent?: Prisma.StringFilter<"Note"> | string
   editedContent?: Prisma.StringFilter<"Note"> | string
   isPublic?: Prisma.BoolFilter<"Note"> | boolean
@@ -258,6 +266,7 @@ export type NoteOrderByWithRelationInput = {
   timestamp?: Prisma.SortOrder
   section?: Prisma.SortOrder
   lecture?: Prisma.SortOrder
+  orderInfo?: Prisma.SortOrder
   originalContent?: Prisma.SortOrder
   editedContent?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
@@ -280,6 +289,7 @@ export type NoteWhereUniqueInput = Prisma.AtLeast<{
   timestamp?: Prisma.StringFilter<"Note"> | string
   section?: Prisma.StringFilter<"Note"> | string
   lecture?: Prisma.StringFilter<"Note"> | string
+  orderInfo?: Prisma.StringFilter<"Note"> | string
   originalContent?: Prisma.StringFilter<"Note"> | string
   editedContent?: Prisma.StringFilter<"Note"> | string
   isPublic?: Prisma.BoolFilter<"Note"> | boolean
@@ -299,6 +309,7 @@ export type NoteOrderByWithAggregationInput = {
   timestamp?: Prisma.SortOrder
   section?: Prisma.SortOrder
   lecture?: Prisma.SortOrder
+  orderInfo?: Prisma.SortOrder
   originalContent?: Prisma.SortOrder
   editedContent?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
@@ -321,6 +332,7 @@ export type NoteScalarWhereWithAggregatesInput = {
   timestamp?: Prisma.StringWithAggregatesFilter<"Note"> | string
   section?: Prisma.StringWithAggregatesFilter<"Note"> | string
   lecture?: Prisma.StringWithAggregatesFilter<"Note"> | string
+  orderInfo?: Prisma.StringWithAggregatesFilter<"Note"> | string
   originalContent?: Prisma.StringWithAggregatesFilter<"Note"> | string
   editedContent?: Prisma.StringWithAggregatesFilter<"Note"> | string
   isPublic?: Prisma.BoolWithAggregatesFilter<"Note"> | boolean
@@ -335,6 +347,7 @@ export type NoteCreateInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -354,6 +367,7 @@ export type NoteUncheckedCreateInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -369,6 +383,7 @@ export type NoteUpdateInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -388,6 +403,7 @@ export type NoteUncheckedUpdateInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -405,6 +421,7 @@ export type NoteCreateManyInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -419,6 +436,7 @@ export type NoteUpdateManyMutationInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -435,6 +453,7 @@ export type NoteUncheckedUpdateManyInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -461,6 +480,7 @@ export type NoteCountOrderByAggregateInput = {
   timestamp?: Prisma.SortOrder
   section?: Prisma.SortOrder
   lecture?: Prisma.SortOrder
+  orderInfo?: Prisma.SortOrder
   originalContent?: Prisma.SortOrder
   editedContent?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
@@ -477,6 +497,7 @@ export type NoteMaxOrderByAggregateInput = {
   timestamp?: Prisma.SortOrder
   section?: Prisma.SortOrder
   lecture?: Prisma.SortOrder
+  orderInfo?: Prisma.SortOrder
   originalContent?: Prisma.SortOrder
   editedContent?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
@@ -493,6 +514,7 @@ export type NoteMinOrderByAggregateInput = {
   timestamp?: Prisma.SortOrder
   section?: Prisma.SortOrder
   lecture?: Prisma.SortOrder
+  orderInfo?: Prisma.SortOrder
   originalContent?: Prisma.SortOrder
   editedContent?: Prisma.SortOrder
   isPublic?: Prisma.SortOrder
@@ -610,6 +632,7 @@ export type NoteCreateWithoutUserInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -627,6 +650,7 @@ export type NoteUncheckedCreateWithoutUserInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -673,6 +697,7 @@ export type NoteScalarWhereInput = {
   timestamp?: Prisma.StringFilter<"Note"> | string
   section?: Prisma.StringFilter<"Note"> | string
   lecture?: Prisma.StringFilter<"Note"> | string
+  orderInfo?: Prisma.StringFilter<"Note"> | string
   originalContent?: Prisma.StringFilter<"Note"> | string
   editedContent?: Prisma.StringFilter<"Note"> | string
   isPublic?: Prisma.BoolFilter<"Note"> | boolean
@@ -687,6 +712,7 @@ export type NoteCreateWithoutCourseInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -704,6 +730,7 @@ export type NoteUncheckedCreateWithoutCourseInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -745,6 +772,7 @@ export type NoteCreateWithoutTagsInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -763,6 +791,7 @@ export type NoteUncheckedCreateWithoutTagsInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -793,6 +822,7 @@ export type NoteUpdateWithoutTagsInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -811,6 +841,7 @@ export type NoteUncheckedUpdateWithoutTagsInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -826,6 +857,7 @@ export type NoteCreateManyUserInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -840,6 +872,7 @@ export type NoteUpdateWithoutUserInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -857,6 +890,7 @@ export type NoteUncheckedUpdateWithoutUserInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -873,6 +907,7 @@ export type NoteUncheckedUpdateManyWithoutUserInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -888,6 +923,7 @@ export type NoteCreateManyCourseInput = {
   timestamp: string
   section: string
   lecture: string
+  orderInfo?: string
   originalContent: string
   editedContent?: string
   isPublic?: boolean
@@ -902,6 +938,7 @@ export type NoteUpdateWithoutCourseInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -919,6 +956,7 @@ export type NoteUncheckedUpdateWithoutCourseInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -935,6 +973,7 @@ export type NoteUncheckedUpdateManyWithoutCourseInput = {
   timestamp?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
   lecture?: Prisma.StringFieldUpdateOperationsInput | string
+  orderInfo?: Prisma.StringFieldUpdateOperationsInput | string
   originalContent?: Prisma.StringFieldUpdateOperationsInput | string
   editedContent?: Prisma.StringFieldUpdateOperationsInput | string
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -982,6 +1021,7 @@ export type NoteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   timestamp?: boolean
   section?: boolean
   lecture?: boolean
+  orderInfo?: boolean
   originalContent?: boolean
   editedContent?: boolean
   isPublic?: boolean
@@ -1002,6 +1042,7 @@ export type NoteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   timestamp?: boolean
   section?: boolean
   lecture?: boolean
+  orderInfo?: boolean
   originalContent?: boolean
   editedContent?: boolean
   isPublic?: boolean
@@ -1020,6 +1061,7 @@ export type NoteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   timestamp?: boolean
   section?: boolean
   lecture?: boolean
+  orderInfo?: boolean
   originalContent?: boolean
   editedContent?: boolean
   isPublic?: boolean
@@ -1038,6 +1080,7 @@ export type NoteSelectScalar = {
   timestamp?: boolean
   section?: boolean
   lecture?: boolean
+  orderInfo?: boolean
   originalContent?: boolean
   editedContent?: boolean
   isPublic?: boolean
@@ -1047,7 +1090,7 @@ export type NoteSelectScalar = {
   updatedAt?: boolean
 }
 
-export type NoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "courseId" | "userId" | "timestamp" | "section" | "lecture" | "originalContent" | "editedContent" | "isPublic" | "hasConflict" | "isDeleted" | "createdAt" | "updatedAt", ExtArgs["result"]["note"]>
+export type NoteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "courseId" | "userId" | "timestamp" | "section" | "lecture" | "orderInfo" | "originalContent" | "editedContent" | "isPublic" | "hasConflict" | "isDeleted" | "createdAt" | "updatedAt", ExtArgs["result"]["note"]>
 export type NoteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1077,6 +1120,7 @@ export type $NotePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     timestamp: string
     section: string
     lecture: string
+    orderInfo: string
     originalContent: string
     editedContent: string
     isPublic: boolean
@@ -1516,6 +1560,7 @@ export interface NoteFieldRefs {
   readonly timestamp: Prisma.FieldRef<"Note", 'String'>
   readonly section: Prisma.FieldRef<"Note", 'String'>
   readonly lecture: Prisma.FieldRef<"Note", 'String'>
+  readonly orderInfo: Prisma.FieldRef<"Note", 'String'>
   readonly originalContent: Prisma.FieldRef<"Note", 'String'>
   readonly editedContent: Prisma.FieldRef<"Note", 'String'>
   readonly isPublic: Prisma.FieldRef<"Note", 'Boolean'>

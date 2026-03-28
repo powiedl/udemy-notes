@@ -58,6 +58,11 @@ export type Tag = Prisma.TagModel
  */
 export type NoteTag = Prisma.NoteTagModel
 /**
+ * Model CourseTag
+ * 
+ */
+export type CourseTag = Prisma.CourseTagModel
+/**
  * Model Log
  * 
  */

@@ -37,6 +37,7 @@ export const Route = createRootRoute({
     ],
   }),
   shellComponent: RootDocument,
+
   notFoundComponent: () => <div>Sorry, the url you tried was not found :(</div>,
 })
 

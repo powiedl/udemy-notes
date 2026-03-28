@@ -14,6 +14,7 @@ export const getCoursesFn = createServerFn({ method: 'GET' })
       orderBy: {
         updatedAt: 'desc',
       },
+      include: { _count: { select: { notes: true } } },
     })
     return courses
   })

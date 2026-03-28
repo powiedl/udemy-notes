@@ -42,10 +42,10 @@ export const authMiddleware = createMiddleware({ type: 'request' }).server(
     const url = new URL(request.url)
     //console.log(`Checking ${url.pathname} ...`)
 
-    if (checkUrl(url.pathname)) return next()
-
     const headers = getRequestHeaders()
     const session = await auth.api.getSession({ headers })
+
+    if (checkUrl(url.pathname)) return next()
 
     if (!session) {
       throw redirect({ to: '/login' })

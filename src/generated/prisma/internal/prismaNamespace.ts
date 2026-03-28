@@ -392,6 +392,7 @@ export const ModelName = {
   Note: 'Note',
   Tag: 'Tag',
   NoteTag: 'NoteTag',
+  CourseTag: 'CourseTag',
   Log: 'Log'
 } as const
 
@@ -408,7 +409,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "course" | "note" | "tag" | "noteTag" | "log"
+    modelProps: "user" | "session" | "account" | "verification" | "course" | "note" | "tag" | "noteTag" | "courseTag" | "log"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1004,6 +1005,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CourseTag: {
+      payload: Prisma.$CourseTagPayload<ExtArgs>
+      fields: Prisma.CourseTagFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CourseTagFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CourseTagFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload>
+        }
+        findFirst: {
+          args: Prisma.CourseTagFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CourseTagFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload>
+        }
+        findMany: {
+          args: Prisma.CourseTagFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload>[]
+        }
+        create: {
+          args: Prisma.CourseTagCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload>
+        }
+        createMany: {
+          args: Prisma.CourseTagCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CourseTagCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload>[]
+        }
+        delete: {
+          args: Prisma.CourseTagDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload>
+        }
+        update: {
+          args: Prisma.CourseTagUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload>
+        }
+        deleteMany: {
+          args: Prisma.CourseTagDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CourseTagUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CourseTagUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload>[]
+        }
+        upsert: {
+          args: Prisma.CourseTagUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTagPayload>
+        }
+        aggregate: {
+          args: Prisma.CourseTagAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCourseTag>
+        }
+        groupBy: {
+          args: Prisma.CourseTagGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CourseTagGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CourseTagCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CourseTagCountAggregateOutputType> | number
+        }
+      }
+    }
     Log: {
       payload: Prisma.$LogPayload<ExtArgs>
       fields: Prisma.LogFieldRefs
@@ -1193,6 +1268,7 @@ export const NoteScalarFieldEnum = {
   timestamp: 'timestamp',
   section: 'section',
   lecture: 'lecture',
+  orderInfo: 'orderInfo',
   originalContent: 'originalContent',
   editedContent: 'editedContent',
   isPublic: 'isPublic',
@@ -1208,6 +1284,7 @@ export type NoteScalarFieldEnum = (typeof NoteScalarFieldEnum)[keyof typeof Note
 export const TagScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  userId: 'userId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1221,6 +1298,14 @@ export const NoteTagScalarFieldEnum = {
 } as const
 
 export type NoteTagScalarFieldEnum = (typeof NoteTagScalarFieldEnum)[keyof typeof NoteTagScalarFieldEnum]
+
+
+export const CourseTagScalarFieldEnum = {
+  courseId: 'courseId',
+  tagId: 'tagId'
+} as const
+
+export type CourseTagScalarFieldEnum = (typeof CourseTagScalarFieldEnum)[keyof typeof CourseTagScalarFieldEnum]
 
 
 export const LogScalarFieldEnum = {
@@ -1416,6 +1501,7 @@ export type GlobalOmitConfig = {
   note?: Prisma.NoteOmit
   tag?: Prisma.TagOmit
   noteTag?: Prisma.NoteTagOmit
+  courseTag?: Prisma.CourseTagOmit
   log?: Prisma.LogOmit
 }
 

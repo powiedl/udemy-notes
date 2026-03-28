@@ -8,6 +8,7 @@ import { logToDb } from '#/lib/logger'
 import { prisma } from '#/db'
 import { Course, Note } from '#/generated/prisma/client'
 import { ImportNote } from '#/lib/types'
+import { orderInfo } from '#/lib/udemy'
 
 function checkConflict(
   newNote: ImportNote,
@@ -152,6 +153,11 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
                 section: note.section,
                 lecture: note.lecture,
                 originalContent: note.content,
+                orderInfo: orderInfo(
+                  note.section,
+                  note.lecture,
+                  note.timestamp,
+                ),
               },
             }),
           )
