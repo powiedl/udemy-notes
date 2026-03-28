@@ -27,7 +27,7 @@ const Navbar = () => {
     })
   }
   return (
-    <nav className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 h-16 w-full">
+    <nav className="fixed top-0 inset-x-0 z-10 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 h-16 w-full">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 pt-2">
         <div className="gap-4 flex flex-row">
           <h2 className="m-0 shrink-0 text-base font-semibold tracking-tight">
