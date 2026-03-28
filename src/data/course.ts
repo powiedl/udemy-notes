@@ -38,3 +38,7 @@ export const getCourseById = createServerFn({ method: 'GET' })
     if (!course) throw notFound()
     return course
   })
+
+export type AwaitedReturnTypeGetCourseById = Awaited<
+  ReturnType<typeof getCourseById>
+>

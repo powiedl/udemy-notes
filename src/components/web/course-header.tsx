@@ -47,7 +47,7 @@ const CourseHeader = ({
               {course.title}
             </Link>
           ) : (
-            course.title
+            <h1 className="text-4xl  font-semibold">{course.title}</h1>
           )}
         </CardTitle>
         <CardContent className="flex flex-col">

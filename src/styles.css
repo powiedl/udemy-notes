@@ -408,3 +408,7 @@ a {
     @apply font-sans;
   }
 }
+
+.single-note > code {
+  font-family: 'Courier New', Courier, monospace;
+}
