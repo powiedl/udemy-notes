@@ -1,6 +1,4 @@
 import Footer from '#/components/Footer'
-import { Button } from '#/components/ui/button'
-import { createDefaultTags } from '#/data/tag'
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({ component: App })
@@ -46,16 +44,6 @@ function App() {
               course file
             </li>
           </ol>
-          {
-            <Button
-              type="button"
-              onClick={() => {
-                createDefaultTags()
-              }}
-            >
-              create default tags
-            </Button>
-          }
         </section>
       </main>
       <Footer />

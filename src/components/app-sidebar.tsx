@@ -1,7 +1,7 @@
 'use client'
 
 import { NavUser } from '#/components/nav-user'
-import type { NavPrimaryProps, NavUserProps } from '#/lib/types'
+import type { NavAdminProps, NavPrimaryProps, NavUserProps } from '#/lib/types'
 
 import {
   Sidebar,
@@ -11,9 +11,18 @@ import {
   SidebarTrigger,
 } from '#/components/ui/sidebar'
 
-import { BookOpenText, CloudUpload, NotebookPen, Bookmark } from 'lucide-react'
+import {
+  BookOpenText,
+  CloudUpload,
+  NotebookPen,
+  Bookmark,
+  BookmarkPlus,
+} from 'lucide-react'
 import { linkOptions } from '@tanstack/react-router'
 import { NavPrimary } from './nav-primary'
+import { SidebarSeparator } from './ui/sidebar-ori'
+import { createDefaultTags } from '#/data/tag'
+import { NavAdmin } from './nav-admin'
 
 const navItems: NavPrimaryProps['items'] = linkOptions([
   {
@@ -42,6 +51,10 @@ const navItems: NavPrimaryProps['items'] = linkOptions([
   },
 ])
 
+const adminItems: NavAdminProps['items'] = [
+  { title: 'seed Tags', callback: createDefaultTags, icon: BookmarkPlus },
+]
+
 export function AppSidebar({ user }: NavUserProps) {
   return (
     <Sidebar
@@ -53,6 +66,12 @@ export function AppSidebar({ user }: NavUserProps) {
       </SidebarHeader>
       <SidebarContent className="grow">
         <NavPrimary items={navItems} />
+        {user.email === 'tim@tom.io' && (
+          <>
+            <SidebarSeparator />
+            <NavAdmin items={adminItems} />
+          </>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

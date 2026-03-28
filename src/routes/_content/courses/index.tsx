@@ -1,12 +1,5 @@
 import { buttonVariants } from '#/components/ui/button'
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '#/components/ui/card'
-import {
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -14,6 +7,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '#/components/ui/empty'
+import CourseHeader from '#/components/web/course-header'
 import { getCoursesFn } from '#/data/course'
 import { cn } from '#/lib/utils'
 import { createFileRoute, Link } from '@tanstack/react-router'
@@ -57,29 +51,7 @@ function CoursesList({ data }: { data: ReturnType<typeof getCoursesFn> }) {
   return (
     <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
       {courses.map((course) => (
-        <Card
-          key={course.id}
-          className="group overflow-hidden transition-all hover:shadow-lg px-4 py-2"
-        >
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              <Link
-                to="/courses/$courseId"
-                params={{ courseId: course.id }}
-                className="block line-clamp-3"
-              >
-                {course.title}
-              </Link>
-            </CardTitle>
-            <CardContent className="flex flex-col">
-              <div>Tags</div>
-              <div>
-                {course._count.notes} note{course._count.notes === 1 ? '' : 's'}
-              </div>
-            </CardContent>
-            <CardFooter>CTA Buttons</CardFooter>
-          </CardHeader>
-        </Card>
+        <CourseHeader course={course} singleCourse={false} key={course.id} />
       ))}
     </div>
   )

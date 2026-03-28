@@ -10,6 +10,14 @@ export interface NavPrimaryProps {
   }[]
 }
 
+export interface NavAdminProps {
+  items: {
+    title: string
+    callback: Function
+    icon: LucideIcon
+  }[]
+}
+
 export interface NavUserProps {
   user: User
 }
