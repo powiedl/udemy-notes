@@ -159,13 +159,55 @@ function processNode(node: CheerioSelector, $: CheerioAPI) {
   return result
 }
 
-function processInlineFormatting(element: CheerioSelector, $: CheerioAPI) {
-  let html = element.html() || ''
+// function processInlineFormatting(element: CheerioSelector, $: CheerioAPI) {
+//   let html = element.html() || ''
 
-  html = html
-    .replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
-    .replace(/<b>(.*?)<\/b>/gi, '**$1**')
-    .replace(/<code>(.*?)<\/code>/gi, '`$1`')
+//   html = html
+//     // Fett (strong/b): ZWSP nur wenn kein Whitespace davor/danach
+//     .replace(
+//       /(?<!\s|^)<(strong|b)>(.*?)<\/\1>(?!\s|$)/gi,
+//       '**&#8203;$2&#8203;**',
+//     )
+//     // Falls doch ein Leerzeichen da ist, ganz normales Markdown
+//     .replace(/<(strong|b)>(.*?)<\/\1>/gi, '**$2**')
+//     .replace(/<code>(.*?)<\/code>/gi, '`$1`')
 
-  return $('<div/>').html(html).text().trim()
+//   return $('<div/>').html(html).text().trim()
+// }
+function processInlineFormatting(element: any, $: any) {
+  // Wir arbeiten direkt auf den Elementen im DOM-Teilbaum
+  element.find('strong, b').each((_: number, el: any) => {
+    const $el = $(el)
+    const content = $el.html()
+
+    const prevNode = el.previousSibling
+    const nextNode = el.nextSibling
+
+    // Zeichen direkt davor prüfen
+    const charBefore =
+      prevNode && prevNode.type === 'text' ? prevNode.data.slice(-1) : ''
+    // Brauchen wir ein ZWSP davor? (Existiert ein Zeichen und ist es kein Whitespace?)
+    const needsPrefix = charBefore !== '' && !/\s/.test(charBefore)
+
+    // Zeichen direkt danach prüfen
+    const charAfter =
+      nextNode && nextNode.type === 'text' ? nextNode.data[0] : ''
+    // Brauchen wir ein ZWSP danach?
+    const needsSuffix = charAfter !== '' && !/\s/.test(charAfter)
+
+    // Präfix und Suffix individuell bestimmen
+    const prefix = needsPrefix ? '\u200B' : ''
+    const suffix = needsSuffix ? '\u200B' : ''
+
+    // Zusammenbau: Nur dort einfügen, wo es wirklich hakt
+    $el.replaceWith(`**${prefix}${content}${suffix}**`)
+  })
+
+  // Code-Tags
+  element.find('code').each((_: number, el: any) => {
+    const $el = $(el)
+    $el.replaceWith(`\`${$el.html()}\``)
+  })
+
+  return element.text().trim()
 }
