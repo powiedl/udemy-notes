@@ -34,7 +34,7 @@ function RouteComponent() {
   //console.log(data)
   return (
     <div className="px-4">
-      <Suspense fallback={<Loader2 className="size-40 animate-spin" />}>
+      <Suspense fallback={<Loader2 className="size-40 animate-spin mx-auto" />}>
         <Course data={coursePromise} />
       </Suspense>
     </div>
