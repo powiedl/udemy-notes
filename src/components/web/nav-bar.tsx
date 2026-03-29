@@ -9,6 +9,7 @@ import {
   CloudUpload,
   GithubIcon,
   House,
+  LogOut,
   NotebookPen,
 } from 'lucide-react'
 import { cn } from '#/lib/utils'
@@ -34,7 +35,7 @@ const Navbar = ({ className }: { className: string }) => {
         className,
       )}
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 pt-2">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-1 sm:px-2 md:px-4 pt-2">
         <div className="gap-4 flex flex-row">
           <h2 className="m-0 shrink-0 text-base font-semibold tracking-tight">
             <Link
@@ -42,14 +43,16 @@ const Navbar = ({ className }: { className: string }) => {
               className="inline-flex items-center gap-2 rounded-full border border-(--chip-line) bg-(--chip-bg) px-3 py-1.5 text-sm text-(--sea-ink) no-underline shadow-[0_8px_24px_rgba(30,90,72,0.08)] sm:px-4 sm:py-2"
             >
               <span className="size-2 rounded-full bg-[linear-gradient(90deg,#56c6be,#7ed3bf)]" />
-              Udemy Notes
+              <span className=" text-sm sm:text-lg md:text-xl">
+                Udemy Notes
+              </span>
             </Link>
           </h2>
           <a
             href="https://github.com/powiedl/udemy-notes"
             target="_blank"
             rel="noreferrer"
-            className="sm:flex items-center gap-1 "
+            className="flex items-center gap-1 "
           >
             <GithubIcon className="size-4" />
             <span className="hidden lg:inline">Github Repo</span>
@@ -98,12 +101,13 @@ const Navbar = ({ className }: { className: string }) => {
             <span className="hidden lg:inline">Tags</span>
           </Link>
         </div>
-        <div className="order-3 flex w-full flex-wrap items-center gap-x-4 gap-y-1 pb-1 text-sm font-semibold sm:order-2 sm:w-auto sm:flex-nowrap sm:pb-0">
+        <div className="order-3 flex flex-wrap items-center gap-x-4 gap-y-1 pb-1 text-sm font-semibold sm:w-auto sm:flex-nowrap sm:pb-0">
           <ThemeToggle />
           {isPending ? null : session ? (
             <>
               <Button variant="secondary" onClick={handleSignOut}>
-                Logout
+                <LogOut className="size-4 mr-1" />
+                <span className="hidden md:inline">Logout</span>
               </Button>
               {/* <Link className={buttonVariants()} to="/dashboard">
                 Dashboard
