@@ -140,6 +140,11 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
               data: {
                 hasConflict: conflict,
                 originalContent: note.content,
+                orderInfo: orderInfo(
+                  note.section,
+                  note.lecture,
+                  note.timestamp,
+                ),
               },
             }),
           )
