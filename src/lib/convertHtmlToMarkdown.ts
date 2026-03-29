@@ -159,55 +159,95 @@ function processNode(node: CheerioSelector, $: CheerioAPI) {
   return result
 }
 
-// function processInlineFormatting(element: CheerioSelector, $: CheerioAPI) {
-//   let html = element.html() || ''
-
-//   html = html
-//     // Fett (strong/b): ZWSP nur wenn kein Whitespace davor/danach
-//     .replace(
-//       /(?<!\s|^)<(strong|b)>(.*?)<\/\1>(?!\s|$)/gi,
-//       '**&#8203;$2&#8203;**',
-//     )
-//     // Falls doch ein Leerzeichen da ist, ganz normales Markdown
-//     .replace(/<(strong|b)>(.*?)<\/\1>/gi, '**$2**')
-//     .replace(/<code>(.*?)<\/code>/gi, '`$1`')
-
-//   return $('<div/>').html(html).text().trim()
-// }
 function processInlineFormatting(element: any, $: any) {
-  // Wir arbeiten direkt auf den Elementen im DOM-Teilbaum
+  // 1. Behandlung von strong/b
   element.find('strong, b').each((_: number, el: any) => {
     const $el = $(el)
-    const content = $el.html()
+    let content = $el.text() // text() statt html(), um Verschachtelungen flach zu halten
 
+    // Führende und abschließende Leerzeichen finden
+    const leadingWhitespace = content.match(/^\s+/)?.[0] || ''
+    const trailingWhitespace = content.match(/\s+$/)?.[0] || ''
+
+    // Den eigentlichen Text trimmen
+    const trimmedContent = content.trim()
+
+    if (trimmedContent.length === 0) {
+      // Falls das Element nur aus Leerzeichen bestand
+      $el.replaceWith(leadingWhitespace)
+      return
+    }
+
+    // Kontextprüfung für Zero-Width-Space (deine bestehende Logik)
     const prevNode = el.previousSibling
     const nextNode = el.nextSibling
-
-    // Zeichen direkt davor prüfen
     const charBefore =
       prevNode && prevNode.type === 'text' ? prevNode.data.slice(-1) : ''
-    // Brauchen wir ein ZWSP davor? (Existiert ein Zeichen und ist es kein Whitespace?)
     const needsPrefix = charBefore !== '' && !/\s/.test(charBefore)
-
-    // Zeichen direkt danach prüfen
     const charAfter =
       nextNode && nextNode.type === 'text' ? nextNode.data[0] : ''
-    // Brauchen wir ein ZWSP danach?
     const needsSuffix = charAfter !== '' && !/\s/.test(charAfter)
 
-    // Präfix und Suffix individuell bestimmen
-    const prefix = needsPrefix ? '\u200B' : ''
-    const suffix = needsSuffix ? '\u200B' : ''
+    const zwspPrefix = needsPrefix ? '\u200B' : ''
+    const zwspSuffix = needsSuffix ? '\u200B' : ''
 
-    // Zusammenbau: Nur dort einfügen, wo es wirklich hakt
-    $el.replaceWith(`**${prefix}${content}${suffix}**`)
+    // WICHTIG: Die ursprünglichen Leerzeichen werden AUSSERHALB der Sterne platziert
+    // Ergebnis: "LeerzeichenVorne**ZWSPInhaltZWSP**LeerzeichenHinten"
+    $el.replaceWith(
+      `${leadingWhitespace}**${zwspPrefix}${trimmedContent}${zwspSuffix}**${trailingWhitespace}`,
+    )
   })
 
-  // Code-Tags
+  // 2. Behandlung von code (ähnliches Prinzip)
   element.find('code').each((_: number, el: any) => {
     const $el = $(el)
-    $el.replaceWith(`\`${$el.html()}\``)
+    const content = $el.text()
+    const leading = content.match(/^\s+/)?.[0] || ''
+    const trailing = content.match(/\s+$/)?.[0] || ''
+    const trimmed = content.trim()
+
+    $el.replaceWith(`${leading}\`${trimmed}\`${trailing}`)
   })
 
-  return element.text().trim()
+  // Am Ende geben wir den text() des Containers zurück,
+  // da wir die Tags bereits im DOM durch Markdown-Strings ersetzt haben.
+  return element.text()
 }
+
+// function processInlineFormatting(element: any, $: any) {
+//   // Wir arbeiten direkt auf den Elementen im DOM-Teilbaum
+//   element.find('strong, b').each((_: number, el: any) => {
+//     const $el = $(el)
+//     const content = $el.html()
+
+//     const prevNode = el.previousSibling
+//     const nextNode = el.nextSibling
+
+//     // Zeichen direkt davor prüfen
+//     const charBefore =
+//       prevNode && prevNode.type === 'text' ? prevNode.data.slice(-1) : ''
+//     // Brauchen wir ein ZWSP davor? (Existiert ein Zeichen und ist es kein Whitespace?)
+//     const needsPrefix = charBefore !== '' && !/\s/.test(charBefore)
+
+//     // Zeichen direkt danach prüfen
+//     const charAfter =
+//       nextNode && nextNode.type === 'text' ? nextNode.data[0] : ''
+//     // Brauchen wir ein ZWSP danach?
+//     const needsSuffix = charAfter !== '' && !/\s/.test(charAfter)
+
+//     // Präfix und Suffix individuell bestimmen
+//     const prefix = needsPrefix ? '\u200B' : ''
+//     const suffix = needsSuffix ? '\u200B' : ''
+
+//     // Zusammenbau: Nur dort einfügen, wo es wirklich hakt
+//     $el.replaceWith(`**${prefix}${content}${suffix}**`)
+//   })
+
+//   // Code-Tags
+//   element.find('code').each((_: number, el: any) => {
+//     const $el = $(el)
+//     $el.replaceWith(`\`${$el.html()}\``)
+//   })
+
+//   return element.text().trim()
+// }

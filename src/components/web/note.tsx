@@ -1,8 +1,7 @@
 import { AwaitedReturnTypeGetCourseById } from '#/data/course'
 import { cn } from '#/lib/utils'
-import { Badge, Tag } from 'lucide-react'
 import { Card, CardContent, CardDescription } from '../ui/card'
-import ReactMarkdown, { MarkdownAsync } from 'react-markdown'
+import ReactMarkdown from 'react-markdown'
 
 const Note = ({
   note,
