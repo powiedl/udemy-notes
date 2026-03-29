@@ -138,7 +138,7 @@ function processNode(node: CheerioSelector, $: CheerioAPI) {
       }
       // 2. Überschriften
       else if (tagName === 'H4') {
-        result += `### ${child.text().trim()}\n\n`
+        result += `#### ${child.text().trim()}\n\n`
       }
       // 3. Paragraphen
       else if (tagName === 'P') {
