@@ -19,13 +19,15 @@ function RouteComponent() {
 
   return (
     <>
-      <SidebarProvider>
+      <SidebarProvider className="h-full">
         <AppSidebar user={user} />
-        <SidebarInset className="flex w-full justify-between h-[calc(100svh-64px)]">
-          <div className="*:mx-auto mt-4">
-            <Outlet />
+        <SidebarInset className="flex flex-col w-full h-full overflow-hidden bg-transparent">
+          <div className="flex-1 overflow-y-auto flex flex-col *:mx-auto mt-4">
+            <div className="main-content flex-1 w-full max-w-6xl mx-auto px-8 -py-8">
+              <Outlet />
+            </div>
+            <Footer className="flex-none w-full" />
           </div>
-          <Footer />
         </SidebarInset>
       </SidebarProvider>
     </>

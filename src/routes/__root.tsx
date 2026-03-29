@@ -43,17 +43,23 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="h-full">
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
-      <body className="font-sans antialiased wrap-anywhere selection:bg-violet-200 bg-linear-60 from-hero-a to-hero-b">
+      {/* h-full und overflow-hidden auf dem body verhindert das "Wackeln" des gesamten Fensters */}
+      <body className="font-sans antialiased wrap-anywhere selection:bg-violet-200 bg-linear-60 from-hero-a to-hero-b h-full overflow-hidden">
         <TooltipProvider>
-          <Navbar />
-          <div className="flex min-h-screen flex-col pt-16">{children}</div>
+          <div className="flex h-full flex-col">
+            <Navbar className="h-16 flex-none" />{' '}
+            {/* Navbar hat feste Höhe, wächst nicht */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {/* Dieser Bereich scrollt im Basislayout */}
+              {children}
+            </div>
+          </div>
         </TooltipProvider>
-
         <Toaster closeButton position="top-center" />
         <TanStackDevtools
           config={{
@@ -62,6 +68,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           plugins={[
             {
               name: 'Tanstack Router',
+
               render: <TanStackRouterDevtoolsPanel />,
             },
           ]}
