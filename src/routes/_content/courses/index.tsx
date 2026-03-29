@@ -9,6 +9,10 @@ import {
 } from '#/components/ui/empty'
 import CourseHeader from '#/components/web/course-header'
 import { getCoursesFn } from '#/data/course'
+import {
+  handleDeleteCourse,
+  handleExportCourse,
+} from '#/handlers/course-header'
 import { cn } from '#/lib/utils'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { BookOpenText, Loader2, UploadCloud } from 'lucide-react'
@@ -51,7 +55,13 @@ function CoursesList({ data }: { data: ReturnType<typeof getCoursesFn> }) {
   return (
     <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
       {courses.map((course) => (
-        <CourseHeader course={course} singleCourse={false} key={course.id} />
+        <CourseHeader
+          course={course}
+          singleCourse={false}
+          key={course.id}
+          onExport={() => handleExportCourse(course.id)}
+          onDelete={() => handleDeleteCourse(course.id)}
+        />
       ))}
     </div>
   )

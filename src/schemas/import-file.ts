@@ -1,9 +1,11 @@
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import z from 'zod'
 
-export const uploadFileSchema = z.object({
+export const importHtmlFileSchema = z.object({
   file: z
-    .instanceof(File, { message: 'Bitte wählen Sie eine Datei aus.' })
+    .instanceof(File, {
+      message: 'Please choose a Udemy course notes HTML file',
+    })
     // Validierung der Dateigröße
     .refine(
       (file) => file.size <= MAX_FILE_SIZE_UPLOAD,
@@ -16,4 +18,4 @@ export const uploadFileSchema = z.object({
     ),
 })
 
-export type UploadFileSchema = z.infer<typeof uploadFileSchema>
+export type ImportHtmlFileSchema = z.infer<typeof importHtmlFileSchema>

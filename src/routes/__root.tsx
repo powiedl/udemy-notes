@@ -60,7 +60,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </TooltipProvider>
-        <Toaster closeButton position="top-center" />
+        <Toaster closeButton position="top-right" />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

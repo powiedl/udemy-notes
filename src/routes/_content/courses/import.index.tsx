@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { UploadForm } from '#/components/upload-form'
+import { ImportHtmlForm } from '#/components/import-form'
 
 export const Route = createFileRoute('/_content/courses/import/')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  return <UploadForm />
+  return <ImportHtmlForm />
 }

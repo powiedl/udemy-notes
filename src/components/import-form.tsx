@@ -1,4 +1,4 @@
-import { uploadHtmlFile } from '#/data/upload'
+import { importHtmlFile } from '#/data/import-export'
 import { useServerFn } from '@tanstack/react-start'
 import { Button } from '#/components/ui/button'
 import {
@@ -10,6 +10,7 @@ import {
 } from '#/components/ui/card'
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -19,8 +20,8 @@ import { useForm } from '@tanstack/react-form'
 import { useNavigate } from '@tanstack/react-router'
 import { useTransition } from 'react'
 import { toast } from 'sonner'
-import { uploadFileSchema } from '#/schemas/upload-file'
-import type { UploadFileSchema } from '#/schemas/upload-file'
+import { importHtmlFileSchema } from '#/schemas/import-file'
+import type { ImportHtmlFileSchema } from '#/schemas/import-file'
 import { logClientError } from '#/data/logger'
 
 function downloadBlob(content: string, filename: string) {
@@ -35,16 +36,16 @@ function downloadBlob(content: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
-export function UploadForm() {
+export function ImportHtmlForm() {
   const navigate = useNavigate()
   const [isPending, startTransition] = useTransition()
-  const uploadFile = useServerFn(uploadHtmlFile)
+  const uploadFile = useServerFn(importHtmlFile)
   const logToDb = useServerFn(logClientError)
   const form = useForm({
     validators: {
-      onSubmit: uploadFileSchema,
+      onSubmit: importHtmlFileSchema,
     },
-    onSubmit: ({ value }: { value: UploadFileSchema }) => {
+    onSubmit: ({ value }: { value: ImportHtmlFileSchema }) => {
       // logToDb({
       //   data: {
       //     component: 'UploadForm-Client',
@@ -58,21 +59,23 @@ export function UploadForm() {
         try {
           const result = await uploadFile({ data: formData })
           if (result.markdownContent) {
-            const fileName =
-              result.originalFileName.replace(/\.[^/.]+$/, '') + '.md'
+            // const fileName =
+            //   result.originalFileName.replace(/\.[^/.]+$/, '') + '.md'
 
-            // Download auslösen
-            downloadBlob(result.markdownContent, fileName)
-            // await logToDb({
-            //   data: {
-            //     component: 'UploadForm-Client',
-            //     severity: 'info',
-            //     message: 'Upload on client finished successful',
-            //   },
-            // })
-            toast.success(
-              'Course notes processed successfully (and .MD file downloaded)',
-            )
+            // // Download auslösen
+            // downloadBlob(result.markdownContent, fileName)
+            // // await logToDb({
+            // //   data: {
+            // //     component: 'UploadForm-Client',
+            // //     severity: 'info',
+            // //     message: 'Upload on client finished successful',
+            // //   },
+            // // })
+            toast.success('Course notes processed successfully')
+            navigate({
+              to: `/courses/$courseId`,
+              params: { courseId: result.courseId },
+            })
           }
         } catch (error) {
           await logToDb({
@@ -131,6 +134,10 @@ export function UploadForm() {
                       placeholder="Enter the HTML Course file"
                       type="file"
                     />
+                    <FieldDescription>
+                      After import you can export all your notes of the course
+                      in the course details (as a markdown file)
+                    </FieldDescription>
 
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />

@@ -22,8 +22,8 @@ function RouteComponent() {
       <SidebarProvider className="h-full">
         <AppSidebar user={user} />
         <SidebarInset className="flex flex-col w-full h-full overflow-hidden bg-transparent">
-          <div className="flex-1 overflow-y-auto flex flex-col *:mx-auto mt-4">
-            <div className="main-content flex-1 w-full max-w-6xl mx-auto px-8 -py-8">
+          <div className="flex-1 overflow-y-auto flex flex-col mt-4">
+            <div className="main-content flex-1 w-full max-w-6xl mx-auto *:mx-auto px-8 -py-8">
               <Outlet />
             </div>
             <Footer className="flex-none w-full" />

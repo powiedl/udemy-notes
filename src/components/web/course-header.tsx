@@ -6,6 +6,9 @@ import {
   CardTitle,
 } from '#/components/ui/card'
 import { Link } from '@tanstack/react-router'
+import { Button } from '../ui/button'
+import { Delete, Download } from 'lucide-react'
+import { cn } from '#/lib/utils'
 
 type Course = {
   _count?: {
@@ -23,9 +26,13 @@ type Course = {
 const CourseHeader = ({
   course,
   singleCourse = true,
+  onExport,
+  onDelete,
 }: {
   course: Course
   singleCourse?: boolean
+  onExport: (id: string) => void
+  onDelete: (id: string) => void
 }) => {
   const countNotes =
     'notes' in course
@@ -56,7 +63,28 @@ const CourseHeader = ({
             {countNotes} note{countNotes === 1 ? '' : 's'}
           </div>
         </CardContent>
-        <CardFooter>CTA Buttons</CardFooter>
+        <CardFooter className="flex flex-row gap-4">
+          <Button type="button" onClick={() => onExport(course.id)}>
+            <Download className="size-4 mr-1" />
+            <span
+              className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
+            >
+              Export
+            </span>
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => onDelete(course.id)}
+          >
+            <Delete className="size-4 mr-1" />
+            <span
+              className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
+            >
+              Delete
+            </span>
+          </Button>
+        </CardFooter>
       </CardHeader>
     </Card>
   )

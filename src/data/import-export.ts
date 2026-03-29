@@ -9,6 +9,9 @@ import { prisma } from '#/db'
 import { Course, Note } from '#/generated/prisma/client'
 import { ImportNote } from '#/lib/types'
 import { orderInfo } from '#/lib/udemy'
+import { exportMdFileSchema } from '#/schemas/export-file'
+import { notFound } from '@tanstack/react-router'
+import { processNoteForMarkdown } from '#/lib/export-helper'
 
 function checkConflict(
   newNote: ImportNote,
@@ -22,7 +25,7 @@ function checkConflict(
     existingNote.editedContent.trim() !== '' // und es gibt auch einen editedContent --> Konflikt
   return hasConflict
 }
-export const uploadHtmlFile = createServerFn({ method: 'POST' })
+export const importHtmlFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
   .inputValidator(async (data) => {
     // Validate that data is FormData
@@ -100,7 +103,9 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
       })
       let finishedCourse: Course
       let existingNotes
+      let courseId: string
       if (existingCourse) {
+        courseId = existingCourse.id
         existingNotes = await prisma.note.findMany({
           where: { courseId: existingCourse.id },
         })
@@ -119,6 +124,7 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
             userId: userId,
           },
         })
+        courseId = finishedCourse.id
       }
       const createdNotes = []
       let numberOfConflicts = 0
@@ -176,6 +182,7 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
         timestamp,
         markdownContent: markdown,
         numberOfConflicts,
+        courseId,
       }
     } catch (error: unknown) {
       console.error('Upload error:', error)
@@ -196,4 +203,100 @@ export const uploadHtmlFile = createServerFn({ method: 'POST' })
         throw new Error('Failed to process file upload')
       }
     }
+  })
+
+export const exportMdFile = createServerFn({ method: 'POST' })
+  .middleware([authFnMiddleware])
+  .inputValidator(exportMdFileSchema)
+  .handler(async ({ data, context }) => {
+    let markdown =
+      '# Mein Kurs\n\n## Metadaten\n\nTags:\n\n* Javascript\n* HTML'
+    const { courseId, includeNotesMetadata, includeTags, includeOriginalNote } =
+      data
+    try {
+      const userId = context.session.user.id
+      const course = await prisma.course.findUnique({
+        where: {
+          id: courseId,
+          userId: userId, // Sicherstellen, dass der Kurs dem User gehört
+        },
+        include: {
+          // 1. Tags des Kurses selbst laden
+          tags: {
+            include: {
+              tag: true,
+            },
+          },
+          // 2. Notizen laden
+          notes: {
+            where: {
+              isDeleted: false, // Optional: Nur nicht gelöschte Notizen laden
+            },
+            orderBy: {
+              orderInfo: 'desc', // Wie gewünscht absteigend sortiert
+            },
+            include: {
+              // 3. Tags der jeweiligen Notiz laden
+              tags: {
+                include: {
+                  tag: true,
+                },
+              },
+            },
+          },
+        },
+      })
+      if (!course) throw notFound()
+      // title of the course
+      markdown = `# ${course.title}\n\n`
+      // course tags
+      if (includeTags) {
+        if (course.tags.length > 0) {
+          markdown += `Tags:\n\n`
+          course.tags.map((t) => {
+            if (t.tag.name) markdown += `* ${t.tag.name}`
+          })
+        }
+      }
+
+      //notes
+      const notesMarkdownArray: string[] = []
+
+      if (course.notes.length > 0) {
+        course.notes.map((n) => {
+          notesMarkdownArray.push(
+            processNoteForMarkdown(n, {
+              includeNotesMetadata,
+              includeOriginalNote,
+            }),
+          )
+        })
+        markdown += notesMarkdownArray.join('\n\n---\n\n')
+      } else {
+        markdown += '## Notes\n\nNo notes found...'
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      if (error instanceof Error) {
+        await logToDb({
+          component: 'ExportMdFile-handler',
+          severity: 'error',
+          message: error.message,
+        })
+        throw new Error(
+          `Failed to export course notes for course '${courseId}': ${error.message}`,
+        )
+      } else {
+        await logToDb({
+          component: 'ExportMd-handler',
+          severity: 'error',
+          message: `Failed to export course notes for course '${courseId}' (no more details available)`,
+        })
+
+        throw new Error('Failed to export course notes')
+      }
+    }
+    markdown.replace(/\n\n---\n\n$/, '') // remove the last seperator after the last note (it is not needed)
+
+    return { success: true, markdown }
   })
