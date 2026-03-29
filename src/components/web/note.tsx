@@ -24,6 +24,7 @@ const Note = ({
             'prose prose-stone dark:prose-invert',
             'prose-headings:scroll-m-20',
             'prose-code:before:content-none prose-code:after:contain-none',
+            'max-w-full',
           )}
         >
           <ReactMarkdown
