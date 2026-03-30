@@ -56,12 +56,12 @@ async function runTaggingSeed() {
   const tagging = [
     {
       type: 'course' as const,
-      parentId: '6641a183-28f9-47f6-83fa-67895e1c48c6',
+      parentId: 'd3af4849-3056-4094-a430-2701957f8712',
       tagId: '508f7dd3-0420-4527-a464-492892fa90e1',
     },
     {
       type: 'course' as const,
-      parentId: '6641a183-28f9-47f6-83fa-67895e1c48c6',
+      parentId: 'd3af4849-3056-4094-a430-2701957f8712',
       tagId: '51eebd20-aefd-45a9-9f25-146966fe5fac',
     },
     {
