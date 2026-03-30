@@ -31,7 +31,12 @@ function App() {
               Open the Developer Tools of your browser and go to the Elements
               view
             </li>
-            <li>Select the root node (html) and copy the element</li>
+            <li>
+              Select the root node (html) by clicking on it and then copy the
+              element (<strong>inner html</strong>) - normally you find this
+              option in the context menu (do <strong>NOT</strong> copy the page
+              source code, because it doesn't contain the notes)
+            </li>
             <li>
               Open an editor, paste the root element into and save the file as
               <span className="text-muted-foreground/90 font-semibold">
