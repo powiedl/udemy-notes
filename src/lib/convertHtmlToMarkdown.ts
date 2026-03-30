@@ -9,36 +9,35 @@ import {
   SECTION_SELECTOR,
 } from './constants'
 import type { ImportCourse, ImportNote } from './types'
+
 interface ConvertResultSuccess {
   markdown: string
   course: ImportCourse
   status: 'SUCCESS'
 }
-
 interface ConvertResultError {
   status: 'ERROR'
   message: string
 }
-
 export type ConvertResult = ConvertResultSuccess | ConvertResultError
+
 /**
- * In Cheerio 1.2.0 ist 'cheerio.Cheerio<any>' der sicherste Weg,
- * um ein selektiertes Element-Set zu typisieren, ohne auf interne
- * Unter-Namespaces zuzugreifen.
+ * Hilfstypen für Cheerio
  */
 type CheerioAPI = cheerio.CheerioAPI
-type CheerioSelector = cheerio.Cheerio<any>
+type CheerioNode = any
+type CheerioSelection = cheerio.Cheerio<CheerioNode>
 
 export function prepareAndConvertHtmlToMarkdown(
   htmlContent: string,
 ): ConvertResult {
-  // 1. Original laden
-  const $original = cheerio.load(htmlContent)
-  const rawTitle = $original('head > title').text() || 'Meine Kurs-Notizen'
+  // 1. Dokument laden
+  const $ = cheerio.load(htmlContent)
+  const rawTitle = $('head > title').text() || 'Meine Kurs-Notizen'
   const title = rawTitle.replace(/^Course:\s*/, '').replace(/\|\s*Udemy$/, '')
 
-  // 2. Den gewünschten Container finden
-  const notesContainer = $original(NOTES_CONTAINER_SELECTOR)
+  // 2. Container finden
+  const notesContainer = $(NOTES_CONTAINER_SELECTOR)
 
   if (!notesContainer.length) {
     return {
@@ -50,11 +49,7 @@ export function prepareAndConvertHtmlToMarkdown(
   // 3. Modifikation: Buttons entfernen
   notesContainer.find('button').remove()
 
-  // 4. Das "neue Dokument" erstellen
-  const $ = cheerio.load(`<!DOCTYPE html><html><body></body></html>`)
-  $('body').append(notesContainer)
-
-  return convertToMarkdown($, title || 'Untitled Course')
+  return convertToMarkdown($, title)
 }
 
 export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
@@ -71,7 +66,7 @@ export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
 
   const notes = container.find(NOTE_SELECTOR)
 
-  notes.each((_idx1: number, el: any) => {
+  notes.each((_: number, el: any) => {
     const noteElement = $(el)
     const duration = noteElement.find(DURATION_SELECTOR).text().trim() || '0:00'
     const section = noteElement.find(SECTION_SELECTOR).text().trim() || ''
@@ -93,123 +88,148 @@ export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
     if (bodyContainer.length) {
       noteMarkdown += processNode(bodyContainer, $)
     }
-    note.content = noteMarkdown
-      .replace(/\n{3,}/g, '\n\n')
-      .replace(/\\n\\n$/, '')
-      .replace(/[ \t]+$/gm, '')
-      .trim()
+    note.content = cleanUpMarkdown(noteMarkdown)
     course.notes.push(note)
     markdown = markdown + noteMarkdown + '\n---\n\n'
   })
 
-  const cleanMarkdown = markdown
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/[ \t]+$/gm, '')
-    .trim()
+  const cleanMarkdown = cleanUpMarkdown(markdown)
 
   return { status: 'SUCCESS', markdown: cleanMarkdown, course }
 }
 
-function processNode(node: CheerioSelector, $: CheerioAPI) {
+function processNode(node: CheerioSelection, $: CheerioAPI): string {
   let result = ''
 
-  node.children().each((_idx2: number, el: any) => {
+  node.contents().each((_: number, el: CheerioNode) => {
+    if (el.type === 'text') {
+      const text = $(el).text()
+      // Ignoriere reine Whitespace-Knoten, die Zeilenumbrüche enthalten (typische HTML-Einrückung)
+      if (text.trim() === '' && text.includes('\n')) {
+        return
+      }
+      result += text
+      return
+    }
+
+    if (el.type !== 'tag') return
+
     const child = $(el)
+    const tagName = el.tagName.toUpperCase()
+    console.log('tagName', tagName)
 
-    // Prüfung auf Tag-Element
-    if (el && 'tagName' in el) {
-      const tagName = (el.tagName as string).toUpperCase()
+    // 1. Code-Blöcke (Udemy nutzt oft Klassen oder PRE/CODE)
+    if (
+      child.hasClass(NOTE_CODE_BLOCK_SELECTOR) ||
+      tagName === 'PRE' ||
+      tagName === 'CODE'
+    ) {
+      let codeText = ''
+      const lines = child.find('li')
 
-      // 1. Spezielle Behandlung für Code-Blöcke
-      if (child.hasClass(NOTE_CODE_BLOCK_SELECTOR) || tagName === 'PRE') {
-        let codeText = ''
-        const lines = child.find('li')
-
-        if (lines.length > 0) {
-          codeText = lines
-            .map((_idx3: number, li: any) => $(li).text())
-            .get()
-            .join('\n')
-        } else {
-          codeText = child.text()
-        }
-
-        result += `\n\`\`\`\n${codeText}\n\`\`\`\n\n`
-      }
-      // 2. Überschriften
-      else if (tagName === 'H4') {
-        result += `#### ${child.text().trim()}\n\n`
-      }
-      // 3. Paragraphen
-      else if (tagName === 'P') {
-        result += `${processInlineFormatting(child, $)}\n\n`
-      }
-      // 4. Listen
-      else if (tagName === 'UL' || tagName === 'OL') {
-        child.find('li').each((_idx4: number, li: any) => {
-          result += `* ${processInlineFormatting($(li), $)}\n`
-        })
-        result += '\n'
+      if (lines.length > 0) {
+        codeText = lines
+          .map((_: number, li: any) => $(li).text())
+          .get()
+          .join('\n')
       } else {
-        result += processNode(child, $)
+        codeText = child.text()
       }
+
+      result += `\n\`\`\`\n${codeText}\n\`\`\`\n\n`
+    }
+    // 2. Überschriften (H1-H6 flexibel)
+    else if (tagName.match(/^H[1-6]$/)) {
+      const level = Number(tagName[1])
+      result += `${'#'.repeat(level)} ${child.text().trim()}\n\n`
+    }
+    // 3. Paragraphen
+    else if (tagName === 'P') {
+      result += `${processInlineFormatting(child, $)}\n\n`
+    }
+    // 4. Listen
+    else if (tagName === 'UL' || tagName === 'OL') {
+      child.find('li').each((_: number, li: any) => {
+        result += `* ${processInlineFormatting($(li), $)}\n`
+      })
+      result += '\n'
+    }
+    // 5. Explizite Zeilenumbrüche
+    else if (tagName === 'BR') {
+      result += '  \n'
+    }
+    // 6. Andere Tags (div, span, etc.) rekursiv behandeln, um Texte darin zu finden
+    else {
+      result += processNode(child, $)
     }
   })
 
   return result
 }
 
-function processInlineFormatting(element: any, $: any) {
-  // 1. Behandlung von strong/b
-  element.find('strong, b').each((_: number, el: any) => {
-    const $el = $(el)
-    let content = $el.text() // text() statt html(), um Verschachtelungen flach zu halten
+function processInlineFormatting(
+  element: CheerioSelection,
+  $: CheerioAPI,
+): string {
+  // Verwende einen eindeutigen Token für <br>, um sie von Source-Code-Umbrüchen zu unterscheiden
+  const BR_TOKEN = '___MD_BR_TOKEN___'
+  element.find('br').replaceWith(BR_TOKEN)
 
-    // Führende und abschließende Leerzeichen finden
-    const leadingWhitespace = content.match(/^\s+/)?.[0] || ''
-    const trailingWhitespace = content.match(/\s+$/)?.[0] || ''
+  const formatMap = [
+    { tags: 'strong, b', wrapper: '**' },
+    { tags: 'em, i', wrapper: '_' },
+    { tags: 'code', wrapper: '`' },
+  ]
 
-    // Den eigentlichen Text trimmen
-    const trimmedContent = content.trim()
+  formatMap.forEach(({ tags, wrapper }) => {
+    element.find(tags).each((_: number, el: any) => {
+      const $el = $(el)
+      const content = $el.text()
+      const leading = content.match(/^\s+/)?.[0] || ''
+      const trailing = content.match(/\s+$/)?.[0] || ''
+      const trimmed = content.trim()
 
-    if (trimmedContent.length === 0) {
-      // Falls das Element nur aus Leerzeichen bestand
-      $el.replaceWith(leadingWhitespace)
-      return
-    }
+      if (trimmed.length === 0) {
+        $el.replaceWith(leading)
+        return
+      }
 
-    // Kontextprüfung für Zero-Width-Space (deine bestehende Logik)
-    const prevNode = el.previousSibling
-    const nextNode = el.nextSibling
-    const charBefore =
-      prevNode && prevNode.type === 'text' ? prevNode.data.slice(-1) : ''
-    const needsPrefix = charBefore !== '' && !/\s/.test(charBefore)
-    const charAfter =
-      nextNode && nextNode.type === 'text' ? nextNode.data[0] : ''
-    const needsSuffix = charAfter !== '' && !/\s/.test(charAfter)
+      // Zero-Width-Space Logik für korrektes Markdown-Parsing bei fehlenden Leerzeichen
+      const prev = el.prev as any
+      const next = el.next as any
+      const needsPrefix = prev?.type === 'text' && !/\s$/.test(prev.data)
+      const needsSuffix = next?.type === 'text' && !/^\s/.test(next.data)
 
-    const zwspPrefix = needsPrefix ? '\u200B' : ''
-    const zwspSuffix = needsSuffix ? '\u200B' : ''
+      const prefix = needsPrefix ? '\u200B' : ''
+      const suffix = needsSuffix ? '\u200B' : ''
 
-    // WICHTIG: Die ursprünglichen Leerzeichen werden AUSSERHALB der Sterne platziert
-    // Ergebnis: "LeerzeichenVorne**ZWSPInhaltZWSP**LeerzeichenHinten"
-    $el.replaceWith(
-      `${leadingWhitespace}**${zwspPrefix}${trimmedContent}${zwspSuffix}**${trailingWhitespace}`,
-    )
+      $el.replaceWith(
+        `${leading}${wrapper}${prefix}${trimmed}${suffix}${wrapper}${trailing}`,
+      )
+    })
   })
 
-  // 2. Behandlung von code (ähnliches Prinzip)
-  element.find('code').each((_: number, el: any) => {
-    const $el = $(el)
-    const content = $el.text()
-    const leading = content.match(/^\s+/)?.[0] || ''
-    const trailing = content.match(/\s+$/)?.[0] || ''
-    const trimmed = content.trim()
+  // Extrahiere den Text und bereinige die HTML-Einrückungen
+  let text = element.text()
 
-    $el.replaceWith(`${leading}\`${trimmed}\`${trailing}`)
-  })
+  return (
+    text
+      // 1. Alle Folgen von Whitespace (Tabs, Newlines aus dem HTML) durch ein Leerzeichen ersetzen
+      .replace(/[\t\n\r ]+/g, ' ')
+      // 2. Platzhalter für <br> in Markdown-Linebreaks umwandeln und Segmente trimmen
+      .split(BR_TOKEN)
+      .map((part) => part.trim())
+      .join('  \n')
+      .trim()
+  )
+}
 
-  // Am Ende geben wir den text() des Containers zurück,
-  // da wir die Tags bereits im DOM durch Markdown-Strings ersetzt haben.
-  return element.text()
+function cleanUpMarkdown(markdown: string): string {
+  return (
+    markdown
+      .replace(/\n{3,}/g, '\n\n')
+      // Behalte genau zwei Leerzeichen am Ende (Markdown Linebreak), entferne andere
+      .replace(/[ \t]+$/gm, (match) => (match.length >= 2 ? '  ' : ''))
+      .trim()
+  )
 }

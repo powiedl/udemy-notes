@@ -38,6 +38,6 @@ export function processNoteForMarkdown(
   }
   return markdown
     .replace(/\n{3,}/g, '\n\n')
-    .replace(/[ \t]+$/gm, '')
+    .replace(/[ \t]+$/gm, (match) => (match.length >= 2 ? '  ' : ''))
     .trim()
 }
