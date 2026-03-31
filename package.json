@@ -16,12 +16,16 @@
     "format": "prettier --check .",
     "check": "prettier --write . && eslint --fix",
     "post-cta-init": "npx -y create-db@latest --user-agent tanstack/tsrouter",
-    "db:generate": "dotenv -e .env.production.local -- prisma generate",
-    "db:push": "dotenv -e .env.production.local -- prisma db push",
-    "db:push:force": "dotenv -e .env.production.local -- prisma db push --force-reset",
-    "db:migrate": "dotenv -e .env.production.local -- prisma migrate dev",
-    "db:studio": "dotenv -e .env.production.local -- prisma studio",
-    "db:seed": "dotenv -e .env.production.local -- prisma db seed"
+    "prod:db:generate": "dotenv -e .env.production.local -- prisma generate",
+    "prod:db:push": "dotenv -e .env.production.local -- prisma db push",
+    "prod:db:migrate": "dotenv -e .env.production.local -- prisma migrate dev",
+    "prod:db:studio": "dotenv -e .env.production.local -- prisma studio",
+    "db:generate": "dotenv -e .env.development.local -- prisma generate",
+    "db:push": "dotenv -e .env.development.local -- prisma db push",
+    "db:migrate": "dotenv -e .env.development.local -- prisma migrate dev",
+    "db:studio": "dotenv -e .env.development.local -- prisma studio",
+    "db:push:force": "dotenv -e .env.development.local -- prisma db push --force-reset",
+    "db:seed": "dotenv -e .env.development.local -- prisma db seed"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
