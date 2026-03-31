@@ -184,9 +184,8 @@ function processInlineFormatting(
   formatMap.forEach(({ tags, wrapper }) => {
     element.find(tags).each((_: number, el: any) => {
       const $el = $(el)
-      // Für 'code' verwenden wir .html(), um eingebettete Tags wie <a> zu erhalten.
-      // Bei anderen Formaten wie fett/kursiv reicht .text().
-      const content = (tags === 'code' ? $el.html() : $el.text()) || ''
+      // Wir verwenden .html(), um eingebettete HTML-Strukturen (wie <div>) zu erhalten.
+      const content = $el.html() || ''
 
       const leading = content.match(/^\s+/)?.[0] || ''
       const trailing = content.match(/\s+$/)?.[0] || ''
