@@ -116,7 +116,6 @@ function processNode(node: CheerioSelection, $: CheerioAPI): string {
 
     const child = $(el)
     const tagName = el.tagName.toUpperCase()
-    console.log('tagName', tagName)
 
     // 1. Code-Blöcke (Udemy nutzt oft Klassen oder PRE/CODE)
     if (
