@@ -129,11 +129,11 @@ function processNode(node: CheerioSelection, $: CheerioAPI): string {
 
       if (lines.length > 0) {
         codeText = lines
-          .map((_: number, li: any) => $(li).text())
+          .map((_: number, li: any) => $(li).html())
           .get()
           .join('\n')
       } else {
-        codeText = child.text()
+        codeText = child.html() || ''
       }
 
       result += `\n\`\`\`\n${codeText}\n\`\`\`\n\n`
@@ -171,21 +171,28 @@ function processInlineFormatting(
   element: CheerioSelection,
   $: CheerioAPI,
 ): string {
+  const LT_TOKEN = '___MD_LT_TOKEN___'
+  const GT_TOKEN = '___MD_GT_TOKEN___'
+
   // Verwende einen eindeutigen Token für <br>, um sie von Source-Code-Umbrüchen zu unterscheiden
   const BR_TOKEN = '___MD_BR_TOKEN___'
   element.find('br').replaceWith(BR_TOKEN)
 
   const formatMap = [
     { tags: 'strong, b', wrapper: '**' },
-    { tags: 'em, i', wrapper: '_' },
+    { tags: 'em, i', wrapper: '*' },
     { tags: 'code', wrapper: '`' },
   ]
 
   formatMap.forEach(({ tags, wrapper }) => {
     element.find(tags).each((_: number, el: any) => {
       const $el = $(el)
-      // Wir verwenden .html(), um eingebettete HTML-Strukturen (wie <div>) zu erhalten.
-      const content = $el.html() || ''
+      // Wir verwenden .html() und ersetzen < > durch Tokens.
+      // Das verhindert, dass Markdown-Parser durch HTML-Tags verwirrt werden
+      // und verhindert doppeltes Escaping durch Cheerio bei Verschachtelung.
+      const content = ($el.html() || '')
+        .replace(/</g, LT_TOKEN)
+        .replace(/>/g, GT_TOKEN)
 
       const leading = content.match(/^\s+/)?.[0] || ''
       const trailing = content.match(/\s+$/)?.[0] || ''
@@ -196,26 +203,28 @@ function processInlineFormatting(
         return
       }
 
-      // Zero-Width-Space Logik für korrektes Markdown-Parsing bei fehlenden Leerzeichen
-      const prev = el.prev as any
-      const next = el.next as any
-      const needsPrefix = prev?.type === 'text' && !/\s$/.test(prev.data)
-      const needsSuffix = next?.type === 'text' && !/^\s/.test(next.data)
-
-      const prefix = needsPrefix ? '\u200B' : ''
-      const suffix = needsSuffix ? '\u200B' : ''
-
-      $el.replaceWith(
-        `${leading}${wrapper}${prefix}${trimmed}${suffix}${wrapper}${trailing}`,
-      )
+      $el.replaceWith(`${leading}${wrapper}${trimmed}${wrapper}${trailing}`)
     })
   })
 
-  // Extrahiere den Text und bereinige die HTML-Einrückungen
-  let text = element.text()
+  // Extrahiere den Inhalt manuell, um verbliebene Tags (z.B. <div>) als Tokens zu erhalten
+  let text = ''
+  element.contents().each((_: number, el: any) => {
+    if (el.type === 'tag') {
+      // Verbliebene Tags ebenfalls in Tokens wandeln
+      text += $.html(el).replace(/</g, LT_TOKEN).replace(/>/g, GT_TOKEN)
+    } else if (el.type === 'text') {
+      text += el.data
+    } else {
+      text += $(el).text()
+    }
+  })
 
   return (
     text
+      // Final: Tokens in HTML-Entities umwandeln für korrekte Anzeige im Markdown-Renderer
+      .replace(new RegExp(LT_TOKEN, 'g'), '&lt;')
+      .replace(new RegExp(GT_TOKEN, 'g'), '&gt;')
       // 1. Alle Folgen von Whitespace (Tabs, Newlines aus dem HTML) durch ein Leerzeichen ersetzen
       .replace(/[\t\n\r ]+/g, ' ')
       // 2. Platzhalter für <br> in Markdown-Linebreaks umwandeln und Segmente trimmen
