@@ -7,6 +7,15 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: 'postgresql', // or "mysql", "postgresql", ...etc
   }),
+  user: {
+    additionalFields: {
+      role: {
+        type: 'string',
+        fieldName: 'role',
+        defaultValue: 'user',
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
@@ -15,6 +24,9 @@ export const auth = betterAuth({
   plugins: [
     tanstackStartCookies(), // make sure this is the last plugin in the array
   ],
+  advanced: {
+    cookiePrefix: 'udemy-notes',
+  },
 })
 
 /*
