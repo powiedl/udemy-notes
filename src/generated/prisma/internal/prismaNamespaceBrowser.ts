@@ -85,6 +85,7 @@ export const UserScalarFieldEnum = {
   email: 'email',
   emailVerified: 'emailVerified',
   image: 'image',
+  role: 'role',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -198,6 +199,7 @@ export type CourseTagScalarFieldEnum = (typeof CourseTagScalarFieldEnum)[keyof t
 export const LogScalarFieldEnum = {
   id: 'id',
   component: 'component',
+  serverFunction: 'serverFunction',
   severity: 'severity',
   message: 'message',
   createdAt: 'createdAt',

@@ -160,10 +160,11 @@ model CourseTag {
 }
 
 model Log {
-  id        String  @id @default(uuid())
-  component String?
-  severity  String?
-  message   String?
+  id             String  @id @default(uuid())
+  component      String? // Frontend-Komponente (optional beim Aufruf)
+  serverFunction String? // Name der Server Function (automatisch)
+  severity       String? // info, warning, error, critical
+  message        String? // Fehlermeldung oder Info-Text
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

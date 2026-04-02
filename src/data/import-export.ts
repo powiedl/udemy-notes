@@ -4,7 +4,7 @@ import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown' //
 import { createServerFn } from '@tanstack/react-start'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { authFnMiddleware } from '#/middlewares/auth'
-import { logToDb } from '#/lib/logger'
+import { logToDb } from '#/lib/logging'
 import { prisma } from '#/db'
 import { Course, Note } from '#/generated/prisma/client'
 import { ImportNote } from '#/types/course'
