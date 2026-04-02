@@ -14,10 +14,14 @@ import {
   useSidebar,
 } from '#/components/ui/sidebar'
 import { authClient } from '#/lib/auth-client'
-import type { NavUserProps } from '#/lib/types'
 import { useNavigate } from '@tanstack/react-router'
+import { User } from 'better-auth/types'
 import { ChevronsUpDownIcon, LogOutIcon } from 'lucide-react'
 import { toast } from 'sonner'
+
+export interface NavUserProps {
+  user: User
+}
 
 export function NavUser({ user }: NavUserProps) {
   const { isMobile } = useSidebar()

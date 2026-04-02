@@ -8,7 +8,7 @@ import {
   NOTES_CONTAINER_SELECTOR,
   SECTION_SELECTOR,
 } from './constants'
-import type { ImportCourse, ImportNote } from './types'
+import type { ImportCourse, ImportNote } from '#/types/course'
 
 interface ConvertResultSuccess {
   markdown: string

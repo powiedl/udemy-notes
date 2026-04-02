@@ -7,10 +7,17 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '#/components/ui/sidebar'
-import type { NavAdminProps } from '#/lib/types'
-import { ShieldUser } from 'lucide-react'
+import { LucideIcon, ShieldUser } from 'lucide-react'
 import { Button } from './ui/button'
 import { SidebarMenuSub } from './ui/sidebar-ori'
+
+export interface NavAdminProps {
+  items: {
+    title: string
+    callback: Function
+    icon: LucideIcon
+  }[]
+}
 
 export function NavAdmin({ items }: NavAdminProps) {
   return (

@@ -1,7 +1,9 @@
 'use client'
 
 import { NavUser } from '#/components/nav-user'
-import type { NavAdminProps, NavPrimaryProps, NavUserProps } from '#/lib/types'
+import type { NavPrimaryProps } from './nav-primary'
+import type { NavAdminProps } from './nav-admin'
+import type { NavUserProps } from '#/components/nav-user'
 
 import {
   Sidebar,
