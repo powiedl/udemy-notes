@@ -6,7 +6,7 @@ import {
   handleDeleteCourse,
   handleExportCourse,
 } from '#/handlers/course-header'
-import { CourseIcon } from '@hugeicons/core-free-icons'
+import { ServerFnData } from '#/types/api'
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { Suspense, use, useEffect } from 'react'

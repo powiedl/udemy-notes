@@ -5,10 +5,13 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { Button } from '../ui/button'
-import { Delete, Download } from 'lucide-react'
+import { Delete, Download, Loader2 } from 'lucide-react'
 import { cn } from '#/lib/utils'
+import { useTransition } from 'react'
+import { UdNoServerResponse } from '#/types/api'
+import { toast } from 'sonner'
 
 type Course = {
   _count?: {
@@ -23,7 +26,7 @@ type Course = {
   notes?: any[]
 }
 
-const CourseHeader = ({
+const CourseHeader = <T,>({
   course,
   singleCourse = true,
   onExport,
@@ -32,12 +35,43 @@ const CourseHeader = ({
   course: Course
   singleCourse?: boolean
   onExport: (id: string) => void
-  onDelete: (id: string) => void
+  onDelete: (id: string) => Promise<UdNoServerResponse<T>>
 }) => {
+  const [isDeleting, startTransition] = useTransition()
+  const router = useRouter()
+  const navigate = useNavigate()
   const countNotes =
     'notes' in course
       ? course.notes && course.notes.length
       : (course._count && course._count.notes) || 0
+  const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    startTransition(async () => {
+      try {
+        const result = await onDelete(course.id)
+        if (!result.success) throw new Error(result.error)
+        if (typeof result.data === 'string') {
+          toast.success(result.data)
+        } else {
+          toast.success('Course deleted successfully')
+        }
+        if (singleCourse) {
+          await navigate({ to: '/courses', replace: true })
+        } else {
+          await router.invalidate()
+        }
+      } catch (error) {
+        console.log(error)
+        if (typeof error === 'string') {
+          toast.error(error)
+        } else {
+          toast.error(
+            'Something unexptected happened while trying to delete the course',
+          )
+        }
+      }
+    })
+  }
   return (
     <Card
       key={course.id}
@@ -75,13 +109,23 @@ const CourseHeader = ({
           <Button
             type="button"
             variant="destructive"
-            onClick={() => onDelete(course.id)}
+            onClick={handleDelete}
+            disabled={isDeleting}
           >
-            <Delete className="size-4 mr-1" />
+            {isDeleting ? (
+              <Loader2
+                className={cn(
+                  'size-4 hidden animate-spin mr-1',
+                  isDeleting ? 'inline' : '',
+                )}
+              />
+            ) : (
+              <Delete className="size-4 mr-1" />
+            )}
             <span
               className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
             >
-              Delete
+              {isDeleting ? 'Deleting' : 'Delete'}
             </span>
           </Button>
         </CardFooter>

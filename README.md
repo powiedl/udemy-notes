@@ -12,14 +12,14 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 - These course notes are stored in the database
 - You can view your notes of the course - in the course details page
 - You can export your notes of the course - in the course details page
+- You can Delete a course - in the course details and overview page
 
 ## Next steps
 
-- [] Adding tags to a course (during import) or to single notes (after import).
-- [] Delete a course - in the course details page
+- [] Adding tags to a course (during import) or to single notes (after import)
 - [] Create your own tags
 - [] FINALLY: Edit your notes in the App
 
-## Learnings 
+## Learnings
 
 - [SERVER-FUNCTION-SYSTEM](SERVER-FUNCTION-SYSTEM.md) - how to setup strong typed Server Functions with a standard return type for every server function. Add a possibility to log errors to the database (with the possibility to add a reference to the calling frontend component and the server function causing the error)

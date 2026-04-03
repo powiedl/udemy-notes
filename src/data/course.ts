@@ -66,22 +66,29 @@ export type AwaitedReturnTypeGetCourseById = Awaited<
 
 export const deleteCourseById = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
-  .inputValidator(z.object({ id: z.string() }))
+  .inputValidator((d: unknown) =>
+    withLogging(z.object({ id: z.string() })).parse(d),
+  )
   .handler(async ({ context, data }) => {
-    const userId = context.session.user.id
-    const { id } = data
-    const course = await prisma.course.findUnique({
-      where: {
-        userId,
-        id,
+    return await wrapServerAction(
+      'deleteCourseById',
+      async () => {
+        const userId = context.session.user.id
+        const { id } = data
+        const course = await prisma.course.findUnique({
+          where: {
+            userId,
+            id,
+          },
+        })
+        if (!course) throw notFound()
+        await prisma.course.delete({
+          where: {
+            id: course.id,
+          },
+        })
+        return 'Course deleted successfully'
       },
-    })
-    if (!course) throw notFound()
-    await prisma.course.delete({
-      where: {
-        id: course.id,
-      },
-    })
-
-    return 'Course deleted successfully'
+      data.loggingMetadata?.component,
+    )
   })

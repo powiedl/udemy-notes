@@ -1,4 +1,7 @@
+import { deleteCourseById } from '#/data/course'
 import { exportMdFile } from '#/data/import-export'
+import { sleep } from '#/lib/utils'
+import { UdNoServerResponse } from '#/types/api'
 import { toast } from 'sonner'
 
 export const handleExportCourse = async (id: string): Promise<void> => {
@@ -46,6 +49,14 @@ export const handleExportCourse = async (id: string): Promise<void> => {
     toast.error('Error during export of the course notes')
   }
 }
-export const handleDeleteCourse = (id: string): void => {
-  alert(`Delete course - ${id}`)
+export const handleDeleteCourse = async (
+  id: string,
+): ReturnType<typeof deleteCourseById> => {
+  const result = await deleteCourseById({
+    data: {
+      id: id,
+      loggingMetadata: { component: 'CourseHeader,handler:handleDeletCourse' },
+    },
+  })
+  return result
 }

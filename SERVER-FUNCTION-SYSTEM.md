@@ -311,3 +311,28 @@ function CourseContent({ course }: { course: any }) {
 ```
 
 **Hinweis:** In diesem Beispiel ist es nicht notwendig einen useEffect zu verwenden. TanStack Start basiert auf React 19. In React 19 kann man für meta Daten einfach an irgendeiner Stelle in der Komponente ein entsprechendes Tag verwenden. React 19 erkennt, dass es ein Element ist, dass in den head Bereich gehört und verschiebt es automatisch in den head Bereich, d. h. den Titel können wir einfach nach `if (!result.success) return <p>FEHLER</p>` mit `<title>{result.data.title}</title>` setzen.
+
+## Verwendung im 'Frontend (Client)' - für eine Server Function, die Parameter erwartet
+
+Für eine Server Function, die Parameter erwartet ist es ähnlich - aber wir müssen natürlich den Parameter übergeben. Dadurch, dass ein paar Funktionen hintereinander die Parameter auswerten, "verändern" und weitergeben, kann es etwas verwirrend sein, was genau man übergeben muss.
+
+Die Server Function erwartet immer ein Objekt als einzigen Parameter (wenn man keinen Parameter benötigt, übergibt man ein leeres Objekt). Andernfalls muss in dem Objekt ein Attribut `data` existieren, dass wieder ein Objekt ist. Dieses Objekt sind die eigentlichen Nutzdaten, d. h. wenn man "am Ende" einen Parameter id vom Typ string will, ruft man die entsprechende Server Function so auf `deleteCourseById({data:{id:'meine-kurs-id'}})`.
+
+In der Server Function im inputValidator validiert man die Parameter dann so (also innerhalb von `withLogging`, dafür dann dort nur den Inhalt von `data`):
+
+```typescript
+  .inputValidator((d: unknown) =>
+    withLogging(z.object({ id: z.string() })).parse(d),
+  )
+```
+
+Im .handler holt man sich den context und data aus den Parameter und verwendet sie dannn innerhalb der `wrapServerAction` (wobei man dieser weder `data` noch `context` als Parameter übergeben muss, damit sie Zugriff darauf hat - weil sie "innerhalb" der Handlerfunktion definiert wird und damit automatisch Zugriff auf alles hat, worauf die handler Funktion selbst Zugriff hat)
+
+```typescript
+  .handler(async ({ context, data }) => {
+    return await wrapServerAction(
+      'deleteCourseById',
+      async () => {
+        const userId = context.session.user.id
+        const { id } = data
+```
