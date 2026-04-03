@@ -336,3 +336,117 @@ Im .handler holt man sich den context und data aus den Parameter und verwendet s
         const userId = context.session.user.id
         const { id } = data
 ```
+
+## Wenn die Server Function FormData bekommt
+
+Wenn eine Server Function FormData verarbeiten muss, können wir den bisherigen Weg nicht nehmen, weil FormData mit dem JSON-basierten Logging-System kollidiert (FormData ist ein flaches Schlüssel-Wert-System, aber `withLogging` erwartet ein verschachteltes JSON-Objekt).
+
+Daher muss man die loggingMetadata als zusätzliches String oder JSON-Feld in das FormData packen, bevor wir es vom Client abschicken. Im inputValidator extrahieren wir dann beides manuell. Hier das Beispiel mit der `importHtmlFile` Server Function:
+
+### Die adaptierte ServerFunction
+
+```typescript
+export const importHtmlFile = createServerFn({ method: 'POST' })
+  .middleware([authFnMiddleware])
+  .inputValidator(async (data: unknown) => {
+    // 1. Grundprüfung auf FormData
+    if (!(data instanceof FormData)) {
+      throw new Error('Expected FormData')
+    }
+
+    // 2. Datei extrahieren & validieren (wie bisher)
+    const file = data.get('file') as File
+    if (!file || file.type !== 'text/html') {
+      throw new Error('Only HTML files are allowed.')
+    }
+    if (file.size > MAX_FILE_SIZE_UPLOAD) {
+      throw new Error('File too large.')
+    }
+
+    // 3. NEU: loggingMetadata aus FormData extrahieren
+    // Wir schicken es vom Client als JSON-String im Feld 'loggingMetadata'
+    const rawLogging = data.get('loggingMetadata')
+    let loggingMetadata
+
+    if (rawLogging && typeof rawLogging === 'string') {
+      try {
+        loggingMetadata = JSON.parse(rawLogging)
+      } catch (e) {
+        // Falls JSON-Parse fehlschlägt, ignorieren wir es oder setzen Default
+      }
+    }
+
+    // Wir geben die Struktur zurück, die unser Handler erwartet
+    return {
+      file,
+      loggingMetadata, // Damit data.loggingMetadata im Handler existiert
+    }
+  })
+  .handler(async ({ data, context }) => {
+```
+
+### Und der Client Teil (wobei hier dazu kommt, dass die Server Function nicht im Loader sondern innerhalb der Komponente aufgerufen wird)
+
+Da die Server Function innerhalb der Komponente aufgerufen wird, und nicht im Loader, sollte man den Hook `useServerFn` verwenden (auch wenn es gut möglich ist, dass ein direkter Aufruf der Server Function auch funktioniert). Der Hook ist insbesondere bei komplexeren Datentypen die zwischen Client und Server geschickt werden müssen robuster. Außerdem erhöht er automatisch die Sicherheit, weil er beispielsweise CSRF Checks und Automatische Header hinzufügt. Man sollte sich daher angewöhnen innerhalb einer Komponente immer den Hook zu verwenden und nur außerhalb (beispielsweise im loader die Server Function direkt aufzurufen).
+
+```typescript
+export function ImportHtmlForm() {
+  const navigate = useNavigate()
+  const [isPending, startTransition] = useTransition()
+  const uploadFile = useServerFn(importHtmlFile)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const form = useForm({
+    defaultValues: {
+      file: null as unknown as File,
+    },
+    validators: {
+      onChange: importHtmlFileSchema, // Validierung bei jeder Änderung
+    },
+    onSubmit: async ({ value }: { value: { file: File } }) => {
+      if (!value.file) {
+        toast.error('Please select a file first')
+        return
+      }
+
+      const formData = new FormData()
+      formData.append('file', value.file)
+
+      // Korrektur: 'loggingMetadata' statt 'loggingMetdata'
+      formData.append(
+        'loggingMetadata',
+        JSON.stringify({ component: 'ImportHtmlForm' }),
+      )
+
+      startTransition(async () => {
+        try {
+          const result = await uploadFile({ data: formData })
+
+          if (!result.success) {
+            toast.error(result.error)
+            return
+          }
+
+          toast.success('Course notes processed successfully')
+
+          // Navigation zur Detailseite des neuen Kurses
+          await navigate({
+            to: '/courses/$courseId', // Pfad an deine Route anpassen
+            params: { courseId: result.data.courseId },
+          })
+        } catch (error) {
+          console.error('Submit Error:', error)
+          toast.error('An unexpected error occurred during upload')
+        }
+      })
+    },
+  })
+
+  return (
+    <Card className="max-w-md w-full mx-auto">
+      <CardHeader>
+        ...
+```
+
+Im `onSubmit` wird ziemlich am Anfang das formData um die loggingMetaData angereichert, damit alles gemeinsam zum Server geschickt wird (wie wir im Server die Daten entgegennehmen und wieder zerteilen haben wir im Abschnitt davor schon gesehen).

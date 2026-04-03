@@ -12,6 +12,7 @@ import { orderInfo } from '#/lib/udemy'
 import { exportMdFileSchema } from '#/schemas/export-file'
 import { notFound } from '@tanstack/react-router'
 import { processNoteForMarkdown } from '#/lib/export-helper'
+import { wrapServerAction } from '#/lib/server-utils'
 
 function checkConflict(
   newNote: ImportNote,
@@ -27,182 +28,145 @@ function checkConflict(
 }
 export const importHtmlFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
-  .inputValidator(async (data) => {
-    // Validate that data is FormData
-    // await logToDb({
-    //   component: 'UploadHtmlFile-Validator',
-    //   severity: 'info',
-    //   message: 'Validator started',
-    // })
+  .inputValidator(async (data: unknown) => {
+    // 1. Grundprüfung auf FormData
     if (!(data instanceof FormData)) {
-      // console.log(
-      //   'uploadHtmlFile, data (should be of type Formdata, but is not)',
-      //   data,
-      // )
-      await logToDb({
-        component: 'UploadHtmlFile-Validator',
-        severity: 'error',
-        message:
-          'uploadHtmlFile, data (should be of type Formdata, but is not)',
-      })
       throw new Error('Expected FormData')
     }
-    // Extract and validate file
+
+    // 2. Datei extrahieren & validieren (wie bisher)
     const file = data.get('file') as File
-
-    // Validate file type
-    if (file.type !== 'text/html') {
-      await logToDb({
-        component: 'UploadHtmlFile-Validator',
-        severity: 'error',
-        message: 'Invalid file type: ' + file.type,
-      })
-      throw new Error('Only HTML files are allowed. Received: ' + file.type)
+    if (!file || file.type !== 'text/html') {
+      throw new Error('Only HTML files are allowed.')
+    }
+    if (file.size > /*1000 */ MAX_FILE_SIZE_UPLOAD) {
+      throw new Error('File too large.')
     }
 
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE_UPLOAD) {
-      await logToDb({
-        component: 'UploadHtmlFile-Validator',
-        severity: 'error',
-        message: 'Filesize exceeds allowed maximum filesize',
-      })
-      throw new Error(
-        `File size must be less than ${Math.floor(MAX_FILE_SIZE_UPLOAD / 1024 / 1024)} MB`,
-      )
+    // 3. NEU: loggingMetadata aus FormData extrahieren
+    // Wir schicken es vom Client als JSON-String im Feld 'loggingMetadata'
+    const rawLogging = data.get('loggingMetadata')
+    let loggingMetadata
+
+    if (rawLogging && typeof rawLogging === 'string') {
+      try {
+        loggingMetadata = JSON.parse(rawLogging)
+      } catch (e) {
+        // Falls JSON-Parse fehlschlägt, ignorieren wir es oder setzen Default
+      }
     }
-    // await logToDb({
-    //   component: 'UploadHtmlFile-Validator',
-    //   severity: 'info',
-    //   message: 'Validator finished successful',
-    // })
-    return { file }
+
+    // Wir geben die Struktur zurück, die unser Handler erwartet
+    return {
+      file,
+      loggingMetadata, // Damit data.loggingMetadata im Handler existiert
+    }
   })
   .handler(async ({ data, context }) => {
-    try {
-      const userId = context.session.user.id
+    return await wrapServerAction(
+      'importHtmlFile',
+      async () => {
+        const userId = context.session.user.id
+        const { file } = data
+        const timestamp = Date.now()
 
-      const { file } = data
+        // --- DEINE BESTEHENDE LOGIK (Buffer, Prisma, etc.) ---
+        const buffer = Buffer.from(await file.arrayBuffer())
+        const htmlContent = buffer.toString('utf8')
+        const conversionResult = prepareAndConvertHtmlToMarkdown(htmlContent)
 
-      // Convert file to Buffer
-      const buffer = Buffer.from(await file.arrayBuffer())
+        if (conversionResult.status === 'ERROR')
+          throw new Error(conversionResult.message)
+        const { course, markdown } = conversionResult
 
-      // Save HTML file
-      const timestamp = Date.now()
-
-      // Read and convert to Markdown
-      const htmlContent = buffer.toString('utf8')
-
-      const conversionResult = prepareAndConvertHtmlToMarkdown(htmlContent)
-      if (conversionResult.status === 'ERROR')
-        throw new Error(conversionResult.message)
-      const { course, markdown } = conversionResult
-
-      const existingCourse = await prisma.course.findFirst({
-        where: { userId: userId, title: course.title },
-      })
-      let finishedCourse: Course
-      let existingNotes
-      let courseId: string
-      if (existingCourse) {
-        courseId = existingCourse.id
-        existingNotes = await prisma.note.findMany({
-          where: { courseId: existingCourse.id },
+        const existingCourse = await prisma.course.findFirst({
+          where: { userId: userId, title: course.title },
         })
-        finishedCourse = await prisma.course.update({
-          where: {
-            id: existingCourse.id,
-          },
-          data: {
-            title: course.title,
-          },
-        })
-      } else {
-        finishedCourse = await prisma.course.create({
-          data: {
-            title: course.title,
-            userId: userId,
-          },
-        })
-        courseId = finishedCourse.id
-      }
-      const createdNotes = []
-      let numberOfConflicts = 0
-      for (let note of course.notes) {
-        const existingNote =
-          existingNotes &&
-          existingNotes.find(
-            (n) =>
-              n.timestamp === note.timestamp &&
-              n.section === note.section &&
-              n.lecture === note.lecture,
-          )
-        if (existingNote) {
-          const conflict = checkConflict(note, existingNote)
-          if (conflict) numberOfConflicts++
-          createdNotes.push(
-            prisma.note.update({
-              where: { id: existingNote.id },
-              data: {
-                hasConflict: conflict,
-                originalContent: note.content,
-                orderInfo: orderInfo(
-                  note.section,
-                  note.lecture,
-                  note.timestamp,
-                ),
-              },
-            }),
-          )
+        let finishedCourse: Course
+        let existingNotes
+        let courseId: string
+        if (existingCourse) {
+          courseId = existingCourse.id
+          existingNotes = await prisma.note.findMany({
+            where: { courseId: existingCourse.id },
+          })
+          finishedCourse = await prisma.course.update({
+            where: {
+              id: existingCourse.id,
+            },
+            data: {
+              title: course.title,
+            },
+          })
         } else {
-          createdNotes.push(
-            prisma.note.create({
-              data: {
-                courseId: finishedCourse.id,
-                userId,
-                timestamp: note.timestamp,
-                section: note.section,
-                lecture: note.lecture,
-                originalContent: note.content,
-                orderInfo: orderInfo(
-                  note.section,
-                  note.lecture,
-                  note.timestamp,
-                ),
-              },
-            }),
-          )
+          finishedCourse = await prisma.course.create({
+            data: {
+              title: course.title,
+              userId: userId,
+            },
+          })
+          courseId = finishedCourse.id
         }
-      }
-      await Promise.all(createdNotes)
-      return {
-        success: true,
-        originalFileName: file.name,
-        size: file.size,
-        timestamp,
-        markdownContent: markdown,
-        numberOfConflicts,
-        courseId,
-      }
-    } catch (error: unknown) {
-      console.error('Upload error:', error)
-      if (error instanceof Error) {
-        await logToDb({
-          component: 'UploadHtmlFile-handler',
-          severity: 'error',
-          message: error.message,
-        })
-        throw new Error('Failed to process file upload: ' + error.message)
-      } else {
-        await logToDb({
-          component: 'UploadHtmlFile-handler',
-          severity: 'error',
-          message: 'Failed to process file upload (no more details available)',
-        })
-
-        throw new Error('Failed to process file upload')
-      }
-    }
+        const createdNotes = []
+        let numberOfConflicts = 0
+        for (let note of course.notes) {
+          const existingNote =
+            existingNotes &&
+            existingNotes.find(
+              (n) =>
+                n.timestamp === note.timestamp &&
+                n.section === note.section &&
+                n.lecture === note.lecture,
+            )
+          if (existingNote) {
+            const conflict = checkConflict(note, existingNote)
+            if (conflict) numberOfConflicts++
+            createdNotes.push(
+              prisma.note.update({
+                where: { id: existingNote.id },
+                data: {
+                  hasConflict: conflict,
+                  originalContent: note.content,
+                  orderInfo: orderInfo(
+                    note.section,
+                    note.lecture,
+                    note.timestamp,
+                  ),
+                },
+              }),
+            )
+          } else {
+            createdNotes.push(
+              prisma.note.create({
+                data: {
+                  courseId: finishedCourse.id,
+                  userId,
+                  timestamp: note.timestamp,
+                  section: note.section,
+                  lecture: note.lecture,
+                  originalContent: note.content,
+                  orderInfo: orderInfo(
+                    note.section,
+                    note.lecture,
+                    note.timestamp,
+                  ),
+                },
+              }),
+            )
+          }
+        }
+        await Promise.all(createdNotes)
+        return {
+          originalFileName: file.name,
+          size: file.size,
+          timestamp,
+          markdownContent: markdown,
+          numberOfConflicts,
+          courseId,
+        }
+      },
+      data.loggingMetadata?.component,
+    )
   })
 
 export const exportMdFile = createServerFn({ method: 'POST' })
