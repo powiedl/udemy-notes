@@ -9,10 +9,7 @@ import {
 } from '#/components/ui/empty'
 import CourseHeader from '#/components/web/course-header'
 import { getCoursesFn } from '#/data/course'
-import {
-  handleDeleteCourse,
-  handleExportCourse,
-} from '#/handlers/course-header'
+import { useCourseActions } from '#/hooks/use-course-actions'
 import { cn } from '#/lib/utils'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { BookOpenText, Loader2, UploadCloud } from 'lucide-react'
@@ -32,6 +29,7 @@ export const Route = createFileRoute('/_content/courses/')({
 
 function CoursesList({ data }: { data: ReturnType<typeof getCoursesFn> }) {
   const result = use(data)
+  const { handleExport, handleDelete } = useCourseActions()
   if (!result.success)
     return (
       <div className="p-4 border border-red-500 bg-red-50 text-red-700 rounded">
@@ -67,8 +65,8 @@ function CoursesList({ data }: { data: ReturnType<typeof getCoursesFn> }) {
           course={course}
           singleCourse={false}
           key={course.id}
-          onExport={() => handleExportCourse(course.id)}
-          onDelete={() => handleDeleteCourse(course.id)}
+          onExport={() => handleExport(course.id)}
+          onDelete={() => handleDelete(course.id)}
         />
       ))}
     </div>

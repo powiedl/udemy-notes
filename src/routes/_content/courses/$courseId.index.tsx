@@ -2,10 +2,7 @@ import { Card, CardContent, CardHeader } from '#/components/ui/card'
 import CourseHeader from '#/components/web/course-header'
 import NotesList from '#/components/web/notes-list'
 import { getCourseById } from '#/data/course'
-import {
-  handleDeleteCourse,
-  handleExportCourse,
-} from '#/handlers/course-header'
+import { useCourseActions } from '#/hooks/use-course-actions'
 import { ServerFnData } from '#/types/api'
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
@@ -42,6 +39,8 @@ function Course({ data }: { data: ReturnType<typeof getCourseById> }) {
 }
 
 function CourseContent({ course }: { course: CourseWithNotes }) {
+  const { handleExport, handleDelete } = useCourseActions()
+
   useEffect(() => {
     document.title = course.title
   }, [course.title])
@@ -51,8 +50,8 @@ function CourseContent({ course }: { course: CourseWithNotes }) {
       <CardHeader>
         <CourseHeader
           course={course}
-          onExport={() => handleExportCourse(course.id)}
-          onDelete={() => handleDeleteCourse(course.id)}
+          onExport={() => handleExport(course.id)}
+          onDelete={() => handleDelete(course.id)}
         />
       </CardHeader>
       <CardContent>

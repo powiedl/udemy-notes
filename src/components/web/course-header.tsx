@@ -61,7 +61,7 @@ const CourseHeader = <T,>({
           await router.invalidate()
         }
       } catch (error) {
-        console.log(error)
+        //console.log(error)
         if (typeof error === 'string') {
           toast.error(error)
         } else {
@@ -98,7 +98,12 @@ const CourseHeader = <T,>({
           </div>
         </CardContent>
         <CardFooter className="flex flex-row gap-4">
-          <Button type="button" onClick={() => onExport(course.id)}>
+          <Button
+            type="button"
+            onClick={() => {
+              onExport(course.id)
+            }}
+          >
             <Download className="size-4 mr-1" />
             <span
               className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}

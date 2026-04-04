@@ -180,6 +180,8 @@ export const getCourseById = createServerFn({ method: 'GET' })
   })
 ```
 
+**WICHTIG:** In der `.handler` Methode darf außer dem return await wrapServerAction(...)`kein anderer Code stehen, sonst wird das return der wrapServerAction "verschluckt". Wahrscheinlich kann man das Ergebnis in einer Variablen speichern und am Ende selbst die Variabe zurückliefern (dann darf man auch zusätzlichen Code in der`.handler` Methode stehen haben).
+
 ## Verwendung im Frontend (Client) - für eine Server Function, die keinen Parameter erwartet
 
 **Datei:** `src/components/CoursesList.tsx`
@@ -326,7 +328,7 @@ In der Server Function im inputValidator validiert man die Parameter dann so (al
   )
 ```
 
-Im .handler holt man sich den context und data aus den Parameter und verwendet sie dannn innerhalb der `wrapServerAction` (wobei man dieser weder `data` noch `context` als Parameter übergeben muss, damit sie Zugriff darauf hat - weil sie "innerhalb" der Handlerfunktion definiert wird und damit automatisch Zugriff auf alles hat, worauf die handler Funktion selbst Zugriff hat)
+Im `.handler` holt man sich den context und data aus dem Parameter und verwendet sie dannn innerhalb der `wrapServerAction` (wobei man dieser weder `data` noch `context` als Parameter übergeben muss, damit sie Zugriff darauf hat - weil sie "innerhalb" der Handlerfunktion definiert wird und damit automatisch Zugriff auf alles hat, worauf die handler Funktion selbst Zugriff hat)
 
 ```typescript
   .handler(async ({ context, data }) => {
@@ -387,7 +389,7 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
 
 ### Und der Client Teil (wobei hier dazu kommt, dass die Server Function nicht im Loader sondern innerhalb der Komponente aufgerufen wird)
 
-Da die Server Function innerhalb der Komponente aufgerufen wird, und nicht im Loader, sollte man den Hook `useServerFn` verwenden (auch wenn es gut möglich ist, dass ein direkter Aufruf der Server Function auch funktioniert). Der Hook ist insbesondere bei komplexeren Datentypen die zwischen Client und Server geschickt werden müssen robuster. Außerdem erhöht er automatisch die Sicherheit, weil er beispielsweise CSRF Checks und Automatische Header hinzufügt. Man sollte sich daher angewöhnen innerhalb einer Komponente immer den Hook zu verwenden und nur außerhalb (beispielsweise im loader die Server Function direkt aufzurufen).
+Da die Server Function innerhalb der Komponente aufgerufen wird, und nicht im Loader, "muss" man den Hook `useServerFn` verwenden (auch wenn es möglich ist, dass ein direkter Aufruf der Server Function auch funktioniert - bei deleteCourse war es so, bei exportCourse aber nicht - ich habe daher alles auf den Hook umgestellt - es ist auch "richtig"). Der Hook ist insbesondere bei komplexeren Datentypen, die zwischen Client und Server geschickt werden müssen, robuster. Außerdem erhöht er automatisch die Sicherheit, weil er beispielsweise CSRF Checks und Automatische Header hinzufügt. Man sollte sich daher angewöhnen innerhalb einer Komponente immer den Hook zu verwenden und nur außerhalb (beispielsweise im loader die Server Function direkt aufzurufen).
 
 ```typescript
 export function ImportHtmlForm() {
@@ -450,3 +452,251 @@ export function ImportHtmlForm() {
 ```
 
 Im `onSubmit` wird ziemlich am Anfang das formData um die loggingMetaData angereichert, damit alles gemeinsam zum Server geschickt wird (wie wir im Server die Daten entgegennehmen und wieder zerteilen haben wir im Abschnitt davor schon gesehen).
+
+## Wenn man die Client Logik in unterschiedlichen Komponenten verwenden will (aber nur einmal zentral festlegen möchte)
+
+Mein erster Ansatz war die entsprechenden handler in einer zentralen Datei zu schreiben und diese handler dann in den jeweiligen Komponenten zu importieren (bzw. in Parent Komponenten zu importieren und sie mittels Prop Passing weiterzureichen).
+
+Das **Problem bei dem Ansatz:** Die Eventhandler sind dann nicht mehr innerhalb einer Komponente und dürfen daher keinen Hook verwenden - wir müssen aber den useServerFn Hook verwenden.
+
+Die **Lösung:** Wir schreiben einen custom Hook, der den Eventhandlercode enthält. In diesem dürfen wir useServerFn verwenden - womit wir die richtig gekapselte Server Function im Eventhandler zur Verfügung haben.
+
+Hier das Beispiel für den deleteCourse und den exportCourse custom Handler:
+
+### Der custom Hook zum "Kapseln" der Server Function
+
+Datei: \*\*src/hooks/use-course-actions.ts
+
+```typescript
+import { useServerFn } from '@tanstack/react-start'
+import { exportMdFile } from '#/data/import-export'
+import { toast } from 'sonner'
+import { deleteCourseById } from '#/data/course'
+
+export function useCourseActions() {
+  // Wir sagen dem Hook explizit, welches Schema die Funktion hat
+  const exportFn = useServerFn<typeof exportMdFile>(exportMdFile)
+  const deleteFn = useServerFn<typeof deleteCourseById>(deleteCourseById)
+
+  const handleDelete = async (id: string) => {
+    const result = await deleteFn({
+      data: {
+        id: id,
+        loggingMetadata: {
+          component: 'CourseHeader, customHook handleDelete',
+        },
+      },
+    })
+    return result
+  }
+  const handleExport = async (courseId: string) => {
+    const toastId = toast.loading('Markdown wird generiert...')
+
+    try {
+      // Hier rufen wir die Funktion auf.
+      // WICHTIG: Das 'await' stellt sicher, dass result den Rückgabetyp der Server Fn hat
+      const result = await exportFn({
+        data: {
+          courseId,
+          includeNotesMetadata: true,
+          includeTags: true,
+          includeOriginalNote: true,
+          loggingMetadata: {
+            component: 'CourseHeader, customHook handleExport',
+          },
+        },
+      })
+
+      if (!result) {
+        throw new Error('Server lieferte keine Antwort')
+      }
+
+      if (!result.success) {
+        // Hier greift dein Error-Logging-System
+        throw new Error(result.error)
+      }
+
+      // ERFOLGSFALL: result.data.markdown ist jetzt sicher verfügbar
+      const markdownContent = result.data.markdown
+
+      const blob = new Blob([markdownContent], { type: 'text/markdown' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `course-${courseId}.md`
+      document.body.appendChild(link)
+      link.click()
+
+      // Cleanup
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success('Download gestartet!', { id: toastId })
+    } catch (e: any) {
+      console.error('Export Error:', e)
+      toast.error(e.message || 'Export fehlgeschlagen', { id: toastId })
+    }
+  }
+
+  return { handleExport, handleDelete }
+}
+```
+
+**Wichtig:** Wir müssen den Type für die beiden Server Functions bei `useServerFn` richtig mitgeben (sonst kommt TanStack Start/Typescript durcheinander und liefert an unterschiedlichsten Stellen falsche Type Errors).
+
+### Die Parent Komponente, die den Eventhandler vom Custom Hook holt und an die Child Komponente weitergibt
+
+**Datei:** `src/routes/_content/$courseId.index.tsx` (oder `src/routes/_content/.index.tsx`)
+
+```typescript
+function CoursesList({ data }: { data: ReturnType<typeof getCoursesFn> }) {
+  const result = use(data)
+  const { handleExport, handleDelete } = useCourseActions()
+  if (!result.success)
+    return (
+      <div className="p-4 border border-red-500 bg-red-50 text-red-700 rounded">
+        <p>Error while loading the courses ...</p>
+        <pre>{result.error}</pre>
+      </div>
+    )
+  const courses = result.data
+  if (!courses)
+    return (
+      <Empty className="border rounded-lg h-full">
+        ...
+      </Empty>
+    )
+  return (
+    <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
+      {courses.map((course) => (
+        <CourseHeader
+          course={course}
+          singleCourse={false}
+          key={course.id}
+          onExport={() => handleExport(course.id)}
+          onDelete={() => handleDelete(course.id)}
+        />
+      ))}
+    </div>
+  )
+}
+```
+
+### Die Child Komponente, die den Handler als Prop entgegen nimmt
+
+**Datei:** `src/components/web/course-header.tsx`
+
+```typescript
+const CourseHeader = <T,>({
+  course,
+  singleCourse = true,
+  onExport,
+  onDelete,
+}: {
+  course: Course
+  singleCourse?: boolean
+  onExport: (id: string) => void
+  onDelete: (id: string) => Promise<UdNoServerResponse<T>>
+}) => {
+  const [isDeleting, startTransition] = useTransition()
+  const router = useRouter()
+  const navigate = useNavigate()
+  const countNotes =
+    'notes' in course
+      ? course.notes && course.notes.length
+      : (course._count && course._count.notes) || 0
+  const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    startTransition(async () => {
+      try {
+        const result = await onDelete(course.id)
+        if (!result.success) throw new Error(result.error)
+        if (typeof result.data === 'string') {
+          toast.success(result.data)
+        } else {
+          toast.success('Course deleted successfully')
+        }
+        if (singleCourse) {
+          await navigate({ to: '/courses', replace: true })
+        } else {
+          await router.invalidate()
+        }
+      } catch (error) {
+        //console.log(error)
+        if (typeof error === 'string') {
+          toast.error(error)
+        } else {
+          toast.error(
+            'Something unexptected happened while trying to delete the course',
+          )
+        }
+      }
+    })
+  }
+  return (
+    <Card
+      key={course.id}
+      className="group overflow-hidden transition-all hover:shadow-lg px-4 py-2"
+    >
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">
+          {!singleCourse ? (
+            <Link
+              to="/courses/$courseId"
+              params={{ courseId: course.id }}
+              className="block line-clamp-3"
+            >
+              {course.title}
+            </Link>
+          ) : (
+            <h1 className="text-4xl  font-semibold">{course.title}</h1>
+          )}
+        </CardTitle>
+        <CardContent className="flex flex-col">
+          <div>Tags</div>
+          <div>
+            {countNotes} note{countNotes === 1 ? '' : 's'}
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-row gap-4">
+          <Button
+            type="button"
+            onClick={() => {
+              onExport(course.id)
+            }}
+          >
+            <Download className="size-4 mr-1" />
+            <span
+              className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
+            >
+              Export
+            </span>
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <Loader2
+                className={cn(
+                  'size-4 hidden animate-spin mr-1',
+                  isDeleting ? 'inline' : '',
+                )}
+              />
+            ) : (
+              <Delete className="size-4 mr-1" />
+            )}
+            <span
+              className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
+            >
+              {isDeleting ? 'Deleting' : 'Delete'}
+            </span>
+          </Button>
+        </CardFooter>
+      </CardHeader>
+    </Card>
+  )
+}
+```

@@ -1,0 +1,72 @@
+import { useServerFn } from '@tanstack/react-start'
+import { exportMdFile } from '#/data/import-export'
+import { toast } from 'sonner'
+import { deleteCourseById } from '#/data/course'
+
+export function useCourseActions() {
+  // Wir sagen dem Hook explizit, welches Schema die Funktion hat
+  const exportFn = useServerFn<typeof exportMdFile>(exportMdFile)
+  const deleteFn = useServerFn<typeof deleteCourseById>(deleteCourseById)
+
+  const handleDelete = async (id: string) => {
+    const result = await deleteFn({
+      data: {
+        id: id,
+        loggingMetadata: {
+          component: 'CourseHeader, customHook handleDelete',
+        },
+      },
+    })
+    return result
+  }
+  const handleExport = async (courseId: string) => {
+    const toastId = toast.loading('Markdown wird generiert...')
+
+    try {
+      // Hier rufen wir die Funktion auf.
+      // WICHTIG: Das 'await' stellt sicher, dass result den Rückgabetyp der Server Fn hat
+      const result = await exportFn({
+        data: {
+          courseId,
+          includeNotesMetadata: true,
+          includeTags: true,
+          includeOriginalNote: true,
+          loggingMetadata: {
+            component: 'CourseHeader, customHook handleExport',
+          },
+        },
+      })
+
+      if (!result) {
+        throw new Error('Server lieferte keine Antwort')
+      }
+
+      if (!result.success) {
+        // Hier greift dein Error-Logging-System
+        throw new Error(result.error)
+      }
+
+      // ERFOLGSFALL: result.data.markdown ist jetzt sicher verfügbar
+      const markdownContent = result.data.markdown
+
+      const blob = new Blob([markdownContent], { type: 'text/markdown' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `course-${courseId}.md`
+      document.body.appendChild(link)
+      link.click()
+
+      // Cleanup
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+
+      toast.success('Download gestartet!', { id: toastId })
+    } catch (e: any) {
+      console.error('Export Error:', e)
+      toast.error(e.message || 'Export fehlgeschlagen', { id: toastId })
+    }
+  }
+
+  return { handleExport, handleDelete }
+}
