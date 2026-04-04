@@ -62,7 +62,7 @@ export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
 
   const notes = container.find(NOTE_SELECTOR)
 
-  notes.each((_: number, el: any) => {
+  notes.each((_, el: CheerioNode) => {
     const noteElement = $(el)
     const duration = noteElement.find(DURATION_SELECTOR).text().trim() || '0:00'
     const section = noteElement.find(SECTION_SELECTOR).text().trim() || ''
@@ -100,7 +100,7 @@ export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
 function processNode(node: CheerioSelection, $: CheerioAPI): string {
   let result = ''
 
-  node.contents().each((_: number, el: CheerioNode) => {
+  node.contents().each((_, el: CheerioNode) => {
     if (el.type === 'text') {
       const text = $(el).text()
       if (text.trim() === '' && text.includes('\n')) {
@@ -125,7 +125,7 @@ function processNode(node: CheerioSelection, $: CheerioAPI): string {
 
       if (lines.length > 0) {
         codeText = lines
-          .map((_: number, li: any) => $(li).text())
+          .map((_, li: CheerioNode) => $(li).text())
           .get()
           .join('\n')
       } else {
@@ -140,7 +140,7 @@ function processNode(node: CheerioSelection, $: CheerioAPI): string {
       result += `${processInlineFormatting(child, $)}\n\n`
     } else if (tagName === 'UL' || tagName === 'OL') {
       const isOrdered = tagName === 'OL'
-      child.children('li').each((index: number, li: any) => {
+      child.children('li').each((index: number, li: CheerioNode) => {
         const $li = $(li)
         let liContent = ''
         const pInside = $li.children('p')
@@ -171,7 +171,7 @@ function processInlineFormatting(
 ): string {
   let result = ''
 
-  element.contents().each((_: number, el: CheerioNode) => {
+  element.contents().each((_, el: CheerioNode) => {
     if (el.type === 'text') {
       result += el.data
       return
