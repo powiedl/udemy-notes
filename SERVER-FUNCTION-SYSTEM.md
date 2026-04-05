@@ -132,7 +132,6 @@ export const getCoursesFn = createServerFn({ method: 'GET' })
     return await wrapServerAction(
       'getCoursesFn',
       async () => {
-        await sleep(10)
         // WICHTIG: await vor prisma!
         const courses = await prisma.course.findMany({
           where: {
