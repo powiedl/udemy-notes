@@ -23,4 +23,4 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 ## Learnings
 
 - [SERVER-FUNCTION-SYSTEM](SERVER-FUNCTION-SYSTEM.md) - how to setup strong typed Server Functions with a standard return type for every server function. Add a possibility to log errors to the database (with the possibility to add a reference to the calling frontend component and the server function causing the error)
-- [LEITFADEN PERFORMANTE SUCHE UND PAGINATION MIT TANSTACK START](LEITFADEN-PERFORMANTE-SUCHE-UND-PAGINATION-MIT-TANSTACK-START.md)
+- [LEITFADEN PERFORMANTE SUCHE UND PAGINATION MIT TANSTACK START](LEITFADEN-PERFORMANTE-SUCHE-UND-PAGINATION-MIT-TANSTACK-START.md) - how to setup a general search and pagination container for "all" of your pages, where this makes sense. Right now it is only implemented in the Courses page, but will be added to additional routes in the future (to see if it is really "general")
