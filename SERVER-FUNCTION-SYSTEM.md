@@ -66,10 +66,13 @@ export const loggingMetadataSchema = z.object({
 
 export function withLogging<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
   const combined = schema.and(loggingMetadataSchema)
-  // Type Assertion 'as z.infer' ist nötig, damit TS das leere Objekt als Default für beliebige Schemas akzeptiert
-  return combined.optional().default({} as z.infer<typeof combined>)
+  // Wenn der Input fehlt (undefined), füttern wir das Schema mit einem leeren Objekt,
+  // damit die internen Defaults berechnet werden.
+  return z.preprocess((val) => val ?? {}, combined)
 }
 ```
+
+Das return in `withLogging` sorgt dafür, dass das Schema ein leeres Objekt bekommt, falls der input undefined ist. Damit ist es möglich, dass .default() im jeweiligen `.inputValidator` berücksichtigt werden - andernfalls "verschluckt" die withLogging die direkt im `.inputValidator()` angegebenen .defaults, wenn ein leeres Objekt an das Schema übergeben wird.
 
 ## Der Server-Action Wrapper (Logic & Logging)
 

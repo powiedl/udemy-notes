@@ -15,6 +15,8 @@ export const loggingMetadataSchema = z.object({
  */
 export function withLogging<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
   const combined = schema.and(loggingMetadataSchema)
-
-  return combined.optional().default({} as z.infer<typeof combined>)
+  // Wenn der Input fehlt (undefined), füttern wir das Schema mit einem leeren Objekt,
+  // damit die internen Defaults berechnet werden.
+  return z.preprocess((val) => val ?? {}, combined)
+  //return combined.optional().default({} as z.infer<typeof combined>)
 }
