@@ -7,7 +7,7 @@ import { cn } from '#/lib/utils'
 import { paginationSchema } from '#/schemas/search-params'
 import { createFileRoute, useRouterState } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { Suspense, use, useDeferredValue } from 'react'
+import { Suspense, use, useDeferredValue, useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/_content/courses/')({
   component: RouteComponent,
@@ -89,7 +89,16 @@ function RouteComponent() {
   // React behält das alte Promise so lange "aktiv", bis das neue aufgelöst ist.
   const deferredPromise = useDeferredValue(coursesPromise)
 
-  const isNavigating = useRouterState({ select: (s) => s.status === 'pending' })
+  // Status-Check
+  const pending = useRouterState({ select: (s) => s.status === 'pending' })
+
+  // Hydration-Schutz:
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const isNavigating = mounted && pending
 
   return (
     <div className="space-y-4">
