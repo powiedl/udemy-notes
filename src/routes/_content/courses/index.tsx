@@ -83,6 +83,7 @@ function CoursesList({
 function RouteComponent() {
   const { coursesPromise } = Route.useLoaderData()
   const searchParams = Route.useSearch()
+  const navigate = Route.useNavigate()
 
   // Hier passiert die Magie:
   // deferredPromise hinkt dem eigentlichen coursesPromise hinterher.
@@ -105,8 +106,9 @@ function RouteComponent() {
       <DataTableSearch
         value={searchParams.search}
         onSearchChange={(text) => {
-          Route.useNavigate()({
+          navigate({
             search: (prev) => ({ ...prev, search: text, page: 1 }),
+            replace: true,
           })
         }}
       />
