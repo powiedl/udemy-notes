@@ -1,23 +1,35 @@
-import { buttonVariants } from '#/components/ui/button'
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '#/components/ui/empty'
 import CourseHeader from '#/components/web/course-header'
+import { DataTablePagination } from '#/components/web/data-table-pagination'
+import { DataTableSearch } from '#/components/web/data-table-search'
 import { getCoursesFn } from '#/data/course'
 import { useCourseActions } from '#/hooks/use-course-actions'
 import { cn } from '#/lib/utils'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { BookOpenText, Loader2, UploadCloud } from 'lucide-react'
-import { Suspense, use } from 'react'
+import { paginationSchema } from '#/schemas/search-params'
+import { createFileRoute, useRouterState } from '@tanstack/react-router'
+import { Loader2 } from 'lucide-react'
+import { Suspense, use, useDeferredValue } from 'react'
 
 export const Route = createFileRoute('/_content/courses/')({
   component: RouteComponent,
-  loader: () => ({ coursesPromise: getCoursesFn({}) }),
+  validateSearch: (search) => paginationSchema.parse(search),
+  // Hier definieren wir, von welchen Parametern der Loader abhängt
+  loaderDeps: ({ search }) => ({ search }),
+  staleTime: 60000,
+  loader: ({ deps }) => {
+    // deps ist hier das Objekt, das loaderDeps zurückgegeben hat.
+    // Also: { search: { page, pageSize, search } }
+    return {
+      coursesPromise: getCoursesFn({
+        data: { ...deps.search, loggingMetadata: { component: 'CoursesPage' } },
+      }),
+    }
+  },
+  // E. (Optional) Eine Pending-Component für das ALLERERSTE Laden
+  pendingComponent: () => (
+    <div className="flex h-full items-center justify-center">
+      <Loader2 className="animate-spin size-12 text-primary" />
+    </div>
+  ),
   head: () => ({
     meta: [
       {
@@ -27,58 +39,88 @@ export const Route = createFileRoute('/_content/courses/')({
   }),
 })
 
-function CoursesList({ data }: { data: ReturnType<typeof getCoursesFn> }) {
+function CoursesList({
+  data,
+  page,
+  pageSize,
+}: {
+  data: ReturnType<typeof getCoursesFn>
+  page: number
+  pageSize: number
+}) {
   const result = use(data)
+  if (!result.success) return <div>Fehler: {result.error}</div>
+  const searchParams = Route.useSearch()
   const { handleExport, handleDelete } = useCourseActions()
-  if (!result.success)
-    return (
-      <div className="p-4 border border-red-500 bg-red-50 text-red-700 rounded">
-        <p>Error while loading the courses ...</p>
-        <pre>{result.error}</pre>
-      </div>
-    )
-  const courses = result.data
-  if (!courses)
-    return (
-      <Empty className="border rounded-lg h-full">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <BookOpenText className="size-12" />
-          </EmptyMedia>
-          <EmptyTitle>No courses imported yet</EmptyTitle>
-        </EmptyHeader>
-        <EmptyDescription>
-          Import a course to start working with your notes
-        </EmptyDescription>
-        <EmptyContent>
-          <Link className={cn(buttonVariants(), 'gap-2')} to="/courses/import">
-            <UploadCloud className="size-4" />
-            Import Course
-          </Link>
-        </EmptyContent>
-      </Empty>
-    )
+  // Wir extrahieren Items und totalCount aus deinem neuen Server-Response-Format
+  const { items: courses, totalCount } = result.data
+
   return (
-    <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
-      {courses.map((course) => (
-        <CourseHeader
-          course={course}
-          singleCourse={false}
-          key={course.id}
-          onExport={() => handleExport(course.id)}
-          onDelete={() => handleDelete(course.id)}
-        />
-      ))}
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
+        {courses.map((course) => (
+          <CourseHeader
+            course={course}
+            singleCourse={false}
+            key={course.id}
+            onExport={() => handleExport(course.id)}
+            onDelete={() => handleDelete(course.id)}
+          />
+        ))}
+      </div>
+
+      {/* Pagination erscheint erst, wenn Daten da sind */}
+      <DataTablePagination
+        totalCount={totalCount}
+        page={page}
+        pageSize={pageSize}
+        currentSearch={searchParams}
+      />
     </div>
   )
 }
 
 function RouteComponent() {
   const { coursesPromise } = Route.useLoaderData()
+  const searchParams = Route.useSearch()
+
+  // Hier passiert die Magie:
+  // deferredPromise hinkt dem eigentlichen coursesPromise hinterher.
+  // React behält das alte Promise so lange "aktiv", bis das neue aufgelöst ist.
+  const deferredPromise = useDeferredValue(coursesPromise)
+
+  const isNavigating = useRouterState({ select: (s) => s.status === 'pending' })
 
   return (
-    <Suspense fallback={<Loader2 className="size-40 animate-spin" />}>
-      <CoursesList data={coursesPromise} />
-    </Suspense>
+    <div className="space-y-4">
+      <DataTableSearch
+        value={searchParams.search}
+        onSearchChange={(text) => {
+          Route.useNavigate()({
+            search: (prev) => ({ ...prev, search: text, page: 1 }),
+          })
+        }}
+      />
+
+      <div
+        className={cn(
+          'transition-opacity duration-300',
+          isNavigating ? 'opacity-50 pointer-events-none' : 'opacity-100',
+        )}
+      >
+        <Suspense fallback={null}>
+          {/* WICHTIG: Wir übergeben das DEFERRED Promise.
+            Dadurch "suspensed" diese Komponente nicht sofort, 
+            sondern zeigt die alten Daten (die durch das div oben 
+            ausgegraut sind), bis die neuen Daten bereit sind.
+          */}
+          <CoursesList
+            data={deferredPromise}
+            page={searchParams.page}
+            pageSize={searchParams.pageSize}
+          />
+        </Suspense>
+      </div>
+    </div>
   )
 }

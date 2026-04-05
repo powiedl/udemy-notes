@@ -23,3 +23,4 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 ## Learnings
 
 - [SERVER-FUNCTION-SYSTEM](SERVER-FUNCTION-SYSTEM.md) - how to setup strong typed Server Functions with a standard return type for every server function. Add a possibility to log errors to the database (with the possibility to add a reference to the calling frontend component and the server function causing the error)
+- [LEITFADEN PERFORMANTE SUCHE UND PAGINATION MIT TANSTACK START](LEITFADEN-PERFORMANTE-SUCHE-UND-PAGINATION-MIT-TANSTACK-START.md)

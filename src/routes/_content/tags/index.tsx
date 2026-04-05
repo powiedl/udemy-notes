@@ -1,7 +1,7 @@
 import Tag from '#/components/web/tag'
 import { getAvailableTagsFn } from '#/data/tag'
 import { createFileRoute } from '@tanstack/react-router'
-import { Construction, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Suspense, use } from 'react'
 
 export const Route = createFileRoute('/_content/tags/')({
