@@ -5,6 +5,7 @@ export async function wrapServerAction<T>(
   serverFunctionName: string,
   fn: () => Promise<T>,
   clientComponent = '<no component>', // Wird vom Frontend durchgereicht
+  userId?: string,
 ): Promise<UdNoServerResponse<T>> {
   try {
     const data = await fn()
@@ -18,6 +19,7 @@ export async function wrapServerAction<T>(
       component: clientComponent,
       severity: 'error',
       message: errorMessage,
+      userId,
     })
 
     return {

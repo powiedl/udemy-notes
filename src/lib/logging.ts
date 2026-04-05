@@ -7,6 +7,7 @@ export async function logToDb(params: {
   serverFunction?: string
   severity: 'info' | 'warning' | 'error' | 'critical'
   message: string
+  userId?: string
 }) {
   return await prisma.log.create({
     data: {
@@ -14,6 +15,7 @@ export async function logToDb(params: {
       serverFunction: params.serverFunction,
       severity: params.severity,
       message: params.message,
+      userId: params.userId,
     },
   })
 }

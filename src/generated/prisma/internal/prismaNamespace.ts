@@ -1315,6 +1315,7 @@ export const LogScalarFieldEnum = {
   serverFunction: 'serverFunction',
   severity: 'severity',
   message: 'message',
+  userId: 'userId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
