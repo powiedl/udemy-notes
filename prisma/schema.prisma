@@ -125,7 +125,7 @@ model Note {
 
 model Tag {
   id        String      @id @default(uuid())
-  name      String      @unique
+  name      String
   notes     NoteTag[]
   userId    String?     @map("user_id")
   user      User?       @relation(fields: [userId], references: [id], onDelete: Cascade)

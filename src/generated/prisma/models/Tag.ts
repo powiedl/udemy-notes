@@ -200,18 +200,18 @@ export type TagOrderByWithRelationInput = {
 
 export type TagWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  name?: string
   name_userId?: Prisma.TagNameUserIdCompoundUniqueInput
   AND?: Prisma.TagWhereInput | Prisma.TagWhereInput[]
   OR?: Prisma.TagWhereInput[]
   NOT?: Prisma.TagWhereInput | Prisma.TagWhereInput[]
+  name?: Prisma.StringFilter<"Tag"> | string
   userId?: Prisma.StringNullableFilter<"Tag"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
   notes?: Prisma.NoteTagListRelationFilter
   user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   courses?: Prisma.CourseTagListRelationFilter
-}, "id" | "name" | "name_userId">
+}, "id" | "name_userId">
 
 export type TagOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
