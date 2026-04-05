@@ -1,9 +1,9 @@
 import { Link } from '@tanstack/react-router'
 import {
+  ChevronFirst,
+  ChevronLast,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
 } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -29,11 +29,18 @@ export function DataTablePagination({
       buttonVariants({ variant: 'outline', size: 'icon' }),
       disabled && 'pointer-events-none opacity-50',
     )
+  const chevronClass = 'h-4 w-4'
 
   return (
-    <div className="flex items-center justify-between px-2 py-4">
+    <div
+      className={cn(
+        totalPages === 1
+          ? 'hidden'
+          : 'flex items-center justify-between px-2 py-4',
+      )}
+    >
       <div className="flex-1 text-sm text-muted-foreground">
-        Gesamt: {totalCount} Einträge
+        Total: {totalCount} entr{totalCount === 1 ? 'y' : 'ies'}
       </div>
 
       <div className="flex items-center space-x-2">
@@ -46,7 +53,7 @@ export function DataTablePagination({
           className={linkStyles(page <= 1)}
           to="."
         >
-          <ChevronsLeft className="h-4 w-4" />
+          <ChevronFirst className={chevronClass} />
         </Link>
 
         {/* Vorherige Seite */}
@@ -56,11 +63,11 @@ export function DataTablePagination({
           className={linkStyles(page <= 1)}
           to="."
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className={chevronClass} />
         </Link>
 
         <div className="text-sm font-medium px-2">
-          Seite {page} von {totalPages}
+          {page} / {totalPages}
         </div>
 
         {/* Nächste Seite */}
@@ -70,7 +77,7 @@ export function DataTablePagination({
           className={linkStyles(page >= totalPages)}
           to="."
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className={chevronClass} />
         </Link>
 
         {/* Letzte Seite */}
@@ -80,7 +87,7 @@ export function DataTablePagination({
           className={linkStyles(page >= totalPages)}
           to="."
         >
-          <ChevronsRight className="h-4 w-4" />
+          <ChevronLast className={chevronClass} />
         </Link>
       </div>
     </div>
