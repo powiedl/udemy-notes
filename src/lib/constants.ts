@@ -15,3 +15,5 @@ export const NOTE_BODY_SELECTOR =
 export const NOTE_CODE_BLOCK_SELECTOR =
   process.env.NOTE_CODE_BLOCK_SELECTOR ||
   'ud-component--base-components--code-block'
+
+export const ELEMENTS_PER_PAGE = [5, 10, 25, 50, 100, 250, 500]
