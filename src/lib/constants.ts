@@ -1,3 +1,5 @@
+import { ClientLoggingMetadata } from '#/types/api'
+
 export const MAX_FILE_SIZE_UPLOAD = 5 * 1024 * 1024 // 5 MB
 
 // Udemy HTML structure constants
@@ -17,3 +19,8 @@ export const NOTE_CODE_BLOCK_SELECTOR =
   'ud-component--base-components--code-block'
 
 export const ELEMENTS_PER_PAGE = [5, 10, 25, 50, 100, 250, 500]
+
+export const MISSING_COMPONENT_NAME = '<no component provided>'
+export const EMPTY_CLIENT_LOGGING_METADATA: ClientLoggingMetadata = {
+  component: MISSING_COMPONENT_NAME,
+}

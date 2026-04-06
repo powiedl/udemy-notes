@@ -1,9 +1,10 @@
 import { prisma } from '#/db'
+import { ClientLoggingMetadata } from '#/types/api'
 
 export type LogSeverity = 'info' | 'warning' | 'error' | 'critical'
 
 export async function logToDb(params: {
-  component?: string
+  metadata: ClientLoggingMetadata
   serverFunction?: string
   severity: 'info' | 'warning' | 'error' | 'critical'
   message: string
@@ -11,7 +12,7 @@ export async function logToDb(params: {
 }) {
   return await prisma.log.create({
     data: {
-      component: params.component,
+      component: params.metadata.component,
       serverFunction: params.serverFunction,
       severity: params.severity,
       message: params.message,

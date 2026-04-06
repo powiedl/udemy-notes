@@ -16,17 +16,21 @@ Das Log-Modell speichert Fehler zentral in der PostgreSQL/Neon Datenbank. Wir tr
 
 ```prisma
 model Log {
-  id             String   @id @default(uuid())
-  component      String?  // Name der Frontend-Komponente (optional beim Aufruf)
-  serverFunction String?  // Name der Server Function (automatisch durch Wrapper)
-  severity       String?  // 'info' | 'warning' | 'error' | 'critical'
-  message        String?  // Die Fehlermeldung
+  id             String  @id @default(uuid())
+  component      String? // Frontend-Komponente (optional beim Aufruf)
+  serverFunction String? // Name der Server Function (automatisch)
+  severity       String? // info, warning, error, critical
+  message        String? // Fehlermeldung oder Info-Text
 
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("log")
 }
+
 ```
 
 ## Der einheitliche Rückgabetyp

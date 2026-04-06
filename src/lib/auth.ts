@@ -29,6 +29,8 @@ export const auth = betterAuth({
   },
 })
 
+export type Session = typeof auth.$Infer.Session
+
 /*
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'

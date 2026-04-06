@@ -3,7 +3,7 @@ import { authFnMiddleware } from '#/middlewares/auth'
 import { createServerFn } from '@tanstack/react-start'
 import { notFound } from '@tanstack/react-router'
 import z from 'zod'
-import { wrapServerAction } from '#/lib/server-utils'
+import { createServerActionOptions, wrapServerAction } from '#/lib/server-utils'
 import { withLogging } from '#/schemas/api-utils'
 import { PAGINATION_DEFAULTS, paginationSchema } from '#/schemas/search-params'
 
@@ -44,10 +44,11 @@ export const getCoursesFn = createServerFn({ method: 'GET' })
           }),
         ])
         //console.log('totalCount', totalCount)
+        //throw new Error('Testfehler für Logging')
         return { items: courses, totalCount }
       },
       // 3. Zugriff auf die Komponente über loggingMetadata
-      data.loggingMetadata?.component,
+      createServerActionOptions(data.loggingMetadata, context.session),
     )
   })
 
@@ -71,9 +72,10 @@ export const getCourseById = createServerFn({ method: 'GET' })
           include: { notes: { orderBy: { orderInfo: 'desc' } } },
         })
         if (!course) throw notFound()
+        //throw new Error('Testfehler für Logging')
         return course
       },
-      data.loggingMetadata?.component,
+      createServerActionOptions(data.loggingMetadata, context.session),
     )
   })
 
@@ -104,8 +106,9 @@ export const deleteCourseById = createServerFn({ method: 'POST' })
             id: course.id,
           },
         })
+        //throw new Error('Testfehler für Logging')
         return 'Course deleted successfully'
       },
-      data.loggingMetadata?.component,
+      createServerActionOptions(data.loggingMetadata, context.session),
     )
   })

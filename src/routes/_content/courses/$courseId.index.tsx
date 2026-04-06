@@ -13,7 +13,12 @@ type CourseWithNotes = ServerFnData<typeof getCourseById>
 export const Route = createFileRoute('/_content/courses/$courseId/')({
   component: RouteComponent,
   loader: ({ params }) => ({
-    coursePromise: getCourseById({ data: { id: params.courseId } }),
+    coursePromise: getCourseById({
+      data: {
+        id: params.courseId,
+        loggingMetadata: { component: 'CoursePage' },
+      },
+    }),
   }),
   head: () => {
     return {

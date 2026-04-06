@@ -2,7 +2,10 @@
 // import path from 'node:path'
 import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown' // Your existing function
 import { createServerFn } from '@tanstack/react-start'
-import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
+import {
+  EMPTY_CLIENT_LOGGING_METADATA,
+  MAX_FILE_SIZE_UPLOAD,
+} from '#/lib/constants'
 import { authFnMiddleware } from '#/middlewares/auth'
 import { prisma } from '#/db'
 import { Course, Note } from '#/generated/prisma/client'
@@ -11,9 +14,8 @@ import { orderInfo } from '#/lib/udemy'
 import { exportMdFileSchema } from '#/schemas/export-file'
 import { notFound } from '@tanstack/react-router'
 import { processNoteForMarkdown } from '#/lib/export-helper'
-import { wrapServerAction } from '#/lib/server-utils'
+import { createServerActionOptions, wrapServerAction } from '#/lib/server-utils'
 import { withLogging } from '#/schemas/api-utils'
-import { UdNoServerResponse } from '#/types/api'
 
 function checkConflict(
   newNote: ImportNote,
@@ -47,7 +49,7 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
     // 3. NEU: loggingMetadata aus FormData extrahieren
     // Wir schicken es vom Client als JSON-String im Feld 'loggingMetadata'
     const rawLogging = data.get('loggingMetadata')
-    let loggingMetadata
+    let loggingMetadata = EMPTY_CLIENT_LOGGING_METADATA
 
     if (rawLogging && typeof rawLogging === 'string') {
       try {
@@ -58,12 +60,14 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
     }
 
     // Wir geben die Struktur zurück, die unser Handler erwartet
+    //throw new Error('Testfehler - im inputValidator') // im inputValidator geht das Logging noch nicht, weil es ja nur um die Server Action gekapselt ist
     return {
       file,
       loggingMetadata, // Damit data.loggingMetadata im Handler existiert
     }
   })
   .handler(async ({ data, context }) => {
+    const { loggingMetadata } = data
     return await wrapServerAction(
       'importHtmlFile',
       async () => {
@@ -157,6 +161,7 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
           }
         }
         await Promise.all(createdNotes)
+        //throw new Error('Testfehler')
         return {
           originalFileName: file.name,
           size: file.size,
@@ -166,7 +171,7 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
           courseId,
         }
       },
-      data.loggingMetadata?.component,
+      createServerActionOptions(loggingMetadata, context.session),
     )
   })
 
@@ -245,10 +250,10 @@ export const exportMdFile = createServerFn({ method: 'POST' })
         }
         markdown = markdown.replace(/\n\n---\n\n$/, '') // remove the last seperator after the last note (it is not needed)
         // because strings in Javascript are immutable, so we need to reassign the result of the replacement to the original variable
-
+        //throw new Error('Testfehler')
         return { markdown }
       },
-      data.loggingMetadata?.component,
+      createServerActionOptions(data.loggingMetadata, context.session),
     )
     return response
   })

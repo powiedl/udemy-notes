@@ -1,5 +1,5 @@
 import { prisma } from '#/db'
-import { wrapServerAction } from '#/lib/server-utils'
+import { createServerActionOptions, wrapServerAction } from '#/lib/server-utils'
 import { authFnMiddleware } from '#/middlewares/auth'
 import { withLogging } from '#/schemas/api-utils'
 import { createServerFn } from '@tanstack/react-start'
@@ -55,9 +55,10 @@ export const getAvailableTagsFn = createServerFn({ method: 'GET' })
           orderBy: { name: 'asc' },
         })
         //console.log(tags.length)
+        throw new Error('Testfehler')
         return tags
       },
-      data.loggingMetadata?.component,
+      createServerActionOptions(data.loggingMetadata, context.session),
     )
   })
 
@@ -83,9 +84,10 @@ export const deleteTagFn = createServerFn({ method: 'POST' })
         })
 
         if (!tag) throw notFound()
+        throw new Error('Testfehler')
         await prisma.tag.delete({ where: { id, userId } })
         return 'tag deleted successfully'
       },
-      data.loggingMetadata?.component,
+      createServerActionOptions(data.loggingMetadata, context.session),
     )
   })
