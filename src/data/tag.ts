@@ -55,7 +55,7 @@ export const getAvailableTagsFn = createServerFn({ method: 'GET' })
           orderBy: { name: 'asc' },
         })
         //console.log(tags.length)
-        throw new Error('Testfehler')
+        //throw new Error('Testfehler')
         return tags
       },
       createServerActionOptions(data.loggingMetadata, context.session),
@@ -84,7 +84,7 @@ export const deleteTagFn = createServerFn({ method: 'POST' })
         })
 
         if (!tag) throw notFound()
-        throw new Error('Testfehler')
+        //throw new Error('Testfehler')
         await prisma.tag.delete({ where: { id, userId } })
         return 'tag deleted successfully'
       },
