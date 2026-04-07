@@ -83,6 +83,7 @@ model Verification {
 model Course {
   id        String      @id @default(uuid())
   title     String
+  trainer   String?
   userId    String      @map("user_id")
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes     Note[]
