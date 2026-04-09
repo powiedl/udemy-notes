@@ -1,5 +1,10 @@
 import { ActionResponse, ClientLoggingMetadata } from '#/types/api'
 import { logToDb } from '#/lib/logging'
+import {
+  EMPTY_CLIENT_LOGGING_METADATA,
+  SERVER_ERROR_SANITIZED_MESSAGE,
+} from './constants'
+import { Session } from './auth'
 
 /**
  * Eigene Fehlerklasse für Server Actions.
@@ -63,7 +68,14 @@ export async function wrapServerAction<T>(
     // Ansonsten maskieren wir den Fehler aus Sicherheitsgründen.
     return {
       success: false,
-      error: 'An unexpected server error occured',
+      error: SERVER_ERROR_SANITIZED_MESSAGE,
     }
   }
+}
+
+export function createServerActionOptions(
+  metadata = EMPTY_CLIENT_LOGGING_METADATA,
+  session?: Session | null,
+) {
+  return { session: session?.session, metadata }
 }

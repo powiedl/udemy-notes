@@ -5,6 +5,7 @@ import { getCoursesFn } from '#/data/course'
 import { useCourseActions } from '#/hooks/use-course-actions'
 import { cn } from '#/lib/utils'
 import { paginationSchema } from '#/schemas/search-params'
+import { ActionResponse, ServerFnData } from '#/types/api'
 import { createFileRoute, useRouterState } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { Suspense, use, useDeferredValue, useEffect, useState } from 'react'
@@ -20,7 +21,10 @@ export const Route = createFileRoute('/_content/courses/')({
     // Also: { search: { page, pageSize, search } }
     return {
       coursesPromise: getCoursesFn({
-        data: { ...deps.search, loggingMetadata: { component: 'CoursesPage' } },
+        data: {
+          ...deps.search,
+          loggingMetadata: { component: 'CoursesPage' },
+        },
       }),
     }
   },
@@ -44,16 +48,22 @@ function CoursesList({
   page,
   pageSize,
 }: {
-  data: ReturnType<typeof getCoursesFn>
+  data: Promise<ActionResponse<ServerFnData<typeof getCoursesFn>>>
   page: number
   pageSize: number
 }) {
-  const result = use(data)
-  if (!result.success) return <div>Fehler: {result.error}</div>
-  const searchParams = Route.useSearch()
-  const { handleExport, handleDelete } = useCourseActions()
-  // Wir extrahieren Items und totalCount aus deinem neuen Server-Response-Format
+  const result = use(data) // Das Promise wird hier aufgelöst
+  if (!result.success) {
+    return (
+      <div className="p-4 text-destructive bg-destructive/10 rounded-md">
+        Fehler beim Laden der Kurse: {result.error}
+      </div>
+    )
+  }
+
   const { items: courses, totalCount } = result.data
+  const { handleExport, handleDelete } = useCourseActions()
+  const searchParams = Route.useSearch() // searchParams für DataTablePagination
 
   return (
     <div className="space-y-4">

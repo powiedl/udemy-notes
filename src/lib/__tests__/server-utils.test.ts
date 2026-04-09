@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { logToDb } from '#/lib/logging'
 import { ServerActionError, wrapServerAction } from '#/lib/server-utils'
+import { SERVER_ERROR_SANITIZED_MESSAGE } from '../constants'
 
 // Wir mocken die Logging-Funktion, damit kein DB-Zugriff erfolgt
 vi.mock('#/lib/logging', () => ({
@@ -82,7 +83,7 @@ describe('wrapServerAction', () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       // Wichtig: Der User darf den technischen Fehler nicht sehen
-      expect(result.error).toBe('An unexpected server error occured')
+      expect(result.error).toBe(SERVER_ERROR_SANITIZED_MESSAGE)
     }
 
     // Aber im Log muss die Wahrheit stehen
