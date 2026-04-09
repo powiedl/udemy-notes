@@ -1,5 +1,7 @@
 # Leitfaden: Performante Suche & Pagination mit TanStack Start
 
+**Version:** 26.409.1
+
 ## Problembeschreibung
 
 Standard-Implementierungen von Pagination in Client-Side-Apps führen oft zu einer schlechten User Experience:

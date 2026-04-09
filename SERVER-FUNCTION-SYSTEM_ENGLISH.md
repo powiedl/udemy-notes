@@ -2,33 +2,33 @@
 
 **Version:** 26.409.1
 
-Dieses Dokument beschreibt das aktuelle Server Function System im Projekt. Es ist darauf ausgelegt, dass alle Server-Funktionen:
+This document describes the current Server Function System in the project. It is designed so that all server functions:
 
-- einen einheitlichen Rückgabetyp verwenden,
-- Fehler automatisch in die Datenbank loggen,
-- optional Metadaten aus der aufrufenden Komponente unterstützen,
-- und sowohl geschützte als auch öffentliche Server Actions ermöglichen.
+- use a uniform return type,
+- automatically log errors to the database,
+- optionally support metadata from the calling component,
+- and enable both protected and public Server Actions.
 
-Offene Todos:
+Open Todos:
 
-- Wie kann man Fehler im `inputValidator` ebenfalls in die Datenbank loggen? Ohne das wieder in jedem einzelnen `inputValidator` manuell machen zu müssen?
-- `loggingMetaSchema` und `withLogging` haben derzeit noch die component hart codiert. Das sollte ebenfalls auf den Typ `ClientLoggingMetadata` angepasst werden
+- How can errors in the `inputValidator` also be logged to the database without having to do this manually in every single `inputValidator`?
+- `loggingMetaSchema` and `withLogging` currently still have the component hard-coded. This should also be adapted to the `ClientLoggingMetadata` type.
 
 ---
 
-## Das Datenmodell (Prisma)
+## The Data Model (Prisma)
 
-**Datei:** `prisma/schema.prisma`
+**File:** `prisma/schema.prisma`
 
-Das Log-Modell speichert Fehler zentral in der PostgreSQL/Neon Datenbank. Wir trennen `serverFunction` (Name der Logik) und `component` (Ort im UI), um beim Debuggen schnell zu sehen, welcher Flow betroffen war.
+The Log model stores errors centrally in the PostgreSQL/Neon database. We separate `serverFunction` (name of the logic) and `component` (location in the UI) to quickly see which flow was affected during debugging.
 
 ```prisma
 model Log {
   id             String  @id @default(uuid())
-  component      String? // Frontend-Komponente (optional beim Aufruf)
-  serverFunction String? // Name der Server Function (automatisch)
+  component      String? // Frontend component (optional when calling)
+  serverFunction String? // Name of the Server Function (automatic)
   severity       String? // info, warning, error, critical
-  message        String? // Fehlermeldung oder Info-Text
+  message        String? // Error message or info text
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -40,9 +40,9 @@ model Log {
 }
 ```
 
-## Der einheitliche Rückgabetyp
+## The Uniform Return Type
 
-**Datei:** `src/types/api.ts`
+**File:** `src/types/api.ts`
 
 ```typescript
 export type UdNoServerResponse<T> =
@@ -68,9 +68,9 @@ export interface ClientLoggingMetadata {
 }
 ```
 
-## Logging-Metadaten und Validator
+## Logging Metadata and Validator
 
-**Datei:** `src/schemas/api-utils.ts`
+**File:** `src/schemas/api-utils.ts`
 
 ```typescript
 import { z } from 'zod'
@@ -89,13 +89,13 @@ export function withLogging<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
 }
 ```
 
-`withLogging` sorgt dafür, dass ein fehlendes Input-Objekt als `{}` behandelt wird, damit optionale Felder und Defaults weiterhin funktionieren.
+`withLogging` ensures that a missing input object is treated as `{}`, so that optional fields and defaults continue to work.
 
 ## Server Action Wrapper (Logic & Logging)
 
-**Datei:** `src/lib/server-utils.ts`
+**File:** `src/lib/server-utils.ts`
 
-Der Wrapper kapselt die Ausführung der Business-Logik und kümmert sich um das Fehler-Logging.
+The wrapper encapsulates the execution of the business logic and handles error logging.
 
 ```typescript
 export async function wrapPublicServerAction<T>(
@@ -130,18 +130,18 @@ export function createServerActionOptions(
 }
 ```
 
-Wichtige Punkte:
+Important points:
 
-- `wrapServerAction` entscheidet automatisch, ob es sich um eine geschützte oder öffentliche Aktion handelt.
-- Fehler werden mit `logToDb` gespeichert.
-- Bei geschützten Aktionen wird zusätzlich `userId` mitgeloggt.
-- `createServerActionOptions` liefert das gemeinsame Options-Objekt für `wrapServerAction`.
+- `wrapServerAction` automatically decides whether it is a protected or public action.
+- Errors are saved using `logToDb`.
+- For protected actions, the `userId` is also logged.
+- `createServerActionOptions` provides the shared options object for `wrapServerAction`.
 
-## Server Functions im aktuellen Code
+## Server Functions in current code
 
-**Datei:** `src/data/course.ts`
+**File:** `src/data/course.ts`
 
-### Beispiel: `getCoursesFn`
+### Example: `getCoursesFn`
 
 ```typescript
 export const getCoursesFn = createServerFn({ method: 'GET' })
@@ -167,7 +167,7 @@ export const getCoursesFn = createServerFn({ method: 'GET' })
   })
 ```
 
-### Beispiel: `getCourseById`
+### Example: `getCourseById`
 
 ```typescript
 export const getCourseById = createServerFn({ method: 'GET' })
@@ -190,13 +190,13 @@ export const getCourseById = createServerFn({ method: 'GET' })
   })
 ```
 
-`createServerActionOptions` stellt hier sicher, dass die `loggingMetadata` aus dem Request zusammen mit der Session weitergereicht wird.
+`createServerActionOptions` ensures here that the `loggingMetadata` from the request is passed along with the session.
 
-## Import einer HTML-Datei mit `FormData`
+## Import an HTML file with `FormData`
 
-**Datei:** `src/data/import-export.ts`
+**File:** `src/data/import-export.ts`
 
-Aktuell wird für den HTML-Import `FormData` erwartet und `loggingMetadata` aus dem FormData-Body extrahiert.
+Currently, `FormData` is expected for the HTML import and `loggingMetadata` is extracted from the FormData body.
 
 ```typescript
 .inputValidator(async (data: unknown) => {
@@ -218,7 +218,7 @@ Aktuell wird für den HTML-Import `FormData` erwartet und `loggingMetadata` aus 
     try {
       loggingMetadata = JSON.parse(rawLogging)
     } catch (e) {
-      // invalid JSON wird ignoriert
+      // invalid JSON is ignored
     }
   }
 
@@ -229,23 +229,23 @@ Aktuell wird für den HTML-Import `FormData` erwartet und `loggingMetadata` aus 
 })
 ```
 
-Im Handler wird die eigentliche Import-Logik dann mit `wrapServerAction` ausgeführt:
+In the handler, the actual import logic is then executed with `wrapServerAction`:
 
 ```typescript
 return await wrapServerAction(
   'importHtmlFile',
   async () => {
-    // ... Import- und Prisma-Logik ...
+    // ... Import and Prisma logic ...
   },
   createServerActionOptions(loggingMetadata, context.session),
 )
 ```
 
-Damit wird sichergestellt, dass auch Upload-Server-Funktionen konsistente Logging-Metadaten und Fehler-Antworten liefern.
+This ensures that upload server functions also provide consistent logging metadata and error responses.
 
-## Hinweis zu `loggingMetadata`
+## Note on `loggingMetadata`
 
-Das Projekt nutzt zusätzlich in `src/lib/constants.ts`:
+The project also uses the following in `src/lib/constants.ts`:
 
 ```typescript
 export const MISSING_COMPONENT_NAME = '<no component provided>'
@@ -254,4 +254,4 @@ export const EMPTY_CLIENT_LOGGING_METADATA: ClientLoggingMetadata = {
 }
 ```
 
-Das bedeutet: Wenn keine Komponente mitgesendet wurde, wird trotzdem ein Platzhalter-Name geloggt, damit alle Logs einen `component`-Wert besitzen.
+This means: if no component was sent, a placeholder name is still logged so that all logs have a `component` value.
