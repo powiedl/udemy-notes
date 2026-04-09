@@ -24,3 +24,6 @@ export const MISSING_COMPONENT_NAME = '<no component provided>'
 export const EMPTY_CLIENT_LOGGING_METADATA: ClientLoggingMetadata = {
   component: MISSING_COMPONENT_NAME,
 }
+
+export const SERVER_ERROR_SANITIZED_MESSAGE =
+  'POWIDL - An unexpected Server error occured ...'
