@@ -17,8 +17,10 @@ export type ExtractData<T> = T extends { success: true; data: infer D }
 export type ServerFnData<T extends (...args: any) => Promise<any>> =
   ExtractData<Awaited<ReturnType<T>>>
 
-export interface ClientLoggingMetadata {
-  component?: string
-  // Hier könnten später weitere Felder wie 'feature' oder 'version' dazukommen
-  feature?: string
-}
+// Re-Export des ClientLoggingMetadata-Typs aus dem Schema
+export type { ClientLoggingMetadata } from '#/schemas/api-utils'
+
+// Globaler Typ für allgemeine Action-Antworten
+export type ActionResponse<T = void> =
+  | { success: true; data: T; message?: string }
+  | { success: false; error: string }

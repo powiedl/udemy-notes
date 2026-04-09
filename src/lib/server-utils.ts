@@ -1,4 +1,5 @@
-import { ClientLoggingMetadata, UdNoServerResponse } from '#/types/api'
+import { UdNoServerResponse } from '#/types/api'
+import { ClientLoggingMetadata } from '#/schemas/api-utils'
 import { Session } from './auth'
 import {
   EMPTY_CLIENT_LOGGING_METADATA,
