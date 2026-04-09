@@ -5,37 +5,16 @@ import { notFound } from '@tanstack/react-router'
 import z from 'zod'
 import { ServerActionError, wrapServerAction } from '#/lib/server-utils'
 import { withLogging } from '#/schemas/api-utils'
-import { PAGINATION_DEFAULTS, paginationSchema } from '#/schemas/search-params'
+import { paginationSchema } from '#/schemas/search-params'
 
-const getCoursesSchema = withLogging(
-  z.object({
-    // Falls du Filter hast, kommen sie hier rein, z.B.:
-    // searchTerm: z.string().optional()
-    page: z
-      .number()
-      .catch(PAGINATION_DEFAULTS.page)
-      .default(PAGINATION_DEFAULTS.page),
-    pageSize: z
-      .number()
-      .catch(PAGINATION_DEFAULTS.pageSize)
-      .default(PAGINATION_DEFAULTS.pageSize),
-    search: z
-      .string()
-      .catch(PAGINATION_DEFAULTS.search)
-      .default(PAGINATION_DEFAULTS.search),
-  }),
-)
+// Wir nutzen das zentrale paginationSchema und reichern es mit Logging-Metadaten an.
+const getCoursesSchema = withLogging(paginationSchema)
 
 export const getCoursesFn = createServerFn({ method: 'GET' })
   .middleware([authFnMiddleware])
   .inputValidator(getCoursesSchema)
   .handler(async ({ data, context }) => {
-    //console.log('getCoursesFn,data', data)
-    const {
-      page = PAGINATION_DEFAULTS.page,
-      pageSize = PAGINATION_DEFAULTS.pageSize,
-      search = PAGINATION_DEFAULTS.search,
-    } = data
+    const { page, pageSize, search } = data
     return await wrapServerAction('getCoursesFn', context, data, async () => {
       const skip = (page - 1) * pageSize
       const take = pageSize

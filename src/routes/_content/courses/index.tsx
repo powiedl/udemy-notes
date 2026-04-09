@@ -6,8 +6,7 @@ import { useCourseActions } from '#/hooks/use-course-actions'
 import { cn } from '#/lib/utils'
 import { paginationSchema } from '#/schemas/search-params'
 import { ActionResponse, ServerFnData } from '#/types/api'
-import { createFileRoute, useRouterState } from '@tanstack/react-router'
-import { Loader2 } from 'lucide-react'
+import { createFileRoute, Link, useRouterState } from '@tanstack/react-router'
 import { Suspense, use, useDeferredValue, useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/_content/courses/')({
@@ -28,12 +27,6 @@ export const Route = createFileRoute('/_content/courses/')({
       }),
     }
   },
-  // E. (Optional) Eine Pending-Component für das ALLERERSTE Laden
-  pendingComponent: () => (
-    <div className="flex h-full items-center justify-center">
-      <Loader2 className="animate-spin size-12 text-primary" />
-    </div>
-  ),
   head: () => ({
     meta: [
       {
@@ -64,6 +57,17 @@ function CoursesList({
   const { items: courses, totalCount } = result.data
   const { handleExport, handleDelete } = useCourseActions()
   const searchParams = Route.useSearch() // searchParams für DataTablePagination
+
+  if (totalCount === 0) {
+    return (
+      <div className="p-4 text-center">
+        You don't have any courses yet.{' '}
+        <Link to="/courses/import" className="text-primary hover:underline">
+          Start by importing your first course
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
