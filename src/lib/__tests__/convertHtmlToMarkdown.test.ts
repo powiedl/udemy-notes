@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { prepareAndConvertHtmlToMarkdown } from './convertHtmlToMarkdown'
+import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown'
 import * as CONSTANTS from '#/lib/constants'
 
 describe('prepareAndConvertHtmlToMarkdown', () => {
