@@ -30,6 +30,8 @@ export type LogMinAggregateOutputType = {
   serverFunction: string | null
   severity: string | null
   message: string | null
+  feature: string | null
+  actionSource: string | null
   userId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -41,6 +43,8 @@ export type LogMaxAggregateOutputType = {
   serverFunction: string | null
   severity: string | null
   message: string | null
+  feature: string | null
+  actionSource: string | null
   userId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -52,6 +56,8 @@ export type LogCountAggregateOutputType = {
   serverFunction: number
   severity: number
   message: number
+  feature: number
+  actionSource: number
   userId: number
   createdAt: number
   updatedAt: number
@@ -65,6 +71,8 @@ export type LogMinAggregateInputType = {
   serverFunction?: true
   severity?: true
   message?: true
+  feature?: true
+  actionSource?: true
   userId?: true
   createdAt?: true
   updatedAt?: true
@@ -76,6 +84,8 @@ export type LogMaxAggregateInputType = {
   serverFunction?: true
   severity?: true
   message?: true
+  feature?: true
+  actionSource?: true
   userId?: true
   createdAt?: true
   updatedAt?: true
@@ -87,6 +97,8 @@ export type LogCountAggregateInputType = {
   serverFunction?: true
   severity?: true
   message?: true
+  feature?: true
+  actionSource?: true
   userId?: true
   createdAt?: true
   updatedAt?: true
@@ -171,6 +183,8 @@ export type LogGroupByOutputType = {
   serverFunction: string | null
   severity: string | null
   message: string | null
+  feature: string | null
+  actionSource: string | null
   userId: string | null
   createdAt: Date
   updatedAt: Date
@@ -203,6 +217,8 @@ export type LogWhereInput = {
   serverFunction?: Prisma.StringNullableFilter<"Log"> | string | null
   severity?: Prisma.StringNullableFilter<"Log"> | string | null
   message?: Prisma.StringNullableFilter<"Log"> | string | null
+  feature?: Prisma.StringNullableFilter<"Log"> | string | null
+  actionSource?: Prisma.StringNullableFilter<"Log"> | string | null
   userId?: Prisma.StringNullableFilter<"Log"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Log"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Log"> | Date | string
@@ -215,6 +231,8 @@ export type LogOrderByWithRelationInput = {
   serverFunction?: Prisma.SortOrderInput | Prisma.SortOrder
   severity?: Prisma.SortOrderInput | Prisma.SortOrder
   message?: Prisma.SortOrderInput | Prisma.SortOrder
+  feature?: Prisma.SortOrderInput | Prisma.SortOrder
+  actionSource?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -230,6 +248,8 @@ export type LogWhereUniqueInput = Prisma.AtLeast<{
   serverFunction?: Prisma.StringNullableFilter<"Log"> | string | null
   severity?: Prisma.StringNullableFilter<"Log"> | string | null
   message?: Prisma.StringNullableFilter<"Log"> | string | null
+  feature?: Prisma.StringNullableFilter<"Log"> | string | null
+  actionSource?: Prisma.StringNullableFilter<"Log"> | string | null
   userId?: Prisma.StringNullableFilter<"Log"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Log"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Log"> | Date | string
@@ -242,6 +262,8 @@ export type LogOrderByWithAggregationInput = {
   serverFunction?: Prisma.SortOrderInput | Prisma.SortOrder
   severity?: Prisma.SortOrderInput | Prisma.SortOrder
   message?: Prisma.SortOrderInput | Prisma.SortOrder
+  feature?: Prisma.SortOrderInput | Prisma.SortOrder
+  actionSource?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -259,6 +281,8 @@ export type LogScalarWhereWithAggregatesInput = {
   serverFunction?: Prisma.StringNullableWithAggregatesFilter<"Log"> | string | null
   severity?: Prisma.StringNullableWithAggregatesFilter<"Log"> | string | null
   message?: Prisma.StringNullableWithAggregatesFilter<"Log"> | string | null
+  feature?: Prisma.StringNullableWithAggregatesFilter<"Log"> | string | null
+  actionSource?: Prisma.StringNullableWithAggregatesFilter<"Log"> | string | null
   userId?: Prisma.StringNullableWithAggregatesFilter<"Log"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Log"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Log"> | Date | string
@@ -270,6 +294,8 @@ export type LogCreateInput = {
   serverFunction?: string | null
   severity?: string | null
   message?: string | null
+  feature?: string | null
+  actionSource?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user?: Prisma.UserCreateNestedOneWithoutLogsInput
@@ -281,6 +307,8 @@ export type LogUncheckedCreateInput = {
   serverFunction?: string | null
   severity?: string | null
   message?: string | null
+  feature?: string | null
+  actionSource?: string | null
   userId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -292,6 +320,8 @@ export type LogUpdateInput = {
   serverFunction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneWithoutLogsNestedInput
@@ -303,6 +333,8 @@ export type LogUncheckedUpdateInput = {
   serverFunction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -314,6 +346,8 @@ export type LogCreateManyInput = {
   serverFunction?: string | null
   severity?: string | null
   message?: string | null
+  feature?: string | null
+  actionSource?: string | null
   userId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -325,6 +359,8 @@ export type LogUpdateManyMutationInput = {
   serverFunction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -335,6 +371,8 @@ export type LogUncheckedUpdateManyInput = {
   serverFunction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -356,6 +394,8 @@ export type LogCountOrderByAggregateInput = {
   serverFunction?: Prisma.SortOrder
   severity?: Prisma.SortOrder
   message?: Prisma.SortOrder
+  feature?: Prisma.SortOrder
+  actionSource?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -367,6 +407,8 @@ export type LogMaxOrderByAggregateInput = {
   serverFunction?: Prisma.SortOrder
   severity?: Prisma.SortOrder
   message?: Prisma.SortOrder
+  feature?: Prisma.SortOrder
+  actionSource?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -378,6 +420,8 @@ export type LogMinOrderByAggregateInput = {
   serverFunction?: Prisma.SortOrder
   severity?: Prisma.SortOrder
   message?: Prisma.SortOrder
+  feature?: Prisma.SortOrder
+  actionSource?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -431,6 +475,8 @@ export type LogCreateWithoutUserInput = {
   serverFunction?: string | null
   severity?: string | null
   message?: string | null
+  feature?: string | null
+  actionSource?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -441,6 +487,8 @@ export type LogUncheckedCreateWithoutUserInput = {
   serverFunction?: string | null
   severity?: string | null
   message?: string | null
+  feature?: string | null
+  actionSource?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -480,6 +528,8 @@ export type LogScalarWhereInput = {
   serverFunction?: Prisma.StringNullableFilter<"Log"> | string | null
   severity?: Prisma.StringNullableFilter<"Log"> | string | null
   message?: Prisma.StringNullableFilter<"Log"> | string | null
+  feature?: Prisma.StringNullableFilter<"Log"> | string | null
+  actionSource?: Prisma.StringNullableFilter<"Log"> | string | null
   userId?: Prisma.StringNullableFilter<"Log"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Log"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Log"> | Date | string
@@ -491,6 +541,8 @@ export type LogCreateManyUserInput = {
   serverFunction?: string | null
   severity?: string | null
   message?: string | null
+  feature?: string | null
+  actionSource?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -501,6 +553,8 @@ export type LogUpdateWithoutUserInput = {
   serverFunction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -511,6 +565,8 @@ export type LogUncheckedUpdateWithoutUserInput = {
   serverFunction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -521,6 +577,8 @@ export type LogUncheckedUpdateManyWithoutUserInput = {
   serverFunction?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   severity?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   message?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  feature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  actionSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -533,6 +591,8 @@ export type LogSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   serverFunction?: boolean
   severity?: boolean
   message?: boolean
+  feature?: boolean
+  actionSource?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -545,6 +605,8 @@ export type LogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extension
   serverFunction?: boolean
   severity?: boolean
   message?: boolean
+  feature?: boolean
+  actionSource?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -557,6 +619,8 @@ export type LogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extension
   serverFunction?: boolean
   severity?: boolean
   message?: boolean
+  feature?: boolean
+  actionSource?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -569,12 +633,14 @@ export type LogSelectScalar = {
   serverFunction?: boolean
   severity?: boolean
   message?: boolean
+  feature?: boolean
+  actionSource?: boolean
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type LogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "component" | "serverFunction" | "severity" | "message" | "userId" | "createdAt" | "updatedAt", ExtArgs["result"]["log"]>
+export type LogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "component" | "serverFunction" | "severity" | "message" | "feature" | "actionSource" | "userId" | "createdAt" | "updatedAt", ExtArgs["result"]["log"]>
 export type LogInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.Log$userArgs<ExtArgs>
 }
@@ -596,6 +662,8 @@ export type $LogPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     serverFunction: string | null
     severity: string | null
     message: string | null
+    feature: string | null
+    actionSource: string | null
     userId: string | null
     createdAt: Date
     updatedAt: Date
@@ -1028,6 +1096,8 @@ export interface LogFieldRefs {
   readonly serverFunction: Prisma.FieldRef<"Log", 'String'>
   readonly severity: Prisma.FieldRef<"Log", 'String'>
   readonly message: Prisma.FieldRef<"Log", 'String'>
+  readonly feature: Prisma.FieldRef<"Log", 'String'>
+  readonly actionSource: Prisma.FieldRef<"Log", 'String'>
   readonly userId: Prisma.FieldRef<"Log", 'String'>
   readonly createdAt: Prisma.FieldRef<"Log", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Log", 'DateTime'>
