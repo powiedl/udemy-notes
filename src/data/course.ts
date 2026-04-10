@@ -1,7 +1,6 @@
 import { prisma } from '#/db'
 import { authFnMiddleware } from '#/middlewares/auth'
 import { createServerFn } from '@tanstack/react-start'
-import { notFound } from '@tanstack/react-router'
 import z from 'zod'
 import { ServerActionError, wrapServerAction } from '#/lib/server-utils'
 import { withLogging } from '#/schemas/api-utils'

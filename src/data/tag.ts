@@ -1,9 +1,8 @@
 import { prisma } from '#/db'
-import { wrapServerAction } from '#/lib/server-utils'
+import { wrapServerAction, ServerActionError } from '#/lib/server-utils'
 import { authFnMiddleware } from '#/middlewares/auth'
 import { withLogging } from '#/schemas/api-utils'
 import { createServerFn } from '@tanstack/react-start'
-import { notFound } from '@tanstack/react-router'
 import z from 'zod'
 
 const defaultTags = [
@@ -20,25 +19,28 @@ const defaultTags = [
   'nest-js',
 ]
 
-export const createDefaultTags = createServerFn({ method: 'POST' }).handler(
-  async () => {
-    const data = defaultTags.map((t) => ({
-      name: t,
-    }))
-    await prisma.tag.createMany({ data, skipDuplicates: true })
-  },
-)
+export const createDefaultTags = createServerFn({ method: 'POST' })
+  .middleware([authFnMiddleware])
+  // Kein Validator nötig, da diese Action keine Parameter braucht
+  .handler(async ({ context }) => {
+    return await wrapServerAction(
+      'createDefaultTags',
+      context,
+      {},
+      async () => {
+        const data = defaultTags.map((t) => ({
+          name: t,
+        }))
+        await prisma.tag.createMany({ data, skipDuplicates: true })
+        return { success: true }
+      },
+    )
+  })
 
 export const getAvailableTagsFn = createServerFn({ method: 'GET' })
   .middleware([authFnMiddleware])
-  .inputValidator((d: unknown) => {
-    // Wir stellen sicher, dass d mindestens ein leeres Objekt ist,
-    // damit die inneren Zod-Defaults (query: '') greifen,
-    // selbst wenn die Server Function ohne 'data' aufgerufen wurde.
-    return withLogging(z.object({ query: z.string().default('') })).parse(
-      d ?? {},
-    )
-  })
+  // DIREKTE Übergabe, damit der Client den Typ kennt!
+  .inputValidator(withLogging(z.object({ query: z.string().default('') })))
   .handler(async ({ data, context }) => {
     return await wrapServerAction(
       'getAvailableTags',
@@ -56,8 +58,6 @@ export const getAvailableTagsFn = createServerFn({ method: 'GET' })
           },
           orderBy: { name: 'asc' },
         })
-        //console.log(tags.length)
-        //throw new Error('Testfehler')
         return tags
       },
     )
@@ -65,12 +65,7 @@ export const getAvailableTagsFn = createServerFn({ method: 'GET' })
 
 export const deleteTagFn = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
-  .inputValidator((d: unknown) => {
-    // Wir stellen sicher, dass d mindestens ein leeres Objekt ist,
-    // damit die inneren Zod-Defaults (query: '') greifen,
-    // selbst wenn die Server Function ohne 'data' aufgerufen wurde.
-    return withLogging(z.object({ id: z.string() })).parse(d ?? {})
-  })
+  .inputValidator(withLogging(z.object({ id: z.string() })))
   .handler(async ({ data, context }) => {
     return await wrapServerAction('deleteTagFn', context, data, async () => {
       const userId = context.session.user.id
@@ -82,8 +77,9 @@ export const deleteTagFn = createServerFn({ method: 'POST' })
         },
       })
 
-      if (!tag) throw notFound()
-      //throw new Error('Testfehler')
+      // Client-freundlicher Fehler statt 404 Page-Redirect
+      if (!tag) throw new ServerActionError('Tag konnte nicht gefunden werden.')
+
       await prisma.tag.delete({ where: { id, userId } })
       return 'tag deleted successfully'
     })

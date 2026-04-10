@@ -17,9 +17,10 @@ export interface NavAdminProps {
     callback: Function
     icon: LucideIcon
   }[]
+  isPending: boolean
 }
 
-export function NavAdmin({ items }: NavAdminProps) {
+export function NavAdmin({ items, isPending }: NavAdminProps) {
   return (
     <SidebarGroup>
       <SidebarGroupContent>
@@ -34,7 +35,11 @@ export function NavAdmin({ items }: NavAdminProps) {
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild size="sm">
-                      <Button type="button" onClick={() => item.callback()}>
+                      <Button
+                        type="button"
+                        onClick={() => item.callback()}
+                        disabled={isPending}
+                      >
                         <item.icon />
                         <span>{item.title}</span>
                       </Button>

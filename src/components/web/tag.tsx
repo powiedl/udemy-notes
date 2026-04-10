@@ -6,7 +6,7 @@ import { useServerFn } from '@tanstack/react-start'
 import { useTransition } from 'react'
 import { Button } from '../ui/button'
 import { cn } from '#/lib/utils'
-import { toast } from 'sonner'
+import { handleAction } from '#/lib/client-utils'
 
 const Tag = ({
   tag,
@@ -24,14 +24,11 @@ const Tag = ({
   const handleDeleteTag = async (id: string) => {
     startDeleteTransition(async () => {
       try {
-        await deleteTag({ data: { id, loggingMetadata } })
+        await handleAction(deleteTag({ data: { id, loggingMetadata } }), {
+          successToast: 'Tag deleted successfully',
+        })
       } catch (error) {
-        if (error instanceof Error) toast.error(error.message)
-        else if (typeof error === 'string') toast.error(error)
-        else
-          toast.error(
-            'Something unexpected happened while trying to delete the tag',
-          )
+        // Fehler wurde bereits durch handleAction via Toast gemeldet
       }
     })
   }
