@@ -22,6 +22,19 @@ export const paginationSchema = z.object({
     .default(PAGINATION_DEFAULTS.search),
 })
 
+// Für Tags eigene Defaults (pageSize)
+export const TAG_PAGINATION_DEFAULTS = {
+  ...PAGINATION_DEFAULTS,
+  pageSize: 10,
+} as const
+
+export const tagPaginationSchema = paginationSchema.extend({
+  pageSize: z.coerce
+    .number()
+    .catch(TAG_PAGINATION_DEFAULTS.pageSize)
+    .default(TAG_PAGINATION_DEFAULTS.pageSize),
+})
+
 // Spezifisch für Notizen (erweitert Basis)
 export const notesSearchSchema = paginationSchema.extend({
   tagIds: z.array(z.string()).optional(),

@@ -3,6 +3,10 @@ import { wrapServerAction, ServerActionError } from '#/lib/server-utils'
 import { authFnMiddleware } from '#/middlewares/auth'
 import { withLogging } from '#/schemas/api-utils'
 import { createServerFn } from '@tanstack/react-start'
+import {
+  TAG_PAGINATION_DEFAULTS,
+  tagPaginationSchema,
+} from '#/schemas/search-params'
 import z from 'zod'
 
 const defaultTags = [
@@ -39,8 +43,10 @@ export const createDefaultTags = createServerFn({ method: 'POST' })
 
 export const getAvailableTagsFn = createServerFn({ method: 'GET' })
   .middleware([authFnMiddleware])
-  // DIREKTE Übergabe, damit der Client den Typ kennt!
-  .inputValidator(withLogging(z.object({ query: z.string().default('') })))
+  .inputValidator(
+    // Wir nutzen unser Standard-Schema und geben ihm die globalen Defaults als Fallback für den leeren Aufruf
+    withLogging(tagPaginationSchema).default(TAG_PAGINATION_DEFAULTS),
+  )
   .handler(async ({ data, context }) => {
     return await wrapServerAction(
       'getAvailableTags',
@@ -48,17 +54,31 @@ export const getAvailableTagsFn = createServerFn({ method: 'GET' })
       data,
       async () => {
         const userId = context.session.user.id
-        const { query } = data
-        const tags = await prisma.tag.findMany({
-          where: {
-            OR: [
-              { userId: null, name: { contains: query } },
-              { userId: userId, name: { contains: query } },
-            ],
-          },
-          orderBy: { name: 'asc' },
-        })
-        return tags
+        // Jetzt heißen die Parameter exakt wie im Leitfaden!
+        const { search, page, pageSize } = data
+        const skip = (page - 1) * pageSize
+
+        const whereClause = {
+          OR: [
+            { userId: null, name: { contains: search } }, // Globale Tags
+            { userId: userId, name: { contains: search } }, // Eigene Tags
+          ],
+        }
+
+        // Parallel laden für maximale Performance (wie bei den Kursen)
+        const [items, totalCount] = await Promise.all([
+          prisma.tag.findMany({
+            where: whereClause,
+            orderBy: { name: 'asc' },
+            skip,
+            take: pageSize,
+          }),
+          prisma.tag.count({
+            where: whereClause,
+          }),
+        ])
+
+        return { items, totalCount }
       },
     )
   })

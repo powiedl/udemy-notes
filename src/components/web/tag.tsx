@@ -11,7 +11,7 @@ import { handleAction } from '#/lib/client-utils'
 const Tag = ({
   tag,
 }: {
-  tag: ServerFnData<typeof getAvailableTagsFn>[number]
+  tag: ServerFnData<typeof getAvailableTagsFn>['items'][number]
 }) => {
   const deleteTag = useServerFn(deleteTagFn)
   const [isDeleting, startDeleteTransition] = useTransition()
