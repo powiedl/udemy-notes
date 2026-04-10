@@ -14,6 +14,8 @@ export class ServerActionError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'ServerActionError'
+    // WICHTIG: Repariert instanceof in kompiliertem JS
+    Object.setPrototypeOf(this, ServerActionError.prototype)
   }
 }
 

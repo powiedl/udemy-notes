@@ -19,7 +19,7 @@ export function useCourseActions() {
           data: {
             id,
             loggingMetadata: {
-              component: 'CourseCard',
+              //component: 'CourseCard',
               actionSource: 'DeleteButton',
             },
           },
@@ -30,7 +30,7 @@ export function useCourseActions() {
     } catch (error) {
       // Der Fehler wurde bereits von handleAction via Toast gemeldet.
       // Hier fangen wir ihn nur ab, damit der Hook nicht abstürzt.
-      console.error('Löschvorgang abgebrochen:', error)
+      //console.error('Löschvorgang abgebrochen:', error)
     }
   }
   const handleExport = async (courseId: string) => {
@@ -77,7 +77,7 @@ export function useCourseActions() {
 
       toast.success('Download gestartet!', { id: toastId })
     } catch (e: any) {
-      console.error('Export Error:', e)
+      //console.error('Export Error:', e)
       toast.error(e.message || 'Export fehlgeschlagen', { id: toastId })
     }
   }

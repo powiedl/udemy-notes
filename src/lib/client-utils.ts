@@ -1,6 +1,14 @@
 import { toast } from 'sonner'
 import { ActionResponse } from '#/types/api'
 
+export class ActionAbortedError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ActionAbortedError'
+    Object.setPrototypeOf(this, ActionAbortedError.prototype)
+  }
+}
+
 /**
  * Optionen für die handleAction-Funktion, um das Verhalten von Toasts anzupassen.
  */
@@ -31,7 +39,7 @@ export async function handleAction<T>(
 
   if (!result.success) {
     if (showErrorToast) toast.error(options?.errorToast || result.error)
-    throw new Error(result.error)
+    throw new ActionAbortedError(result.error)
   } else {
     if (showSuccessToast && (options?.successToast || result.message))
       toast.success(options?.successToast || result.message)
