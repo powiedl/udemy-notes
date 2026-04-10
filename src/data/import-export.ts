@@ -14,8 +14,8 @@ import { orderInfo } from '#/lib/udemy'
 import { exportMdFileSchema } from '#/schemas/export-file'
 import { notFound } from '@tanstack/react-router'
 import { processNoteForMarkdown } from '#/lib/export-helper'
-import { createServerActionOptions, wrapServerAction } from '#/lib/server-utils'
-import { withLogging } from '#/schemas/api-utils'
+import { ServerActionError, wrapServerAction } from '#/lib/server-utils'
+import { withLogging, clientLoggingMetadataSchema } from '#/schemas/api-utils'
 
 function checkConflict(
   newNote: ImportNote,
@@ -40,10 +40,10 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
     // 2. Datei extrahieren & validieren (wie bisher)
     const file = data.get('file') as File
     if (!file || file.type !== 'text/html') {
-      throw new Error('Only HTML files are allowed.')
+      throw new ServerActionError('Only HTML files are allowed.')
     }
-    if (file.size > /*1000 */ MAX_FILE_SIZE_UPLOAD) {
-      throw new Error('File too large.')
+    if (file.size > /*1000*/ MAX_FILE_SIZE_UPLOAD) {
+      throw new ServerActionError('File too large.')
     }
 
     // 3. NEU: loggingMetadata aus FormData extrahieren
@@ -53,7 +53,8 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
 
     if (rawLogging && typeof rawLogging === 'string') {
       try {
-        loggingMetadata = JSON.parse(rawLogging)
+        const parsedJson = JSON.parse(rawLogging)
+        loggingMetadata = clientLoggingMetadataSchema.parse(parsedJson)
       } catch (e) {
         // Falls JSON-Parse fehlschlägt, ignorieren wir es oder setzen Default
       }
@@ -67,193 +68,184 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
     }
   })
   .handler(async ({ data, context }) => {
-    const { loggingMetadata } = data
-    return await wrapServerAction(
-      'importHtmlFile',
-      async () => {
-        const userId = context.session.user.id
-        const { file } = data
-        const timestamp = Date.now()
+    return await wrapServerAction('importHtmlFile', context, data, async () => {
+      const userId = context.session.user.id
+      const { file } = data
+      const timestamp = Date.now()
 
-        // --- DEINE BESTEHENDE LOGIK (Buffer, Prisma, etc.) ---
-        const buffer = Buffer.from(await file.arrayBuffer())
-        const htmlContent = buffer.toString('utf8')
-        const conversionResult = prepareAndConvertHtmlToMarkdown(htmlContent)
+      // --- DEINE BESTEHENDE LOGIK (Buffer, Prisma, etc.) ---
+      const buffer = Buffer.from(await file.arrayBuffer())
+      const htmlContent = buffer.toString('utf8')
+      const conversionResult = prepareAndConvertHtmlToMarkdown(htmlContent)
 
-        if (conversionResult.status === 'ERROR')
-          throw new Error(conversionResult.message)
-        const { course, markdown } = conversionResult
+      if (conversionResult.status === 'ERROR')
+        throw new Error(conversionResult.message)
+      const { course, markdown } = conversionResult
 
-        const existingCourse = await prisma.course.findFirst({
-          where: { userId: userId, title: course.title },
+      const existingCourse = await prisma.course.findFirst({
+        where: { userId: userId, title: course.title },
+      })
+      let finishedCourse: Course
+      let existingNotes
+      let courseId: string
+      if (existingCourse) {
+        courseId = existingCourse.id
+        existingNotes = await prisma.note.findMany({
+          where: { courseId: existingCourse.id },
         })
-        let finishedCourse: Course
-        let existingNotes
-        let courseId: string
-        if (existingCourse) {
-          courseId = existingCourse.id
-          existingNotes = await prisma.note.findMany({
-            where: { courseId: existingCourse.id },
-          })
-          finishedCourse = await prisma.course.update({
-            where: {
-              id: existingCourse.id,
-            },
-            data: {
-              title: course.title,
-            },
-          })
+        finishedCourse = await prisma.course.update({
+          where: {
+            id: existingCourse.id,
+          },
+          data: {
+            title: course.title,
+          },
+        })
+      } else {
+        finishedCourse = await prisma.course.create({
+          data: {
+            title: course.title,
+            userId: userId,
+          },
+        })
+        courseId = finishedCourse.id
+      }
+      const createdNotes = []
+      let numberOfConflicts = 0
+      for (let note of course.notes) {
+        const existingNote =
+          existingNotes &&
+          existingNotes.find(
+            (n) =>
+              n.timestamp === note.timestamp &&
+              n.section === note.section &&
+              n.lecture === note.lecture,
+          )
+        if (existingNote) {
+          const conflict = checkConflict(note, existingNote)
+          if (conflict) numberOfConflicts++
+          createdNotes.push(
+            prisma.note.update({
+              where: { id: existingNote.id },
+              data: {
+                hasConflict: conflict,
+                originalContent: note.content,
+                orderInfo: orderInfo(
+                  note.section,
+                  note.lecture,
+                  note.timestamp,
+                ),
+              },
+            }),
+          )
         } else {
-          finishedCourse = await prisma.course.create({
-            data: {
-              title: course.title,
-              userId: userId,
-            },
-          })
-          courseId = finishedCourse.id
+          createdNotes.push(
+            prisma.note.create({
+              data: {
+                courseId: finishedCourse.id,
+                userId,
+                timestamp: note.timestamp,
+                section: note.section,
+                lecture: note.lecture,
+                originalContent: note.content,
+                orderInfo: orderInfo(
+                  note.section,
+                  note.lecture,
+                  note.timestamp,
+                ),
+              },
+            }),
+          )
         }
-        const createdNotes = []
-        let numberOfConflicts = 0
-        for (let note of course.notes) {
-          const existingNote =
-            existingNotes &&
-            existingNotes.find(
-              (n) =>
-                n.timestamp === note.timestamp &&
-                n.section === note.section &&
-                n.lecture === note.lecture,
-            )
-          if (existingNote) {
-            const conflict = checkConflict(note, existingNote)
-            if (conflict) numberOfConflicts++
-            createdNotes.push(
-              prisma.note.update({
-                where: { id: existingNote.id },
-                data: {
-                  hasConflict: conflict,
-                  originalContent: note.content,
-                  orderInfo: orderInfo(
-                    note.section,
-                    note.lecture,
-                    note.timestamp,
-                  ),
-                },
-              }),
-            )
-          } else {
-            createdNotes.push(
-              prisma.note.create({
-                data: {
-                  courseId: finishedCourse.id,
-                  userId,
-                  timestamp: note.timestamp,
-                  section: note.section,
-                  lecture: note.lecture,
-                  originalContent: note.content,
-                  orderInfo: orderInfo(
-                    note.section,
-                    note.lecture,
-                    note.timestamp,
-                  ),
-                },
-              }),
-            )
-          }
-        }
-        await Promise.all(createdNotes)
-        //throw new Error('Testfehler')
-        return {
-          originalFileName: file.name,
-          size: file.size,
-          timestamp,
-          markdownContent: markdown,
-          numberOfConflicts,
-          courseId,
-        }
-      },
-      createServerActionOptions(loggingMetadata, context.session),
-    )
+      }
+      await Promise.all(createdNotes)
+      //throw new Error('Testfehler')
+      return {
+        originalFileName: file.name,
+        size: file.size,
+        timestamp,
+        markdownContent: markdown,
+        numberOfConflicts,
+        courseId,
+      }
+    })
   })
 
 export const exportMdFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
   .inputValidator((d: unknown) => withLogging(exportMdFileSchema).parse(d))
   .handler(async ({ data, context }) => {
-    let markdown =
-      '# Mein Kurs\n\n## Metadaten\n\nTags:\n\n* Javascript\n* HTML'
-    const { courseId, includeNotesMetadata, includeTags, includeOriginalNote } =
-      data
-
-    const response = await wrapServerAction(
-      'exportMdFile',
-      async () => {
-        const userId = context.session.user.id
-        const course = await prisma.course.findUnique({
-          where: {
-            id: courseId,
-            userId: userId, // Sicherstellen, dass der Kurs dem User gehört
-          },
-          include: {
-            // 1. Tags des Kurses selbst laden
-            tags: {
-              include: {
-                tag: true,
-              },
+    return await wrapServerAction('exportMdFile', context, data, async () => {
+      const {
+        courseId,
+        includeNotesMetadata,
+        includeTags,
+        includeOriginalNote,
+      } = data
+      const userId = context.session.user.id
+      const course = await prisma.course.findUnique({
+        where: {
+          id: courseId,
+          userId: userId, // Sicherstellen, dass der Kurs dem User gehört
+        },
+        include: {
+          // 1. Tags des Kurses selbst laden
+          tags: {
+            include: {
+              tag: true,
             },
-            // 2. Notizen laden
-            notes: {
-              where: {
-                isDeleted: false, // Optional: Nur nicht gelöschte Notizen laden
-              },
-              orderBy: {
-                orderInfo: 'desc', // Wie gewünscht absteigend sortiert
-              },
-              include: {
-                // 3. Tags der jeweiligen Notiz laden
-                tags: {
-                  include: {
-                    tag: true,
-                  },
+          },
+          // 2. Notizen laden
+          notes: {
+            where: {
+              isDeleted: false, // Optional: Nur nicht gelöschte Notizen laden
+            },
+            orderBy: {
+              orderInfo: 'desc', // Wie gewünscht absteigend sortiert
+            },
+            include: {
+              // 3. Tags der jeweiligen Notiz laden
+              tags: {
+                include: {
+                  tag: true,
                 },
               },
             },
           },
-        })
-        if (!course) throw notFound()
-        // title of the course
-        markdown = `# ${course.title}\n\n`
-        // course tags
-        if (includeTags) {
-          if (course.tags.length > 0) {
-            markdown += `Tags:\n\n`
-            course.tags.map((t) => {
-              if (t.tag.name) markdown += `* ${t.tag.name}`
-            })
-          }
-        }
-
-        //notes
-        const notesMarkdownArray: string[] = []
-
-        if (course.notes.length > 0) {
-          course.notes.map((n) => {
-            notesMarkdownArray.push(
-              processNoteForMarkdown(n, {
-                includeNotesMetadata,
-                includeOriginalNote,
-              }),
-            )
+        },
+      })
+      if (!course) throw notFound()
+      // title of the course
+      let markdown = `# ${course.title}\n\n`
+      // course tags
+      if (includeTags) {
+        if (course.tags.length > 0) {
+          markdown += `Tags:\n\n`
+          course.tags.map((t) => {
+            if (t.tag.name) markdown += `* ${t.tag.name}`
           })
-          markdown += notesMarkdownArray.join('\n\n---\n\n')
-        } else {
-          markdown += '## Notes\n\nNo notes found...'
         }
-        markdown = markdown.replace(/\n\n---\n\n$/, '') // remove the last seperator after the last note (it is not needed)
-        // because strings in Javascript are immutable, so we need to reassign the result of the replacement to the original variable
-        //throw new Error('Testfehler')
-        return { markdown }
-      },
-      createServerActionOptions(data.loggingMetadata, context.session),
-    )
-    return response
+      }
+
+      //notes
+      const notesMarkdownArray: string[] = []
+
+      if (course.notes.length > 0) {
+        course.notes.map((n) => {
+          notesMarkdownArray.push(
+            processNoteForMarkdown(n, {
+              includeNotesMetadata,
+              includeOriginalNote,
+            }),
+          )
+        })
+        markdown += notesMarkdownArray.join('\n\n---\n\n')
+      } else {
+        markdown += '## Notes\n\nNo notes found...'
+      }
+      markdown = markdown.replace(/\n\n---\n\n$/, '') // remove the last seperator after the last note (it is not needed)
+      // because strings in Javascript are immutable, so we need to reassign the result of the replacement to the original variable
+      //throw new Error('Testfehler')
+      return { markdown }
+    })
   })

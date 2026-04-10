@@ -40,7 +40,7 @@ export const getCoursesFn = createServerFn({ method: 'GET' })
         }),
       ])
       //console.log('totalCount', totalCount)
-      //throw new Error('Testfehler für Logging')
+      //throw new ServerActionError('Testfehler für Logging')
       //console.log('getCoursesFn,result:', { items: courses, totalCount })
       return { items: courses, totalCount }
     })
@@ -93,12 +93,12 @@ export const deleteCourseById = createServerFn({ method: 'POST' })
           },
         })
         if (!course) throw notFound()
+        //throw new ServerActionError('Testfehler für Logging')
         await prisma.course.delete({
           where: {
             id: course.id,
           },
         })
-        //throw new Error('Testfehler für Logging')
         return 'Course deleted successfully'
       },
     )
