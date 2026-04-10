@@ -167,6 +167,8 @@ model Log {
   serverFunction String? // Name der Server Function (automatisch)
   severity       String? // info, warning, error, critical
   message        String? // Fehlermeldung oder Info-Text
+  feature        String? // Feature, das den Fehler ausgelöst hat
+  actionSource   String? // Element, dass den Fehler ausgelöst hat, z. b. der Button, auf den man klickt
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
