@@ -34,35 +34,31 @@ export function useCourseActions() {
     }
   }
   const handleExport = async (courseId: string) => {
-    const toastId = toast.loading('Markdown wird generiert...')
-
     try {
       // Hier rufen wir die Funktion auf.
       // WICHTIG: Das 'await' stellt sicher, dass result den Rückgabetyp der Server Fn hat
-      const result = await exportFn({
-        data: {
-          courseId,
-          includeNotesMetadata: true,
-          includeTags: true,
-          includeOriginalNote: true,
-          loggingMetadata: {
-            component: 'CourseHeader',
-            actionSource: 'ExportButton',
+      const result = await handleAction(
+        exportFn({
+          data: {
+            courseId,
+            includeNotesMetadata: true,
+            includeTags: true,
+            includeOriginalNote: true,
+            loggingMetadata: {
+              component: 'CourseHeader',
+              actionSource: 'ExportButton',
+            },
           },
-        },
-      })
+        }),
+        { successToast: 'Course exported successfully' },
+      )
 
       if (!result) {
         throw new Error('Server lieferte keine Antwort')
       }
 
-      if (!result.success) {
-        // Hier greift dein Error-Logging-System
-        throw new Error(result.error)
-      }
-
       // ERFOLGSFALL: result.data.markdown ist jetzt sicher verfügbar
-      const markdownContent = result.data.markdown
+      const markdownContent = result.markdown
 
       const blob = new Blob([markdownContent], { type: 'text/markdown' })
       const url = window.URL.createObjectURL(blob)
@@ -75,11 +71,8 @@ export function useCourseActions() {
       // Cleanup
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
-
-      toast.success('Download gestartet!', { id: toastId })
     } catch (e: any) {
       //console.error('Export Error:', e)
-      toast.error(e.message || 'Export fehlgeschlagen', { id: toastId })
     }
   }
 

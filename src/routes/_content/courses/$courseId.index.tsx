@@ -6,7 +6,7 @@ import { useCourseActions } from '#/hooks/use-course-actions'
 import { ServerFnData } from '#/types/api'
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { Suspense, use, useEffect } from 'react'
+import { Suspense, use } from 'react'
 
 type CourseWithNotes = ServerFnData<typeof getCourseById>
 
@@ -46,23 +46,31 @@ function Course({ data }: { data: ReturnType<typeof getCourseById> }) {
 function CourseContent({ course }: { course: CourseWithNotes }) {
   const { handleExport, handleDelete } = useCourseActions()
 
-  useEffect(() => {
-    document.title = course.title
-  }, [course.title])
+  // useEffect(() => {
+  //   document.title = course.title
+  // }, [course.title])
 
+  const title =
+    course.title?.trim() !== 'Course Details'
+      ? `${course.title} | Udemy Notes`
+      : 'Course Details | Udemy-Notes'
   return (
-    <Card>
-      <CardHeader>
-        <CourseHeader
-          course={course}
-          onExport={() => handleExport(course.id)}
-          onDelete={() => handleDelete(course.id)}
-        />
-      </CardHeader>
-      <CardContent>
-        <NotesList notes={course.notes} />
-      </CardContent>
-    </Card>
+    <>
+      {/* React 19 way - use title tag for <head><title></title></head> */}
+      <title>{title}</title>
+      <Card>
+        <CardHeader>
+          <CourseHeader
+            course={course}
+            onExport={() => handleExport(course.id)}
+            onDelete={() => handleDelete(course.id)}
+          />
+        </CardHeader>
+        <CardContent>
+          <NotesList notes={course.notes} />
+        </CardContent>
+      </Card>
+    </>
   )
 }
 

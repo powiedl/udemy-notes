@@ -77,7 +77,11 @@ const CourseHeader = ({
             }}
             disabled={isPending}
           >
-            <Download className="size-4 mr-1" />
+            {isExporting ? (
+              <Loader2 className="size-4 mr-1 animate-spin" />
+            ) : (
+              <Download className="size-4 mr-1" />
+            )}{' '}
             <span
               className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
             >

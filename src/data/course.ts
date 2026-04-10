@@ -8,6 +8,11 @@ import { withLogging } from '#/schemas/api-utils'
 import { paginationSchema } from '#/schemas/search-params'
 import { sleep } from '#/lib/utils'
 
+// #region validation schemas
+export const courseIdSchema = withLogging(z.object({ id: z.string() }))
+
+// #endregion
+
 // Wir nutzen das zentrale paginationSchema und reichern es mit Logging-Metadaten an.
 const getCoursesSchema = withLogging(paginationSchema)
 export const getCoursesFn = createServerFn({ method: 'GET' })
@@ -48,9 +53,7 @@ export const getCoursesFn = createServerFn({ method: 'GET' })
 
 export const getCourseById = createServerFn({ method: 'GET' })
   .middleware([authFnMiddleware])
-  .inputValidator((d: unknown) =>
-    withLogging(z.object({ id: z.string() })).parse(d),
-  )
+  .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
     return await wrapServerAction('getCourseById', context, data, async () => {
       const userId = context.session.user.id
@@ -63,7 +66,7 @@ export const getCourseById = createServerFn({ method: 'GET' })
 
         include: { notes: { orderBy: { orderInfo: 'desc' } } },
       })
-      if (!course) throw notFound()
+      if (!course) throw new ServerActionError('Course not found')
       //throw new Error('Testfehler für Logging')
       return course
     })
@@ -72,14 +75,9 @@ export const getCourseById = createServerFn({ method: 'GET' })
 export type AwaitedReturnTypeGetCourseById = Awaited<
   ReturnType<typeof getCourseById>
 >
-const deleteCourseSchema = withLogging(
-  z.object({
-    id: z.string(),
-  }),
-)
 export const deleteCourseById = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
-  .inputValidator(deleteCourseSchema)
+  .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
     return await wrapServerAction(
       'deleteCourseById',
@@ -94,7 +92,8 @@ export const deleteCourseById = createServerFn({ method: 'POST' })
             id,
           },
         })
-        if (!course) throw notFound()
+        if (!course) throw new ServerActionError('Course not found')
+
         //throw new Error('SERVER-Testfehler für Logging')
         //throw new ServerActionError('Testfehlermessage für Client für Logging')
         await prisma.course.delete({

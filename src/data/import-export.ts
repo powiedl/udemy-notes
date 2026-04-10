@@ -12,7 +12,6 @@ import { Course, Note } from '#/generated/prisma/client'
 import { ImportNote } from '#/types/course'
 import { orderInfo } from '#/lib/udemy'
 import { exportMdFileSchema } from '#/schemas/export-file'
-import { notFound } from '@tanstack/react-router'
 import { processNoteForMarkdown } from '#/lib/export-helper'
 import { ServerActionError, wrapServerAction } from '#/lib/server-utils'
 import { withLogging, clientLoggingMetadataSchema } from '#/schemas/api-utils'
@@ -164,7 +163,7 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
 
 export const exportMdFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
-  .inputValidator((d: unknown) => withLogging(exportMdFileSchema).parse(d))
+  .inputValidator(withLogging(exportMdFileSchema))
   .handler(async ({ data, context }) => {
     return await wrapServerAction('exportMdFile', context, data, async () => {
       const {
@@ -205,7 +204,7 @@ export const exportMdFile = createServerFn({ method: 'POST' })
           },
         },
       })
-      if (!course) throw notFound()
+      if (!course) throw new ServerActionError('Course not found')
       // title of the course
       let markdown = `# ${course.title}\n\n`
       // course tags
