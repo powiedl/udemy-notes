@@ -1,6 +1,6 @@
 # Leitfaden: Performante Suche & Pagination mit TanStack Start
 
-**Version:** 26.409.1
+**Version:** 26.410.1
 
 ## Problembeschreibung
 
@@ -51,30 +51,33 @@ export const paginationSchema = z.object({
 
 In TanStack Start will man bei der Behandlung der Search Params in der URL in fast 100% der Fälle immer beides machen.
 
-### Die Server Function (getCoursesFn)
+### B. Die Server Function (getCoursesFn)
 
-Die Server Function muss so umgebaut werden, dass sie nicht nur die Items, sondern auch die **Gesamtanzahl** (totalCount) zurückgibt, damit die Pagination weiß, wie viele Seiten existieren.
+Die Server Function muss so umgebaut werden, dass sie nicht nur die Items, sondern auch die **Gesamtanzahl** (totalCount) zurückgibt, damit die Pagination weiß, wie viele Seiten existieren. Zudem muss sie unsere neue `wrapServerAction` Architektur und die direkte Übergabe im `.inputValidator` nutzen.
 
 **Datei:** `src/data/course.ts`
 
 ```typescript
 export const getCoursesFn = createServerFn({ method: 'GET' })
-  .validator((d: any) => paginationSchema.parse(d)) // Validierung direkt am Eingang
-  .handler(async ({ data }) => {
-    const { page, pageSize, search } = data
-    const skip = (page - 1) * pageSize
+  .inputValidator(paginationSchema) // Validierung direkt am Eingang (ohne Pfeilfunktion!)
+  .handler(async ({ data, context }) => {
+    return await wrapServerAction('getCoursesFn', context, data, async () => {
+      const { page, pageSize, search } = data
+      const skip = (page - 1) * pageSize
 
-    // Parallel ausführen für bessere Performance
-    const [items, totalCount] = await Promise.all([
-      db.course.findMany({
-        where: { title: { contains: search } },
-        skip,
-        take: pageSize,
-      }),
-      db.course.count({ where: { title: { contains: search } } }),
-    ])
+      // Parallel ausführen für bessere Performance
+      const [items, totalCount] = await Promise.all([
+        db.course.findMany({
+          where: { title: { contains: search } },
+          skip,
+          take: pageSize,
+        }),
+        db.course.count({ where: { title: { contains: search } } }),
+      ])
 
-    return { items, totalCount, success: true }
+      // success: true wird automatisch von wrapServerAction hinzugefügt
+      return { items, totalCount }
+    })
   })
 ```
 
@@ -204,14 +207,14 @@ function RouteComponent() {
 }
 ```
 
-Um **Hydration Mismatch** zu verhindern (der Server rendert etwas anderes wie der Client) müssen wir sicherstellen, dass `isPending` nur auf dem Client aktiviert wird. Das erreichen wir durch den useEffect, der`mounted` auf `true` setzt, sobald der Initial Render am Client abgeschlossen wurde. Das verwenden wir dann um `isNavigating` nur dann auf `true` zu setzen, wenn der Router im `pending` State ist und der initial Render schon abgeschlossen wurde.
+Um **Hydration Mismatch** zu verhindern (der Server rendert etwas anderes wie der Client) müssen wir sicherstellen, dass `isPending` nur auf dem Client aktiviert wird. Das erreichen wir durch den useEffect, der `mounted` auf `true` setzt, sobald der Initial Render am Client abgeschlossen wurde. Das verwenden wir dann um `isNavigating` nur dann auf `true` zu setzen, wenn der Router im `pending` State ist und der initial Render schon abgeschlossen wurde.
 
 ## Checkliste für weitere Seiten
 
 Um dieses Muster auf andere Seiten (z.B. /tags) zu übertragen:
 
 1. **Schema prüfen:** Reicht paginationSchema aus oder müssen neue Filter (z.B. sort) dazu?
-2. **Server Function:** Gibt sie { items, totalCount } zurück?
+2. **Server Function:** Gibt sie `{ items, totalCount }` innerhalb von `wrapServerAction` zurück? Ist das Schema direkt in `.inputValidator()` übergeben?
 3. **Loader:** Sind loaderDeps auf die search-Params gesetzt?
 4. **DeferredValue:** Wird in der Hauptkomponente useDeferredValue für das Loader-Promise genutzt?
 5. **Suspense:** Ist der Fallback auf null gesetzt, damit das opacity-50 Feedback die Führung übernimmt?
