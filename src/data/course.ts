@@ -93,7 +93,7 @@ export const deleteCourseById = createServerFn({ method: 'POST' })
           },
         })
         if (!course) throw notFound()
-        //throw new ServerActionError('Testfehler für Logging')
+        throw new ServerActionError('Testfehler für Logging')
         await prisma.course.delete({
           where: {
             id: course.id,

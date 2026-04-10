@@ -2,22 +2,36 @@ import { useServerFn } from '@tanstack/react-start'
 import { exportMdFile } from '#/data/import-export'
 import { toast } from 'sonner'
 import { deleteCourseById } from '#/data/course'
+import { handleAction } from '#/lib/client-utils'
+import { useRouter } from '@tanstack/react-router'
 
 export function useCourseActions() {
+  const router = useRouter()
   // Wir sagen dem Hook explizit, welches Schema die Funktion hat
   const exportFn = useServerFn<typeof exportMdFile>(exportMdFile)
   const deleteFn = useServerFn<typeof deleteCourseById>(deleteCourseById)
 
   const handleDelete = async (id: string) => {
-    const result = await deleteFn({
-      data: {
-        id: id,
-        loggingMetadata: {
-          component: 'CourseHeader, customHook handleDelete',
-        },
-      },
-    })
-    return result
+    try {
+      // Wir übergeben das Promise, das deleteFn() zurückgibt, an handleAction
+      await handleAction(
+        deleteFn({
+          data: {
+            id,
+            loggingMetadata: {
+              component: 'CourseCard',
+              actionSource: 'DeleteButton',
+            },
+          },
+        }),
+        { successToast: 'Kurs erfolgreich gelöscht' },
+      )
+      await router.invalidate()
+    } catch (error) {
+      // Der Fehler wurde bereits von handleAction via Toast gemeldet.
+      // Hier fangen wir ihn nur ab, damit der Hook nicht abstürzt.
+      console.error('Löschvorgang abgebrochen:', error)
+    }
   }
   const handleExport = async (courseId: string) => {
     const toastId = toast.loading('Markdown wird generiert...')
