@@ -25,6 +25,7 @@ import {
 
 import { importHtmlFile } from '#/data/import-export'
 import { importHtmlFileSchema } from '#/schemas/import-file'
+import { handleAction } from '#/lib/client-utils'
 
 export function ImportHtmlForm() {
   const navigate = useNavigate()
@@ -57,19 +58,14 @@ export function ImportHtmlForm() {
 
       startTransition(async () => {
         try {
-          const result = await uploadFile({ data: formData })
-
-          if (!result.success) {
-            toast.error(result.error)
-            return
-          }
-
-          toast.success('Course notes processed successfully')
+          const result = await handleAction(uploadFile({ data: formData }), {
+            successToast: 'Course notes processed successfully',
+          })
 
           // Navigation zur Detailseite des neuen Kurses
           await navigate({
             to: '/courses/$courseId', // Pfad an deine Route anpassen
-            params: { courseId: result.data.courseId },
+            params: { courseId: result.courseId },
           })
         } catch (error) {
           console.error('Submit Error:', error)

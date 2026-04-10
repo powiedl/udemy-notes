@@ -16,6 +16,7 @@ import { notFound } from '@tanstack/react-router'
 import { processNoteForMarkdown } from '#/lib/export-helper'
 import { ServerActionError, wrapServerAction } from '#/lib/server-utils'
 import { withLogging, clientLoggingMetadataSchema } from '#/schemas/api-utils'
+import z from 'zod'
 
 function checkConflict(
   newNote: ImportNote,
@@ -29,146 +30,136 @@ function checkConflict(
     existingNote.editedContent.trim() !== '' // und es gibt auch einen editedContent --> Konflikt
   return hasConflict
 }
+
+const importHtmlSchema = z.instanceof(FormData)
 export const importHtmlFile = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
-  .inputValidator(async (data: unknown) => {
-    // 1. Grundprüfung auf FormData
-    if (!(data instanceof FormData)) {
-      throw new Error('Expected FormData')
-    }
-
-    // 2. Datei extrahieren & validieren (wie bisher)
-    const file = data.get('file') as File
-    if (!file || file.type !== 'text/html') {
-      throw new ServerActionError('Only HTML files are allowed.')
-    }
-    if (file.size > /*1000 */ MAX_FILE_SIZE_UPLOAD) {
-      throw new ServerActionError('File too large.')
-    }
-
-    // 3. NEU: loggingMetadata aus FormData extrahieren
-    // Wir schicken es vom Client als JSON-String im Feld 'loggingMetadata'
-    const rawLogging = data.get('loggingMetadata')
+  .inputValidator(importHtmlSchema)
+  .handler(async ({ data, context }) => {
     let loggingMetadata = EMPTY_CLIENT_LOGGING_METADATA
+    const rawLogging = data.get('loggingMetadata')
 
     if (rawLogging && typeof rawLogging === 'string') {
       try {
         const parsedJson = JSON.parse(rawLogging)
         loggingMetadata = clientLoggingMetadataSchema.parse(parsedJson)
-      } catch (e) {
-        // Falls JSON-Parse fehlschlägt, ignorieren wir es oder setzen Default
-      }
+      } catch (e) {}
     }
+    return await wrapServerAction(
+      'importHtmlFile',
+      context,
+      { loggingMetadata },
+      async () => {
+        const userId = context.session.user.id
 
-    // Wir geben die Struktur zurück, die unser Handler erwartet
-    //throw new Error('Testfehler - im inputValidator') // im inputValidator geht das Logging noch nicht, weil es ja nur um die Server Action gekapselt ist
-    return {
-      file,
-      loggingMetadata, // Damit data.loggingMetadata im Handler existiert
-    }
-  })
-  .handler(async ({ data, context }) => {
-    return await wrapServerAction('importHtmlFile', context, data, async () => {
-      const userId = context.session.user.id
-      const { file } = data
-      const timestamp = Date.now()
-
-      // --- DEINE BESTEHENDE LOGIK (Buffer, Prisma, etc.) ---
-      const buffer = Buffer.from(await file.arrayBuffer())
-      const htmlContent = buffer.toString('utf8')
-      const conversionResult = prepareAndConvertHtmlToMarkdown(htmlContent)
-
-      if (conversionResult.status === 'ERROR')
-        throw new Error(conversionResult.message)
-      const { course, markdown } = conversionResult
-
-      const existingCourse = await prisma.course.findFirst({
-        where: { userId: userId, title: course.title },
-      })
-      let finishedCourse: Course
-      let existingNotes
-      let courseId: string
-      if (existingCourse) {
-        courseId = existingCourse.id
-        existingNotes = await prisma.note.findMany({
-          where: { courseId: existingCourse.id },
-        })
-        finishedCourse = await prisma.course.update({
-          where: {
-            id: existingCourse.id,
-          },
-          data: {
-            title: course.title,
-          },
-        })
-      } else {
-        finishedCourse = await prisma.course.create({
-          data: {
-            title: course.title,
-            userId: userId,
-          },
-        })
-        courseId = finishedCourse.id
-      }
-      const createdNotes = []
-      let numberOfConflicts = 0
-      for (let note of course.notes) {
-        const existingNote =
-          existingNotes &&
-          existingNotes.find(
-            (n) =>
-              n.timestamp === note.timestamp &&
-              n.section === note.section &&
-              n.lecture === note.lecture,
-          )
-        if (existingNote) {
-          const conflict = checkConflict(note, existingNote)
-          if (conflict) numberOfConflicts++
-          createdNotes.push(
-            prisma.note.update({
-              where: { id: existingNote.id },
-              data: {
-                hasConflict: conflict,
-                originalContent: note.content,
-                orderInfo: orderInfo(
-                  note.section,
-                  note.lecture,
-                  note.timestamp,
-                ),
-              },
-            }),
-          )
-        } else {
-          createdNotes.push(
-            prisma.note.create({
-              data: {
-                courseId: finishedCourse.id,
-                userId,
-                timestamp: note.timestamp,
-                section: note.section,
-                lecture: note.lecture,
-                originalContent: note.content,
-                orderInfo: orderInfo(
-                  note.section,
-                  note.lecture,
-                  note.timestamp,
-                ),
-              },
-            }),
-          )
+        // 5. & 6. Datei extrahieren und validieren (wirft ServerActionError für Client-Toasts)
+        const file = data.get('file') as File | null
+        if (!file || file.type !== 'text/html') {
+          throw new ServerActionError('Only HTML files are allowed.')
         }
-      }
-      await Promise.all(createdNotes)
-      //throw new Error('Testfehler')
-      return {
-        originalFileName: file.name,
-        size: file.size,
-        timestamp,
-        markdownContent: markdown,
-        numberOfConflicts,
-        courseId,
-      }
-    })
+        if (file.size > MAX_FILE_SIZE_UPLOAD) {
+          throw new ServerActionError('File too large. Maximum size exceeded.')
+        }
+
+        const timestamp = Date.now()
+
+        const buffer = Buffer.from(await file.arrayBuffer())
+        const htmlContent = buffer.toString('utf8')
+        const conversionResult = prepareAndConvertHtmlToMarkdown(htmlContent)
+
+        if (conversionResult.status === 'ERROR')
+          throw new ServerActionError(conversionResult.message)
+
+        const { course, markdown } = conversionResult
+
+        const existingCourse = await prisma.course.findFirst({
+          where: { userId: userId, title: course.title },
+        })
+        let finishedCourse: Course
+        let existingNotes
+        let courseId: string
+        if (existingCourse) {
+          courseId = existingCourse.id
+          existingNotes = await prisma.note.findMany({
+            where: { courseId: existingCourse.id },
+          })
+          finishedCourse = await prisma.course.update({
+            where: {
+              id: existingCourse.id,
+            },
+            data: {
+              title: course.title,
+            },
+          })
+        } else {
+          finishedCourse = await prisma.course.create({
+            data: {
+              title: course.title,
+              userId: userId,
+            },
+          })
+          courseId = finishedCourse.id
+        }
+        const createdNotes = []
+        let numberOfConflicts = 0
+        for (let note of course.notes) {
+          const existingNote =
+            existingNotes &&
+            existingNotes.find(
+              (n) =>
+                n.timestamp === note.timestamp &&
+                n.section === note.section &&
+                n.lecture === note.lecture,
+            )
+          if (existingNote) {
+            const conflict = checkConflict(note, existingNote)
+            if (conflict) numberOfConflicts++
+            createdNotes.push(
+              prisma.note.update({
+                where: { id: existingNote.id },
+                data: {
+                  hasConflict: conflict,
+                  originalContent: note.content,
+                  orderInfo: orderInfo(
+                    note.section,
+                    note.lecture,
+                    note.timestamp,
+                  ),
+                },
+              }),
+            )
+          } else {
+            createdNotes.push(
+              prisma.note.create({
+                data: {
+                  courseId: finishedCourse.id,
+                  userId,
+                  timestamp: note.timestamp,
+                  section: note.section,
+                  lecture: note.lecture,
+                  originalContent: note.content,
+                  orderInfo: orderInfo(
+                    note.section,
+                    note.lecture,
+                    note.timestamp,
+                  ),
+                },
+              }),
+            )
+          }
+        }
+        await Promise.all(createdNotes)
+        //throw new Error('Testfehler')
+        return {
+          originalFileName: file.name,
+          size: file.size,
+          timestamp,
+          markdownContent: markdown,
+          numberOfConflicts,
+          courseId,
+        }
+      },
+    )
   })
 
 export const exportMdFile = createServerFn({ method: 'POST' })
