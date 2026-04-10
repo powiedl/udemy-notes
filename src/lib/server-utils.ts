@@ -11,6 +11,7 @@ import { Session } from './auth'
  * Wenn dieser Fehler geworfen wird, wird die Nachricht direkt an den Client weitergegeben.
  */
 export class ServerActionError extends Error {
+  public readonly isSafeForClient = true
   constructor(message: string) {
     super(message)
     this.name = 'ServerActionError'
@@ -38,15 +39,15 @@ export async function wrapServerAction<T>(
       message: successMessage,
     }
   } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unbekannter Fehler'
+    const realErrorMessage =
+      error instanceof Error ? error.message : String(error)
 
     // 1. Den echten (technischen) Fehler für Debugging-Zwecke in die DB loggen
     await logToDb({
       metadata: input.loggingMetadata ?? {},
       serverFunction: actionName,
       severity: 'error',
-      message: errorMessage,
+      message: realErrorMessage,
       userId: context?.session?.user?.id,
     }).catch((logError) => {
       console.error(
@@ -54,24 +55,22 @@ export async function wrapServerAction<T>(
         logError,
       )
     })
-    if (process.env.NODE_ENV === 'development') {
-      console.error(`[ServerAction: ${actionName}] Fehler:`, error)
-    }
+    // if (process.env.NODE_ENV === 'development') {
+    //   console.error(`[ServerAction: ${actionName}] Fehler:`, error)
+    // }
 
-    // 2. Antwort an den Client vorbereiten
-    // Wenn es ein expliziter ServerActionError ist, schicken wir die Nachricht durch.
-    if (error instanceof ServerActionError) {
-      return {
-        success: false,
-        error: error.message,
-      }
-    }
+    // Der robuste Check
+    const isSafeError =
+      error instanceof ServerActionError ||
+      (error !== null &&
+        typeof error === 'object' &&
+        'isSafeForClient' in error)
 
-    // Ansonsten maskieren wir den Fehler aus Sicherheitsgründen.
-    return {
-      success: false,
-      error: SERVER_ERROR_SANITIZED_MESSAGE,
-    }
+    const clientErrorMessage = isSafeError
+      ? realErrorMessage
+      : SERVER_ERROR_SANITIZED_MESSAGE
+
+    return { success: false, error: clientErrorMessage }
   }
 }
 

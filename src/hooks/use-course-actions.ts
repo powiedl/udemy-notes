@@ -19,7 +19,7 @@ export function useCourseActions() {
           data: {
             id,
             loggingMetadata: {
-              //component: 'CourseCard',
+              component: 'CourseCard',
               actionSource: 'DeleteButton',
             },
           },

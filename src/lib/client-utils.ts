@@ -35,14 +35,24 @@ export async function handleAction<T>(
   const showSuccessToast = options?.showSuccessToast ?? true
   const showErrorToast = options?.showErrorToast ?? true
 
-  const result = await promise
+  try {
+    const result = await promise
 
-  if (!result.success) {
-    if (showErrorToast) toast.error(options?.errorToast || result.error)
-    throw new ActionAbortedError(result.error)
-  } else {
-    if (showSuccessToast && (options?.successToast || result.message))
+    if (!result.success) {
+      if (showErrorToast) toast.error(options?.errorToast || result.error)
+      throw new ActionAbortedError(result.error)
+    }
+
+    if (showSuccessToast && (options?.successToast || result.message)) {
       toast.success(options?.successToast || result.message)
+    }
+
     return result.data
+  } catch (err) {
+    if (err instanceof ActionAbortedError) {
+      throw err
+    }
+    toast.error('Network or server error')
+    throw new ActionAbortedError('Network or server error')
   }
 }
