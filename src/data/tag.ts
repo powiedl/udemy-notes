@@ -1,5 +1,5 @@
 import { prisma } from '#/db'
-import { createServerActionOptions, wrapServerAction } from '#/lib/server-utils'
+import { wrapServerAction } from '#/lib/server-utils'
 import { authFnMiddleware } from '#/middlewares/auth'
 import { withLogging } from '#/schemas/api-utils'
 import { createServerFn } from '@tanstack/react-start'
@@ -42,6 +42,8 @@ export const getAvailableTagsFn = createServerFn({ method: 'GET' })
   .handler(async ({ data, context }) => {
     return await wrapServerAction(
       'getAvailableTags',
+      context,
+      data,
       async () => {
         const userId = context.session.user.id
         const { query } = data
@@ -58,7 +60,6 @@ export const getAvailableTagsFn = createServerFn({ method: 'GET' })
         //throw new Error('Testfehler')
         return tags
       },
-      createServerActionOptions(data.loggingMetadata, context.session),
     )
   })
 
@@ -71,23 +72,19 @@ export const deleteTagFn = createServerFn({ method: 'POST' })
     return withLogging(z.object({ id: z.string() })).parse(d ?? {})
   })
   .handler(async ({ data, context }) => {
-    return await wrapServerAction(
-      'getAvailableTags',
-      async () => {
-        const userId = context.session.user.id
-        const { id } = data
-        const tag = await prisma.tag.findUnique({
-          where: {
-            userId,
-            id,
-          },
-        })
+    return await wrapServerAction('deleteTagFn', context, data, async () => {
+      const userId = context.session.user.id
+      const { id } = data
+      const tag = await prisma.tag.findUnique({
+        where: {
+          userId,
+          id,
+        },
+      })
 
-        if (!tag) throw notFound()
-        //throw new Error('Testfehler')
-        await prisma.tag.delete({ where: { id, userId } })
-        return 'tag deleted successfully'
-      },
-      createServerActionOptions(data.loggingMetadata, context.session),
-    )
+      if (!tag) throw notFound()
+      //throw new Error('Testfehler')
+      await prisma.tag.delete({ where: { id, userId } })
+      return 'tag deleted successfully'
+    })
   })
