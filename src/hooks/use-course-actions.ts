@@ -46,7 +46,8 @@ export function useCourseActions() {
           includeTags: true,
           includeOriginalNote: true,
           loggingMetadata: {
-            component: 'CourseHeader, customHook handleExport',
+            component: 'CourseHeader',
+            actionSource: 'ExportButton',
           },
         },
       })

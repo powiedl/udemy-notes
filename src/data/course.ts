@@ -6,10 +6,10 @@ import z from 'zod'
 import { ServerActionError, wrapServerAction } from '#/lib/server-utils'
 import { withLogging } from '#/schemas/api-utils'
 import { paginationSchema } from '#/schemas/search-params'
+import { sleep } from '#/lib/utils'
 
 // Wir nutzen das zentrale paginationSchema und reichern es mit Logging-Metadaten an.
 const getCoursesSchema = withLogging(paginationSchema)
-
 export const getCoursesFn = createServerFn({ method: 'GET' })
   .middleware([authFnMiddleware])
   .inputValidator(getCoursesSchema)
@@ -72,12 +72,14 @@ export const getCourseById = createServerFn({ method: 'GET' })
 export type AwaitedReturnTypeGetCourseById = Awaited<
   ReturnType<typeof getCourseById>
 >
-
+const deleteCourseSchema = withLogging(
+  z.object({
+    id: z.string(),
+  }),
+)
 export const deleteCourseById = createServerFn({ method: 'POST' })
   .middleware([authFnMiddleware])
-  .inputValidator((d: unknown) =>
-    withLogging(z.object({ id: z.string() })).parse(d),
-  )
+  .inputValidator(deleteCourseSchema)
   .handler(async ({ context, data }) => {
     return await wrapServerAction(
       'deleteCourseById',
@@ -93,7 +95,8 @@ export const deleteCourseById = createServerFn({ method: 'POST' })
           },
         })
         if (!course) throw notFound()
-        throw new ServerActionError('Testfehler für Logging')
+        //throw new Error('SERVER-Testfehler für Logging')
+        //throw new ServerActionError('Testfehlermessage für Client für Logging')
         await prisma.course.delete({
           where: {
             id: course.id,

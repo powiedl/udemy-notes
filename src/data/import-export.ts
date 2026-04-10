@@ -42,7 +42,7 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
     if (!file || file.type !== 'text/html') {
       throw new ServerActionError('Only HTML files are allowed.')
     }
-    if (file.size > /*1000*/ MAX_FILE_SIZE_UPLOAD) {
+    if (file.size > /*1000 */ MAX_FILE_SIZE_UPLOAD) {
       throw new ServerActionError('File too large.')
     }
 
