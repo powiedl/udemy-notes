@@ -1,8 +1,9 @@
+'use server'
 import { prisma } from '#/db'
 import { authFnMiddleware } from '#/middlewares/auth'
 import { createServerFn } from '@tanstack/react-start'
 import z from 'zod'
-import { ServerActionError, wrapServerAction } from '#/lib/server-utils'
+import { authFn, ServerActionError, wrapServerAction } from '#/lib/server-utils'
 import { withLogging } from '#/schemas/api-utils'
 import { paginationSchema } from '#/schemas/search-params'
 import { sleep } from '#/lib/utils'
@@ -74,8 +75,7 @@ export const getCourseById = createServerFn({ method: 'GET' })
 export type AwaitedReturnTypeGetCourseById = Awaited<
   ReturnType<typeof getCourseById>
 >
-export const deleteCourseById = createServerFn({ method: 'POST' })
-  .middleware([authFnMiddleware])
+export const deleteCourseById = authFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
     return await wrapServerAction(
@@ -93,7 +93,7 @@ export const deleteCourseById = createServerFn({ method: 'POST' })
         })
         if (!course) throw new ServerActionError('Course not found')
 
-        //throw new Error('SERVER-Testfehler für Logging')
+        throw new Error('SERVER-Testfehler für Logging')
         //throw new ServerActionError('Testfehlermessage für Client für Logging')
         await prisma.course.delete({
           where: {

@@ -1,10 +1,21 @@
 import { ActionResponse, ClientLoggingMetadata } from '#/types/api'
+import { requestIdMiddleware } from '#/middlewares/request-id'
+import { authFnMiddleware } from '#/middlewares/auth'
 import { logToDb } from '#/lib/logging'
 import {
   EMPTY_CLIENT_LOGGING_METADATA,
   SERVER_ERROR_SANITIZED_MESSAGE,
 } from './constants'
 import { Session } from './auth'
+import { createServerFn } from '@tanstack/react-start'
+
+// Die neuen Builder für künftige Funktionen
+export const publicFn = createServerFn().middleware([requestIdMiddleware])
+
+export const authFn = createServerFn().middleware([
+  requestIdMiddleware,
+  authFnMiddleware,
+])
 
 /**
  * Eigene Fehlerklasse für Server Actions.
@@ -26,7 +37,12 @@ export class ServerActionError extends Error {
  */
 export async function wrapServerAction<T>(
   actionName: string,
-  context: { session?: { user: { id: string } } | null },
+  // ÄNDERUNG: requestId und correlationId müssen jetzt hier übergeben werden
+  context: {
+    session?: { user: { id: string } } | null
+    requestId: string
+    correlationId: string
+  },
   input: { loggingMetadata?: ClientLoggingMetadata },
   action: () => Promise<T>,
   successMessage?: string,
@@ -42,35 +58,38 @@ export async function wrapServerAction<T>(
     const realErrorMessage =
       error instanceof Error ? error.message : String(error)
 
-    // 1. Den echten (technischen) Fehler für Debugging-Zwecke in die DB loggen
+    // 1. Den echten (technischen) Fehler mit IDs in die DB loggen
     await logToDb({
       metadata: input.loggingMetadata ?? {},
       serverFunction: actionName,
       severity: 'error',
       message: realErrorMessage,
       userId: context?.session?.user?.id,
+      requestId: context.requestId, // NEU
+      correlationId: context.correlationId, // NEU
     }).catch((logError) => {
       console.error(
-        'Kritisch: Fehler konnte nicht in DB geloggt werden:',
+        `[${context.requestId}] Kritisch: Fehler konnte nicht in DB geloggt werden:`,
         logError,
       )
     })
-    // if (process.env.NODE_ENV === 'development') {
-    //   console.error(`[ServerAction: ${actionName}] Fehler:`, error)
-    // }
 
-    // Der robuste Check
+    // Der robuste Check auf "sichere" Fehler
     const isSafeError =
       error instanceof ServerActionError ||
       (error !== null &&
         typeof error === 'object' &&
         'isSafeForClient' in error)
 
+    // 2. Error Masking: Dem User die requestId mitsenden
     const clientErrorMessage = isSafeError
       ? realErrorMessage
-      : SERVER_ERROR_SANITIZED_MESSAGE
+      : `${SERVER_ERROR_SANITIZED_MESSAGE} (Referenz-Code: ${context.requestId})`
 
-    return { success: false, error: clientErrorMessage }
+    return {
+      success: false,
+      error: clientErrorMessage,
+    }
   }
 }
 

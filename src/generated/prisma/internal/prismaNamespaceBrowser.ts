@@ -205,7 +205,7 @@ export const LogScalarFieldEnum = {
   message: 'message',
   feature: 'feature',
   actionSource: 'actionSource',
-  correclationId: 'correclationId',
+  correlationId: 'correlationId',
   requestId: 'requestId',
   userId: 'userId',
   createdAt: 'createdAt',

@@ -169,7 +169,7 @@ model Log {
   message        String? // Fehlermeldung oder Info-Text
   feature        String? // Feature, das den Fehler ausgelöst hat
   actionSource   String? @map("action_source") // Element, dass den Fehler ausgelöst hat, z. b. der Button, auf den man klickt
-  correclationId String? @map("correlation_id")
+  correlationId  String? @map("correlation_id")
   requestId      String? @map("request_id")
 
   userId String? @map("user_id")

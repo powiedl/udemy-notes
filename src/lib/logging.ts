@@ -1,4 +1,3 @@
-import { prisma } from '#/db'
 import { ClientLoggingMetadata } from '#/types/api'
 
 export type LogSeverity = 'info' | 'warning' | 'error' | 'critical'
@@ -13,6 +12,7 @@ export async function logToDb(params: {
   requestId?: string
   correlationId?: string
 }) {
+  const { prisma } = await import('#/db')
   return await prisma.log.create({
     data: {
       component: params.metadata.component,
