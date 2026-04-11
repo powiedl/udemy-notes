@@ -1,8 +1,8 @@
 # Server Function System
 
-**Version:** 26.411.1
+**Version:** 26.411.2
 
-Dieses Dokument beschreibt die Architektur für die Server-Kommunikation in dieser Applikation. Das System stellt sicher, dass jeder Request über alle Ebenen hinweg (Client -> Middleware -> Server -> DB) rückverfolgbar ist und Fehler sicher sowie benutzerfreundlich behandelt werden.
+Dieses Dokument beschreibt die Architektur für die Server-Kommunikation in dieser Applikation. Das System stellt sicher, dass jeder Request über alle Ebenen hinweg (Client -> Middleware -> Server -> DB) rückverfolgbar ist, Fehler sicher behandelt werden und **kein Server-Code (wie Prisma oder Secrets) in den Browser-Bundle gelangt**.
 
 ---
 
@@ -64,21 +64,21 @@ Um Tracing und Middlewares konsistent zu halten, werden Server Functions ausschl
 | `authFn`      | POST    | Geschützt  | `requestIdMiddleware`, `authFnMiddleware` |
 | `authGetFn`   | GET     | Geschützt  | `requestIdMiddleware`, `authFnMiddleware` |
 
-**Wichtig:** Man muss die verwendete Middleware explizit bei der Fabric angeben, man darf beispielsweise kein Array `PUBLIC_MIDDLEWARE` und `AUTH_MIDDLEWARE` machen, in diese die Middlewares eintragen und dann das Array als Parameter für .middleware verwenden (wenn man das macht, erkennt Typescript die Typen nicht mehr sauber!)
+### Das Isolation Pattern (Leak Prevention)
 
-### Der Wrapper: `wrapServerAction`
+Um zu verhindern, dass Server-Bibliotheken (wie Prisma) in den Client-Bundle geladen werden, verwenden wir innerhalb der Handler konsequent **Dynamic Imports**. Jede Business-Logik wird zudem in `wrapServerAction` gehüllt.
 
-Jede Business-Logik innerhalb eines Handlers wird in `wrapServerAction` gehüllt.
-
-1.  **Logging:** Schreibt bei Fehlern automatisch einen Eintrag in die `Log`-Tabelle.
-2.  **Error Masking:** Wandelt unerwartete Fehler in eine generische Nachricht um ("Ein interner Fehler ist aufgetreten"), während `ServerActionError`s (sichere Fehler) durchgereicht werden.
-3.  **Tracing:** Reichert die Antwort mit der `requestId` aus dem Context an.
+**Wichtig:** Importiere Server-Utilities NIEMALS auf Top-Level Ebene der Datei.
 
 ```typescript
-// Beispiel: Implementierung einer geschützten Action
+// Beispiel: Implementierung einer geschützten Action mit Isolation Pattern
 export const deleteCourseById = authFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
+    // 1. Server-only Utilities erst INNERHALB des Handlers laden
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+
     return await wrapServerAction(
       'deleteCourseById',
       context, // Enthält requestId, correlationId und session
@@ -112,27 +112,12 @@ Im Frontend werden alle Server Function Aufrufe über `handleAction` (in `src/li
   - Bietet einen **"ID kopieren"**-Button.
   - **UX-Optimierung:** Beim Klick auf "Kopieren" wird die ID in die Zwischenablage gelegt, ein "Kopiert"-Erfolgs-Toast gezeigt und der ursprüngliche Fehler-Toast sofort geschlossen (`dismiss`).
 
-```tsx
-// Beispiel: Nutzung in einer Komponente
-const onDelete = async (id: string) => {
-  const result = await handleAction(
-    deleteCourseById({
-      id,
-      loggingMetadata: { component: 'CourseCard' },
-    }),
-  )
-
-  if (result) {
-    // Weiterführende Logik bei Erfolg (result entspricht result.data)
-  }
-}
-```
-
 ---
 
 ## 5. Best Practices & Regeln
 
 1.  **Kein direktes `createServerFn`:** Nutze immer die Fabrics, damit die Middleware-Kette (Tracing) nicht unterbrochen wird.
-2.  **Input Validierung:** Nutze `.inputValidator(schema)` mit Zod-Schemas, die via `withLogging(baseSchema)` erstellt wurden.
-3.  **GET für Queries:** Verwende `authGetFn` für reine Datenabfragen (Queries), um Browser-Caching und URL-Parameter-Support zu ermöglichen.
-4.  **Fehler-Typing:** Nutze `ServerActionError` für Validierungsfehler, die der User direkt sehen soll. Nutze Standard-`Error` für technische Probleme, die maskiert werden müssen.
+2.  **Strict Isolation:** Importiere `prisma` oder andere `.server`-Module **niemals am Dateianfang**. Nutze immer `await import(...)` innerhalb des Handlers.
+3.  **Input Validierung:** Nutze `.inputValidator(schema)` mit Zod-Schemas, die via `withLogging(baseSchema)` erstellt wurden.
+4.  **GET für Queries:** Verwende `authGetFn` für reine Datenabfragen (Queries), um Browser-Caching und URL-Parameter-Support zu ermöglichen.
+5.  **Fehler-Typing:** Nutze `ServerActionError` für Validierungsfehler, die der User direkt sehen soll. Nutze Standard-`Error` für technische Probleme, die maskiert werden müssen.

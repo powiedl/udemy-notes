@@ -1,8 +1,8 @@
 # Server Function System
 
-**Version:** 26.411.1
+**Version:** 26.411.2
 
-This document describes the architecture for server communication in this application. The system ensures that every request is traceable across all layers (Client -> Middleware -> Server -> DB) and that errors are handled securely and in a user-friendly manner.
+This document describes the architecture for server communication within this application. The system ensures that every request is traceable across all layers (Client -> Middleware -> Server -> DB), errors are handled securely, and **no server-only code (such as Prisma or secrets) leaks into the browser bundle**.
 
 ---
 
@@ -15,7 +15,7 @@ Every log entry in the database is uniquely assignable to a client call via the 
 model Log {
   id              String   @id @default(uuid())
   component       String?  // Frontend component (e.g., "CourseCard")
-  serverFunction  String?  @map("server_function") // Name of the function (e.g., "deleteCourseById")
+  serverFunction  String?  @map("server_function") // Name of the Fn (e.g., "deleteCourseById")
   severity        String?  // info, warning, error, critical
   message         String?  // Masked or technical message
 
@@ -36,7 +36,7 @@ model Log {
 
 ## 2. Communication Types
 
-We use an **Intersection** so that tracing IDs are always available in both success and error cases.
+We use an **Intersection** to ensure that tracing IDs are always available in both success and error cases.
 
 ```typescript
 // src/types/api.ts
@@ -55,7 +55,7 @@ export type ActionResponse<T = void> = {
 
 ### Fabrics (Server Function Factories)
 
-To keep tracing and middlewares consistent, server functions are created exclusively via predefined fabrics in `src/lib/server-utils.ts`.
+To keep tracing and middlewares consistent, Server Functions are created exclusively via predefined fabrics in `src/lib/server-utils.ts`.
 
 | Fabric        | Method | Protection | Included Middlewares                      |
 | :------------ | :----- | :--------- | :---------------------------------------- |
@@ -64,21 +64,21 @@ To keep tracing and middlewares consistent, server functions are created exclusi
 | `authFn`      | POST   | Protected  | `requestIdMiddleware`, `authFnMiddleware` |
 | `authGetFn`   | GET    | Protected  | `requestIdMiddleware`, `authFnMiddleware` |
 
-**Important:** The middleware used must be explicitly specified in the fabric. You must not, for example, create an array like `PUBLIC_MIDDLEWARE` or `AUTH_MIDDLEWARE`, add the middlewares to it, and then use that array as a parameter for `.middleware` (if you do this, TypeScript will no longer correctly infer the types!).
+### The Isolation Pattern (Leak Prevention)
 
-### The Wrapper: `wrapServerAction`
+To prevent server libraries (like Prisma) from being loaded into the client bundle, we consistently use **Dynamic Imports** within the handlers. Furthermore, every business logic block is wrapped in `wrapServerAction`.
 
-Every piece of business logic within a handler is wrapped in `wrapServerAction`.
-
-1.  **Logging:** Automatically creates an entry in the `Log` table when errors occur.
-2.  **Error Masking:** Converts unexpected errors into a generic message ("An internal error has occurred"), while `ServerActionError`s (safe errors) are passed through.
-3.  **Tracing:** Enriches the response with the `requestId` from the context.
+**Important:** NEVER import server utilities at the top level of the file.
 
 ```typescript
-// Example: Implementation of a protected action
+// Example: Implementing a protected action with the Isolation Pattern
 export const deleteCourseById = authFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
+    // 1. Load server-only utilities ONLY INSIDE the handler
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+
     return await wrapServerAction(
       'deleteCourseById',
       context, // Contains requestId, correlationId, and session
@@ -103,37 +103,21 @@ export const deleteCourseById = authFn
 
 ### The `handleAction` Utility
 
-In the frontend, all server function calls are processed via `handleAction` (in `src/lib/client-utils.ts`). This controls the UI feedback via **Sonner toasts**.
+In the frontend, all Server Function calls are processed via `handleAction` (in `src/lib/client-utils.ts`). This controls UI feedback via **Sonner Toasts**.
 
-- **Success:** Shows a green toast (disappears after 5s).
-- **Client Error (Safe):** Shows a red toast (disappears after 5s).
-- **Server Error (Hard):**
-  - The toast remains permanently visible (`duration: Infinity`).
+- **Success:** Displays a green toast (disappears after 5s).
+- **Client Error (Safe):** Displays a red toast (disappears after 5s).
+- **Server Error (Hard):** - The toast remains visible permanently (`duration: Infinity`).
   - Displays the `requestId` as a reference.
   - Provides a **"Copy ID"** button.
-  - **UX Optimization:** When "Copy ID" is clicked, the ID is placed on the clipboard, a "Copied" success toast is shown, and the original error toast is immediately closed (`dismiss`).
-
-```tsx
-// Example: Usage in a component
-const onDelete = async (id: string) => {
-  const result = await handleAction(
-    deleteCourseById({
-      id,
-      loggingMetadata: { component: 'CourseCard' },
-    }),
-  )
-
-  if (result) {
-    // Further logic on success (result corresponds to result.data)
-  }
-}
-```
+  - **UX Optimization:** Clicking "Copy" places the ID in the clipboard, shows a "Copied" success toast, and immediately closes the original error toast (`dismiss`).
 
 ---
 
 ## 5. Best Practices & Rules
 
-1.  **No direct `createServerFn`:** Always use the fabrics so that the middleware chain (tracing) is not interrupted.
-2.  **Input Validation:** Use `.inputValidator(schema)` with Zod schemas created via `withLogging(baseSchema)`.
-3.  **GET for Queries:** Use `authGetFn` for pure data requests (queries) to enable browser caching and URL parameter support.
-4.  **Error Typing:** Use `ServerActionError` for validation errors that the user should see directly. Use standard `Error` for technical issues that must be masked.
+1.  **No direct `createServerFn`:** Always use the fabrics to ensure the middleware chain (tracing) is not broken.
+2.  **Strict Isolation:** **Never** import `prisma` or other `.server` modules at the beginning of the file. Always use `await import(...)` inside the handler.
+3.  **Input Validation:** Use `.inputValidator(schema)` with Zod schemas created via `withLogging(baseSchema)`.
+4.  **GET for Queries:** Use `authGetFn` for pure data fetches (Queries) to enable browser caching and URL parameter support.
+5.  **Error Typing:** Use `ServerActionError` for validation errors that should be shown directly to the user. Use standard `Error` for technical issues that must be masked.
