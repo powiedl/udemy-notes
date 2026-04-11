@@ -54,6 +54,8 @@ export const getCoursesFn = authGetFn
 export const getCourseById = authGetFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction('getCourseById', context, data, async () => {
       const userId = context.session.user.id
       const { id } = data
@@ -77,6 +79,8 @@ export type AwaitedReturnTypeGetCourseById = Awaited<
 export const deleteCourseById = authFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction(
       'deleteCourseById',
       context,
