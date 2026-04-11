@@ -1,6 +1,5 @@
 // import fs from 'node:fs'
 // import path from 'node:path'
-import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown' // Your existing function
 import {
   EMPTY_CLIENT_LOGGING_METADATA,
   MAX_FILE_SIZE_UPLOAD,
@@ -8,13 +7,12 @@ import {
 
 import { Course, Note } from '#/generated/prisma/client'
 import { ImportNote } from '#/types/course'
-import { orderInfo } from '#/lib/udemy'
 import { exportMdFileSchema } from '#/schemas/export-file'
 import { processNoteForMarkdown } from '#/lib/export-helper'
 import { authFn } from '#/lib/rpc'
 import { ServerActionError } from '#/types/errors'
-import { withLogging, clientLoggingMetadataSchema } from '#/schemas/api-utils'
-import z from 'zod'
+import { withLogging } from '#/schemas/api-utils'
+import { importHtmlFileSchema } from '#/schemas/import-file'
 
 function checkConflict(
   newNote: ImportNote,
@@ -29,136 +27,162 @@ function checkConflict(
   return hasConflict
 }
 
-const importHtmlSchema = z.instanceof(FormData)
-export const importHtmlFile = authFn()
-  .inputValidator(importHtmlSchema)
+export const importHtmlFile = authFn
+  .inputValidator(importHtmlFileSchema)
   .handler(async ({ data, context }) => {
     const { prisma } = await import('#/lib/db.server')
     const { wrapServerAction } = await import('#/lib/server-utils.server')
-    let loggingMetadata = EMPTY_CLIENT_LOGGING_METADATA
-    const rawLogging = data.get('loggingMetadata')
+    const { prepareAndConvertHtmlToMarkdown } =
+      await import('#/lib/convertHtmlToMarkdown')
+    const { orderInfo } = await import('#/lib/udemy')
 
-    if (rawLogging && typeof rawLogging === 'string') {
-      try {
-        const parsedJson = JSON.parse(rawLogging)
-        loggingMetadata = clientLoggingMetadataSchema.parse(parsedJson)
-      } catch (e) {}
-    }
-    return await wrapServerAction(
-      'importHtmlFile',
-      context,
-      { loggingMetadata },
-      async () => {
-        const userId = context.session.user.id
+    return await wrapServerAction('importHtmlFile', context, data, async () => {
+      const userId = context.session.user.id
+      const {
+        htmlContent,
+        fileName,
+        fileSize,
+        trainer,
+        tagIds,
+        newPrivateTags,
+      } = data
 
-        // 5. & 6. Datei extrahieren und validieren (wirft ServerActionError für Client-Toasts)
-        const file = data.get('file') as File | null
-        if (!file || file.type !== 'text/html') {
-          throw new ServerActionError('Only HTML files are allowed.')
-        }
-        if (file.size > MAX_FILE_SIZE_UPLOAD) {
-          throw new ServerActionError('File too large. Maximum size exceeded.')
-        }
+      // 1. Validierung (HTML-Check & Größe)
+      // Da wir den String erhalten, prüfen wir hier die übergebene fileSize
+      if (fileSize > MAX_FILE_SIZE_UPLOAD) {
+        throw new ServerActionError('File too large. Maximum size exceeded.')
+      }
+      // Einfacher Check, ob es nach HTML aussieht (da kein MIME-Type mehr am String)
+      if (!htmlContent.trim().toLowerCase().startsWith('<')) {
+        throw new ServerActionError('Only HTML files are allowed.')
+      }
 
-        const timestamp = Date.now()
+      const timestamp = Date.now()
 
-        const buffer = Buffer.from(await file.arrayBuffer())
-        const htmlContent = buffer.toString('utf8')
-        const conversionResult = prepareAndConvertHtmlToMarkdown(htmlContent)
+      // 2. HTML zu Markdown konvertieren
+      const conversionResult = prepareAndConvertHtmlToMarkdown(htmlContent)
+      if (conversionResult.status === 'ERROR') {
+        throw new ServerActionError(conversionResult.message)
+      }
 
-        if (conversionResult.status === 'ERROR')
-          throw new ServerActionError(conversionResult.message)
+      const { course, markdown } = conversionResult
 
-        const { course, markdown } = conversionResult
+      // 3. Neue private Tags anlegen
+      let finalTagIds = [...tagIds]
+      if (newPrivateTags.length > 0) {
+        const createdTags = await Promise.all(
+          newPrivateTags.map((name) =>
+            prisma.tag.create({
+              data: { name, userId },
+              select: { id: true },
+            }),
+          ),
+        )
+        finalTagIds = [...finalTagIds, ...createdTags.map((t) => t.id)]
+      }
 
-        const existingCourse = await prisma.course.findFirst({
-          where: { userId: userId, title: course.title },
+      // 4. Kurs Upsert (Existierenden Kurs finden oder neu anlegen)
+      const existingCourse = await prisma.course.findFirst({
+        where: { userId, title: course.title },
+      })
+
+      let finishedCourse: Course
+      let existingNotes = null
+      const trainerName = trainer || 'Unbekannter Trainer'
+
+      if (existingCourse) {
+        existingNotes = await prisma.note.findMany({
+          where: { courseId: existingCourse.id },
         })
-        let finishedCourse: Course
-        let existingNotes
-        let courseId: string
-        if (existingCourse) {
-          courseId = existingCourse.id
-          existingNotes = await prisma.note.findMany({
-            where: { courseId: existingCourse.id },
-          })
-          finishedCourse = await prisma.course.update({
-            where: {
-              id: existingCourse.id,
+        finishedCourse = await prisma.course.update({
+          where: { id: existingCourse.id },
+          data: {
+            title: course.title,
+            trainer: trainerName,
+            // Tags aktualisieren (wir ersetzen die bestehenden Tags durch die neue Auswahl)
+            tags: {
+              deleteMany: {}, // Alle alten Verknüpfungen lösen
+              create: finalTagIds.map((tagId) => ({ tagId })),
             },
-            data: {
-              title: course.title,
+          },
+        })
+      } else {
+        finishedCourse = await prisma.course.create({
+          data: {
+            title: course.title,
+            trainer: trainerName,
+            userId,
+            tags: {
+              create: finalTagIds.map((tagId) => ({ tagId })),
             },
-          })
+          },
+        })
+      }
+
+      const courseId = finishedCourse.id
+
+      // 5. Notizen verarbeiten (Update mit Konflikt-Check oder Create)
+      const notePromises = []
+      let numberOfConflicts = 0
+
+      for (const note of course.notes) {
+        const existingNote =
+          existingNotes &&
+          existingNotes.find(
+            (n) =>
+              n.timestamp === note.timestamp &&
+              n.section === note.section &&
+              n.lecture === note.lecture,
+          )
+
+        const calculatedOrderInfo = orderInfo(
+          note.section,
+          note.lecture,
+          note.timestamp,
+        )
+
+        if (existingNote) {
+          const conflict = checkConflict(note, existingNote)
+          if (conflict) numberOfConflicts++
+
+          notePromises.push(
+            prisma.note.update({
+              where: { id: existingNote.id },
+              data: {
+                hasConflict: conflict,
+                originalContent: note.content,
+                orderInfo: calculatedOrderInfo,
+              },
+            }),
+          )
         } else {
-          finishedCourse = await prisma.course.create({
-            data: {
-              title: course.title,
-              userId: userId,
-            },
-          })
-          courseId = finishedCourse.id
+          notePromises.push(
+            prisma.note.create({
+              data: {
+                courseId,
+                userId,
+                timestamp: note.timestamp,
+                section: note.section,
+                lecture: note.lecture,
+                originalContent: note.content,
+                orderInfo: calculatedOrderInfo,
+              },
+            }),
+          )
         }
-        const createdNotes = []
-        let numberOfConflicts = 0
-        for (let note of course.notes) {
-          const existingNote =
-            existingNotes &&
-            existingNotes.find(
-              (n) =>
-                n.timestamp === note.timestamp &&
-                n.section === note.section &&
-                n.lecture === note.lecture,
-            )
-          if (existingNote) {
-            const conflict = checkConflict(note, existingNote)
-            if (conflict) numberOfConflicts++
-            createdNotes.push(
-              prisma.note.update({
-                where: { id: existingNote.id },
-                data: {
-                  hasConflict: conflict,
-                  originalContent: note.content,
-                  orderInfo: orderInfo(
-                    note.section,
-                    note.lecture,
-                    note.timestamp,
-                  ),
-                },
-              }),
-            )
-          } else {
-            createdNotes.push(
-              prisma.note.create({
-                data: {
-                  courseId: finishedCourse.id,
-                  userId,
-                  timestamp: note.timestamp,
-                  section: note.section,
-                  lecture: note.lecture,
-                  originalContent: note.content,
-                  orderInfo: orderInfo(
-                    note.section,
-                    note.lecture,
-                    note.timestamp,
-                  ),
-                },
-              }),
-            )
-          }
-        }
-        await Promise.all(createdNotes)
-        //throw new Error('Testfehler')
-        return {
-          originalFileName: file.name,
-          size: file.size,
-          timestamp,
-          markdownContent: markdown,
-          numberOfConflicts,
-          courseId,
-        }
-      },
-    )
+      }
+
+      await Promise.all(notePromises)
+
+      return {
+        originalFileName: fileName,
+        size: fileSize,
+        timestamp,
+        markdownContent: markdown,
+        numberOfConflicts,
+        courseId,
+      }
+    })
   })
 
 export const exportMdFile = authFn()

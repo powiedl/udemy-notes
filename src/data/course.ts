@@ -107,3 +107,84 @@ export const deleteCourseById = authFn
       },
     )
   })
+
+export const getTrainerSuggestionsSchema = withLogging(
+  z.object({
+    query: z.string(),
+  }),
+)
+
+export const getTrainerSuggestionsFn = authGetFn
+  .inputValidator(getTrainerSuggestionsSchema)
+  .handler(async ({ data, context }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+
+    return await wrapServerAction(
+      'getTrainerSuggestionsFn',
+      context,
+      data,
+      async () => {
+        const { query } = data
+        const trimmedQuery = query.trim()
+
+        if (trimmedQuery.length < 2) return []
+
+        // Wir holen uns etwas mehr Ergebnisse, um nach der manuellen
+        // Bereinigung (Duplicate-Check) sicher 5 Unikate zu haben.
+        const suggestions = await prisma.course.findMany({
+          where: {
+            AND: [
+              {
+                trainer: {
+                  startsWith: trimmedQuery,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                NOT: {
+                  trainer: {
+                    in: ['Unbekannter Trainer', ''], // Ausschluss des Placeholders und leerer Strings
+                  },
+                },
+              },
+              {
+                NOT: {
+                  trainer: null, // Sicherstellen, dass keine Null-Werte kommen
+                },
+              },
+            ],
+          },
+          select: {
+            trainer: true,
+          },
+          // Wir behalten distinct auf DB-Ebene als ersten Filter
+          distinct: ['trainer'],
+          orderBy: {
+            trainer: 'asc',
+          },
+          take: 20,
+        })
+
+        // 2. Schritt: Manuelle Bereinigung für absolute Eindeutigkeit (Case-Insensitive)
+        // Das löst das Problem, wenn "John Doe" und "john doe" in der DB stehen.
+        const seen = new Set<string>()
+        const uniqueResults: string[] = []
+
+        for (const item of suggestions) {
+          const name = item.trainer?.trim()
+          if (!name) continue
+
+          const lowerName = name.toLowerCase()
+          if (!seen.has(lowerName)) {
+            seen.add(lowerName)
+            uniqueResults.push(name)
+          }
+
+          if (uniqueResults.length >= 5) break
+        }
+
+        return uniqueResults
+      },
+    )
+  })

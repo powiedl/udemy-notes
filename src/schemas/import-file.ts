@@ -1,21 +1,15 @@
-import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
+//import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import z from 'zod'
+import { withLogging } from './api-utils'
 
-export const importHtmlFileSchema = z.object({
-  file: z
-    .instanceof(File, {
-      message: 'Please choose a Udemy course notes HTML file',
-    })
-    // Validierung der Dateigröße
-    .refine(
-      (file) => file.size <= MAX_FILE_SIZE_UPLOAD,
-      `Die Datei ist zu groß (Maximal erlaubt: ${MAX_FILE_SIZE_UPLOAD / 1024 / 1024} MB)`,
-    )
-    // Validierung des MIME-Typs
-    .refine(
-      (file) => file.type === 'text/html',
-      'Es sind nur HTML-Dateien für den Upload zulässig.',
-    ),
-})
-
+export const importHtmlFileSchema = withLogging(
+  z.object({
+    htmlContent: z.string().min(1, 'HTML content is required'),
+    fileName: z.string(), // Für das Logging/Response benötigt
+    fileSize: z.number(), // Für die Validierung im Handler
+    trainer: z.string().optional(),
+    tagIds: z.array(z.string()).default([]),
+    newPrivateTags: z.array(z.string()).default([]),
+  }),
+)
 export type ImportHtmlFileSchema = z.infer<typeof importHtmlFileSchema>
