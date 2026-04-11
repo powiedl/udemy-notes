@@ -6,13 +6,13 @@ import {
   MAX_FILE_SIZE_UPLOAD,
 } from '#/lib/constants'
 
-import { prisma } from '#/db'
 import { Course, Note } from '#/generated/prisma/client'
 import { ImportNote } from '#/types/course'
 import { orderInfo } from '#/lib/udemy'
 import { exportMdFileSchema } from '#/schemas/export-file'
 import { processNoteForMarkdown } from '#/lib/export-helper'
-import { authFn, ServerActionError, wrapServerAction } from '#/lib/server-utils'
+import { authFn } from '#/lib/rpc'
+import { ServerActionError } from '#/types/errors'
 import { withLogging, clientLoggingMetadataSchema } from '#/schemas/api-utils'
 import z from 'zod'
 
@@ -33,6 +33,8 @@ const importHtmlSchema = z.instanceof(FormData)
 export const importHtmlFile = authFn()
   .inputValidator(importHtmlSchema)
   .handler(async ({ data, context }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
     let loggingMetadata = EMPTY_CLIENT_LOGGING_METADATA
     const rawLogging = data.get('loggingMetadata')
 
@@ -162,6 +164,8 @@ export const importHtmlFile = authFn()
 export const exportMdFile = authFn()
   .inputValidator(withLogging(exportMdFileSchema))
   .handler(async ({ data, context }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction('exportMdFile', context, data, async () => {
       const {
         courseId,

@@ -1,7 +1,6 @@
 import {
   HeadContent,
   Scripts,
-  createRootRoute,
   createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'

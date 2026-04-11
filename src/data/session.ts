@@ -1,7 +1,8 @@
-import { authGetFn, wrapServerAction } from '#/lib/server-utils'
+import { authGetFn } from '#/lib/rpc'
 
 export const getSessionFn = authGetFn // Wir behalten GET bei
   .handler(async ({ context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
     // Wir nutzen wrapServerAction für konsistentes Logging/IDs
     return await wrapServerAction(
       'getSessionFn',

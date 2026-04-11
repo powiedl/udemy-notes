@@ -1,6 +1,5 @@
 import { useServerFn } from '@tanstack/react-start'
 import { exportMdFile } from '#/data/import-export'
-import { toast } from 'sonner'
 import { deleteCourseById } from '#/data/course'
 import { handleAction } from '#/lib/client-utils'
 import { useRouter } from '@tanstack/react-router'

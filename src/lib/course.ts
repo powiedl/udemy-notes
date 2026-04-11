@@ -1,10 +1,10 @@
 'use server'
-
+import { prisma } from '#/lib/db'
 import z from 'zod'
-import { authFn, authGetFn } from '#/lib/rpc'
+import { authFn, authGetFn, wrapServerAction } from '#/lib/server-utils'
+import { ServerActionError } from '#/types/errors'
 import { withLogging } from '#/schemas/api-utils'
 import { paginationSchema } from '#/schemas/search-params'
-import { ServerActionError } from '#/types/errors'
 import { sleep } from '#/lib/utils'
 
 // #region validation schemas
@@ -17,8 +17,6 @@ const getCoursesSchema = withLogging(paginationSchema)
 export const getCoursesFn = authGetFn
   .inputValidator(getCoursesSchema)
   .handler(async ({ data, context }) => {
-    const { prisma } = await import('#/lib/db.server')
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
     const { page, pageSize, search } = data
     return await wrapServerAction('getCoursesFn', context, data, async () => {
       const skip = (page - 1) * pageSize

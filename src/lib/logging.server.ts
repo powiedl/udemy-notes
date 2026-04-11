@@ -12,7 +12,7 @@ export async function logToDb(params: {
   requestId?: string
   correlationId?: string
 }) {
-  const { prisma } = await import('#/db')
+  const { prisma } = await import('#/lib/db.server')
   return await prisma.log.create({
     data: {
       component: params.metadata.component,

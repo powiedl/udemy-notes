@@ -1,5 +1,5 @@
-import { prisma } from '#/db'
-import { wrapServerAction, ServerActionError, authFn } from '#/lib/server-utils'
+import { authFn, authGetFn } from '#/lib/rpc'
+import { ServerActionError } from '#/types/errors'
 import { withLogging } from '#/schemas/api-utils'
 import {
   TAG_PAGINATION_DEFAULTS,
@@ -21,9 +21,11 @@ const defaultTags = [
   'nest-js',
 ]
 
-export const createDefaultTags = authFn()
+export const createDefaultTags = authFn
   // Kein Validator nötig, da diese Action keine Parameter braucht
   .handler(async ({ context }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction(
       'createDefaultTags',
       context,
@@ -38,12 +40,14 @@ export const createDefaultTags = authFn()
     )
   })
 
-export const getAvailableTagsFn = authFn('GET')
+export const getAvailableTagsFn = authGetFn
   .inputValidator(
     // Wir nutzen unser Standard-Schema und geben ihm die globalen Defaults als Fallback für den leeren Aufruf
     withLogging(tagPaginationSchema).default(TAG_PAGINATION_DEFAULTS),
   )
   .handler(async ({ data, context }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction(
       'getAvailableTags',
       context,
@@ -79,9 +83,11 @@ export const getAvailableTagsFn = authFn('GET')
     )
   })
 
-export const deleteTagFn = authFn()
+export const deleteTagFn = authFn
   .inputValidator(withLogging(z.object({ id: z.string() })))
   .handler(async ({ data, context }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction('deleteTagFn', context, data, async () => {
       const userId = context.session.user.id
       const { id } = data

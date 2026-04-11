@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { logToDb } from '#/lib/logging'
-import { ServerActionError, wrapServerAction } from '#/lib/server-utils'
+import { ServerActionError, wrapServerAction } from '#/lib/server-utils.server'
 import { SERVER_ERROR_SANITIZED_MESSAGE } from '../constants'
 
 // Wir mocken die Logging-Funktion, damit kein DB-Zugriff erfolgt
