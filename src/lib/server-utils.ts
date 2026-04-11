@@ -9,10 +9,18 @@ import {
 import { Session } from './auth'
 import { createServerFn } from '@tanstack/react-start'
 
-// Die neuen Builder für künftige Funktionen
 export const publicFn = createServerFn().middleware([requestIdMiddleware])
+// GET (für Abfragen/Queries)
+export const publicGetFn = createServerFn({ method: 'GET' }).middleware([
+  requestIdMiddleware,
+])
 
 export const authFn = createServerFn().middleware([
+  requestIdMiddleware,
+  authFnMiddleware,
+])
+// GET (für Abfragen/Queries)
+export const authGetFn = createServerFn({ method: 'GET' }).middleware([
   requestIdMiddleware,
   authFnMiddleware,
 ])
@@ -84,11 +92,13 @@ export async function wrapServerAction<T>(
     // 2. Error Masking: Dem User die requestId mitsenden
     const clientErrorMessage = isSafeError
       ? realErrorMessage
-      : `${SERVER_ERROR_SANITIZED_MESSAGE} (Referenz-Code: ${context.requestId})`
+      : SERVER_ERROR_SANITIZED_MESSAGE
 
     return {
       success: false,
       error: clientErrorMessage,
+      requestId: context.requestId,
+      correlationId: context.correlationId,
     }
   }
 }

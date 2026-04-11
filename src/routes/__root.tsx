@@ -73,7 +73,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             </div>
           </QueryClientProvider>
         </TooltipProvider>
-        <Toaster closeButton position="top-right" />
+        <Toaster
+          closeButton
+          position="top-right"
+          richColors // Ermöglicht farbige Toasts und korrekt gestylte Buttons
+          expand={true} // Hilft, wenn der Toast viel Inhalt (wie die ID) hat
+        />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

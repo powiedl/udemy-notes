@@ -195,7 +195,7 @@ export function ImportHtmlForm() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="absolute top-2 right-2 h-8 w-8 rounded-full z-10"
+                          className="absolute top-2 right-2 h-8 w-8 rounded-full z-10 hover:cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation()
                             field.handleChange(null as any)
@@ -225,7 +225,7 @@ export function ImportHtmlForm() {
             <div className="pt-4">
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full hover:cursor-pointer"
                 disabled={isPending || !form.state.canSubmit}
               >
                 {isPending ? (

@@ -22,6 +22,7 @@ import { useState, useTransition } from 'react'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { AlertCircleIcon } from 'lucide-react'
 import { toast } from 'sonner'
+import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 
 export function SignupForm() {
   const [error, setError] = useState('')
@@ -52,7 +53,7 @@ export function SignupForm() {
           fetchOptions: {
             onSuccess: () => {
               toast.success('Account created successfully')
-              navigate({ to: '/courses' })
+              navigate({ to: '/courses', search: PAGINATION_DEFAULTS })
             },
             onError: ({ error: err }) => {
               toast.error(err.message)
@@ -220,10 +221,14 @@ export function SignupForm() {
               />
               <FieldGroup>
                 <Field>
-                  <Button disabled={isPending} type="submit">
+                  <Button
+                    disabled={isPending}
+                    type="submit"
+                    className="hover:cursor-pointer"
+                  >
                     {isPending ? 'Creating ...' : 'Create Account'}
                   </Button>
-                  <FieldDescription className="px-6 text-center">
+                  <FieldDescription className="px-6 text-center cursor-pointer">
                     Already have an account? <Link to="/login">Log in</Link>
                   </FieldDescription>
                 </Field>

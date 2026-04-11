@@ -7,9 +7,22 @@ import { createFileRoute, Outlet } from '@tanstack/react-router'
 export const Route = createFileRoute('/_content')({
   component: RouteComponent,
   loader: async () => {
-    const session = await getSessionFn()
+    // 1. Das Ergebnis der Server Function abrufen
+    const result = await getSessionFn()
+
+    // 2. Prüfen, ob der Aufruf erfolgreich war
+    if (!result.success) {
+      // Falls die Session nicht geladen werden konnte,
+      // werfen wir einen Error oder redirecten.
+      // Hinweis: Da authFnMiddleware bereits redirectet,
+      // sollte dieser Fall hier selten eintreten.
+      throw new Error(result.error || 'Session konnte nicht geladen werden')
+    }
+
+    // 3. Die Daten aus dem .data Feld extrahieren
+    // result.data ist hier vom Typ 'Session'
     return {
-      user: session.user,
+      user: result.data.user,
     }
   },
 })

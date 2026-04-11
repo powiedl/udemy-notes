@@ -76,6 +76,7 @@ const CourseHeader = ({
               })
             }}
             disabled={isPending}
+            className="hover:cursor-pointer"
           >
             {isExporting ? (
               <Loader2 className="size-4 mr-1 animate-spin" />
@@ -97,6 +98,7 @@ const CourseHeader = ({
               })
             }
             disabled={isPending}
+            className="hover:cursor-pointer"
           >
             {isDeleting ? (
               <Loader2

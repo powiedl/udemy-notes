@@ -412,3 +412,18 @@ a {
 .single-note > code {
   font-family: 'Courier New', Courier, monospace;
 }
+
+/* Erzwinge Sichtbarkeit für Sonner-Buttons */
+[data-sonner-toast] [data-button] {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  opacity: 1 !important;
+  display: inline-flex !important;
+}
+
+[data-sonner-toast][data-rich-colors='true'][data-type='error'] [data-button] {
+  background-color: white !important;
+  color: var(--destructive) !important;
+}

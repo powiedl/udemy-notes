@@ -39,6 +39,7 @@ export function NavAdmin({ items, isPending }: NavAdminProps) {
                         type="button"
                         onClick={() => item.callback()}
                         disabled={isPending}
+                        className="hover:cursor-pointer"
                       >
                         <item.icon />
                         <span>{item.title}</span>

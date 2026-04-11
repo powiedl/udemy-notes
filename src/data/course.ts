@@ -1,9 +1,12 @@
 'use server'
 import { prisma } from '#/db'
-import { authFnMiddleware } from '#/middlewares/auth'
-import { createServerFn } from '@tanstack/react-start'
 import z from 'zod'
-import { authFn, ServerActionError, wrapServerAction } from '#/lib/server-utils'
+import {
+  authFn,
+  authGetFn,
+  ServerActionError,
+  wrapServerAction,
+} from '#/lib/server-utils'
 import { withLogging } from '#/schemas/api-utils'
 import { paginationSchema } from '#/schemas/search-params'
 import { sleep } from '#/lib/utils'
@@ -15,8 +18,7 @@ export const courseIdSchema = withLogging(z.object({ id: z.string() }))
 
 // Wir nutzen das zentrale paginationSchema und reichern es mit Logging-Metadaten an.
 const getCoursesSchema = withLogging(paginationSchema)
-export const getCoursesFn = createServerFn({ method: 'GET' })
-  .middleware([authFnMiddleware])
+export const getCoursesFn = authGetFn
   .inputValidator(getCoursesSchema)
   .handler(async ({ data, context }) => {
     const { page, pageSize, search } = data
@@ -51,8 +53,7 @@ export const getCoursesFn = createServerFn({ method: 'GET' })
     })
   })
 
-export const getCourseById = createServerFn({ method: 'GET' })
-  .middleware([authFnMiddleware])
+export const getCourseById = authGetFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
     return await wrapServerAction('getCourseById', context, data, async () => {
@@ -93,7 +94,7 @@ export const deleteCourseById = authFn
         })
         if (!course) throw new ServerActionError('Course not found')
 
-        throw new Error('SERVER-Testfehler für Logging')
+        //throw new Error('SERVER-Testfehler für Logging')
         //throw new ServerActionError('Testfehlermessage für Client für Logging')
         await prisma.course.delete({
           where: {

@@ -21,6 +21,10 @@ export type ServerFnData<T extends (...args: any) => Promise<any>> =
 export type { ClientLoggingMetadata } from '#/schemas/api-utils'
 
 // Globaler Typ für allgemeine Action-Antworten
-export type ActionResponse<T = void> =
+export type ActionResponse<T = void> = {
+  requestId?: string
+  correlationId?: string
+} & (
   | { success: true; data: T; message?: string }
   | { success: false; error: string }
+)

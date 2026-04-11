@@ -13,6 +13,10 @@ import {
   NotebookPen,
 } from 'lucide-react'
 import { cn } from '#/lib/utils'
+import {
+  PAGINATION_DEFAULTS,
+  TAG_PAGINATION_DEFAULTS,
+} from '#/schemas/search-params'
 
 const Navbar = ({ className }: { className: string }) => {
   const { data: session, isPending } = authClient.useSession()
@@ -72,6 +76,7 @@ const Navbar = ({ className }: { className: string }) => {
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
             activeOptions={{ exact: true }}
+            search={PAGINATION_DEFAULTS}
           >
             <BookOpenText className="size-4 mr-1" />
             <span className="hidden lg:inline">Courses</span>
@@ -96,6 +101,7 @@ const Navbar = ({ className }: { className: string }) => {
             to="/tags"
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
+            search={TAG_PAGINATION_DEFAULTS}
           >
             <Bookmark className="size-4 mr-1" />
             <span className="hidden lg:inline">Tags</span>
@@ -105,7 +111,11 @@ const Navbar = ({ className }: { className: string }) => {
           <ThemeToggle />
           {isPending ? null : session ? (
             <>
-              <Button variant="secondary" onClick={handleSignOut}>
+              <Button
+                variant="secondary"
+                onClick={handleSignOut}
+                className="hover:cursor-pointer"
+              >
                 <LogOut className="size-4 mr-1" />
                 <span className="hidden md:inline">Logout</span>
               </Button>

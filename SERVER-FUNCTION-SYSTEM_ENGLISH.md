@@ -1,250 +1,139 @@
-````markdown
 # Server Function System
 
-**Version:** 26.410.1
+**Version:** 26.411.1
 
-This document describes the current Server Function System in the project. It is designed so that all Server Functions:
-
-- guarantee maximum TypeScript inference for the client (no anonymous functions in validators),
-- use a unified return type (`UdNoServerResponse`),
-- automatically log errors to the database,
-- transport UI-friendly errors to the client via `ServerActionError`,
-- support metadata from the calling component.
+This document describes the architecture for server communication in this application. The system ensures that every request is traceable across all layers (Client -> Middleware -> Server -> DB) and that errors are handled securely and in a user-friendly manner.
 
 ---
 
-## The Data Model (Prisma)
+## 1. Tracing & Logging (Data Model)
 
-**File:** `prisma/schema.prisma`
-
-The Log model centrally stores errors in the PostgreSQL/Neon database. We separate `serverFunction` (name of the logic) and `component` (location in the UI) to quickly see which flow was affected during debugging.
+Every log entry in the database is uniquely assignable to a client call via the `request_id`. The schema allows correlation between frontend components and server logic.
 
 ```prisma
+// prisma/schema.prisma
 model Log {
-  id             String  @id @default(uuid())
-  component      String? // Frontend component (optional on call)
-  serverFunction String? // Name of the Server Function (automatic)
-  severity       String? // info, warning, error, critical
-  message        String? // Error message or info text
-  feature        String? // Feature that triggered the error
-  actionSource   String? // Element that triggered the error, e.g., the clicked button
+  id              String   @id @default(uuid())
+  component       String?  // Frontend component (e.g., "CourseCard")
+  serverFunction  String?  @map("server_function") // Name of the function (e.g., "deleteCourseById")
+  severity        String?  // info, warning, error, critical
+  message         String?  // Masked or technical message
 
-  userId String? @map("user_id")
-  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestId       String?  @map("request_id")
+  correlationId   String?  @map("correlation_id")
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  userId          String?  @map("user_id")
+  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   @@map("log")
 }
 ```
-````
 
-## The Unified Return Type & Client Logging
+---
 
-**File:** `src/types/api.ts`
+## 2. Communication Types
+
+We use an **Intersection** so that tracing IDs are always available in both success and error cases.
 
 ```typescript
-export type UdNoServerResponse<T> =
+// src/types/api.ts
+export type ActionResponse<T = void> = {
+  requestId?: string
+  correlationId?: string
+} & (
   | { success: true; data: T; message?: string }
-  | {
-      success: false
-      error: string
-      code?: string
-      component?: string
-      serverFunction?: string
-    }
-
-export type ExtractData<T> = T extends { success: true; data: infer D }
-  ? D
-  : never
-
-export type ServerFnData<T extends (...args: any) => Promise<any>> =
-  ExtractData<Awaited<ReturnType<T>>>
-
-export interface ClientLoggingMetadata {
-  component?: string
-  feature?: string
-}
+  | { success: false; error: string }
+)
 ```
 
-## Logging Metadata and Validator
+---
 
-**File:** `src/schemas/api-utils.ts`
+## 3. Server-Side Architecture
 
-```typescript
-import { z } from 'zod'
+### Fabrics (Server Function Factories)
 
-export const clientLoggingMetadataSchema = z.object({
-  component: z.string().optional(),
-  feature: z.string().optional(),
-})
+To keep tracing and middlewares consistent, server functions are created exclusively via predefined fabrics in `src/lib/server-utils.ts`.
 
-export const loggingMetadataSchema = z.object({
-  loggingMetadata: clientLoggingMetadataSchema.optional(),
-})
+| Fabric        | Method | Protection | Included Middlewares                      |
+| :------------ | :----- | :--------- | :---------------------------------------- |
+| `publicFn`    | POST   | Public     | `requestIdMiddleware`                     |
+| `publicGetFn` | GET    | Public     | `requestIdMiddleware`                     |
+| `authFn`      | POST   | Protected  | `requestIdMiddleware`, `authFnMiddleware` |
+| `authGetFn`   | GET    | Protected  | `requestIdMiddleware`, `authFnMiddleware` |
 
-export function withLogging<T extends z.ZodRawShape>(schema: z.ZodObject<T>) {
-  return schema.merge(loggingMetadataSchema)
-}
+**Important:** The middleware used must be explicitly specified in the fabric. You must not, for example, create an array like `PUBLIC_MIDDLEWARE` or `AUTH_MIDDLEWARE`, add the middlewares to it, and then use that array as a parameter for `.middleware` (if you do this, TypeScript will no longer correctly infer the types!).
 
-// Example for standardized IDs:
-export const idSchema = z.object({ id: z.string().min(1) })
-export const courseIdSchema = withLogging(idSchema)
-```
+### The Wrapper: `wrapServerAction`
 
-**Important:** The Zod schema is now passed _directly_ to the validator so as not to destroy type inference on the client.
+Every piece of business logic within a handler is wrapped in `wrapServerAction`.
 
-## Server Action Wrapper & Error Handling
-
-**File:** `src/lib/server-utils.ts`
-
-The wrapper encapsulates the execution of the business logic. For errors that should be displayed directly as a toast in the frontend, we use `ServerActionError`. All other errors (like 500s) are logged and packaged generically.
+1.  **Logging:** Automatically creates an entry in the `Log` table when errors occur.
+2.  **Error Masking:** Converts unexpected errors into a generic message ("An internal error has occurred"), while `ServerActionError`s (safe errors) are passed through.
+3.  **Tracing:** Enriches the response with the `requestId` from the context.
 
 ```typescript
-export class ServerActionError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ServerActionError'
-  }
-}
-
-export async function wrapServerAction<T>(
-  serverFunctionName: string,
-  context: any, // Contains session etc.
-  data: any, // Contains loggingMetadata
-  fn: () => Promise<T>,
-  successMessage?: string,
-): Promise<UdNoServerResponse<T>> {
-  // ... internal logic:
-  // 1. Executes fn()
-  // 2. Catches ServerActionError -> success: false, error: message
-  // 3. Catches other errors -> logToDb() -> success: false, error: "Something went wrong"
-  // 4. On success -> success: true, data: result
-}
-```
-
-## Server Functions in the Current Code
-
-### Example: Simple Data Passing (`getCourseById`)
-
-**File:** `src/data/course.ts`
-
-**Rule:** Do not use anonymous arrow functions in `.inputValidator()`!
-
-```typescript
-import { createServerFn } from '@tanstack/react-start'
-import { authFnMiddleware } from '#/middlewares/auth'
-import { wrapServerAction, ServerActionError } from '#/lib/server-utils'
-import { courseIdSchema } from '#/schemas/api-utils'
-import { prisma } from '#/db'
-
-export const getCourseById = createServerFn({ method: 'GET' })
-  .middleware([authFnMiddleware])
-  .inputValidator(courseIdSchema) // DIRECT passing for 100% type safety
+// Example: Implementation of a protected action
+export const deleteCourseById = authFn
+  .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
-    return await wrapServerAction('getCourseById', context, data, async () => {
-      const userId = context.session.user.id
-      const { id } = data
-
-      const course = await prisma.course.findUnique({
-        where: { id, userId },
-      })
-
-      // Client-friendly error instead of notFound() redirect
-      if (!course) throw new ServerActionError('Course could not be found.')
-
-      return course
-    })
-  })
-```
-
-### Example: File Upload with `FormData` (`importHtmlFile`)
-
-**File:** `src/data/import-export.ts`
-
-For file uploads, the Zod schema is just the bouncer (`z.instanceof(FormData)`). The content validation (MIME type, file size) happens inside the wrapper.
-
-```typescript
-import { z } from 'zod'
-import { EMPTY_CLIENT_LOGGING_METADATA } from '#/lib/constants'
-
-const importHtmlSchema = z.instanceof(FormData)
-
-export const importHtmlFile = createServerFn({ method: 'POST' })
-  .middleware([authFnMiddleware])
-  .inputValidator(importHtmlSchema)
-  .handler(async ({ data, context }) => {
-    // 1. Extract LoggingMetadata BEFORE the wrapper
-    let loggingMetadata = EMPTY_CLIENT_LOGGING_METADATA
-    const rawLogging = data.get('loggingMetadata')
-    if (typeof rawLogging === 'string') {
-      try {
-        loggingMetadata = JSON.parse(rawLogging)
-      } catch (e) {}
-    }
-
-    // 2. Call wrapper
     return await wrapServerAction(
-      'importHtmlFile',
-      context,
-      { loggingMetadata },
+      'deleteCourseById',
+      context, // Contains requestId, correlationId, and session
+      data, // Contains loggingMetadata
       async () => {
-        // 3. Perform content validation HERE
-        const file = data.get('file') as File | null
-        if (!file || file.type !== 'text/html') {
-          throw new ServerActionError('Only HTML files are allowed.')
-        }
-        if (file.size > MAX_FILE_SIZE_UPLOAD) {
-          throw new ServerActionError('The file is too large.')
-        }
+        const { id } = data
+        const userId = context.session.user.id
 
-        // ... Import and Prisma logic ...
-        return { success: true }
+        const course = await prisma.course.findUnique({ where: { id, userId } })
+        if (!course) throw new ServerActionError('Course not found.')
+
+        await prisma.course.delete({ where: { id } })
+        return 'Course deleted successfully.'
       },
     )
   })
 ```
 
-## Client-Side Integration (Frontend)
+---
 
-**File:** `src/lib/client-utils.ts` (and UI components)
+## 4. Client-Side Handling
 
-To cleanly evaluate the unified structure on the client and display automatic toasts, server mutation calls are wrapped with the `handleAction` utility.
+### The `handleAction` Utility
 
-**Example in a component (`Tag.tsx`):**
+In the frontend, all server function calls are processed via `handleAction` (in `src/lib/client-utils.ts`). This controls the UI feedback via **Sonner toasts**.
+
+- **Success:** Shows a green toast (disappears after 5s).
+- **Client Error (Safe):** Shows a red toast (disappears after 5s).
+- **Server Error (Hard):**
+  - The toast remains permanently visible (`duration: Infinity`).
+  - Displays the `requestId` as a reference.
+  - Provides a **"Copy ID"** button.
+  - **UX Optimization:** When "Copy ID" is clicked, the ID is placed on the clipboard, a "Copied" success toast is shown, and the original error toast is immediately closed (`dismiss`).
 
 ```tsx
-import { handleAction } from '#/lib/client-utils'
-import { useServerFn } from '@tanstack/react-start'
-import { useTransition } from 'react'
-
-export const Tag = ({ tag }) => {
-  const deleteTag = useServerFn(deleteTagFn)
-  const [isPending, startTransition] = useTransition()
-
-  const handleDelete = () => {
-    startTransition(async () => {
-      try {
-        await handleAction(
-          deleteTag({
-            data: {
-              id: tag.id,
-              loggingMetadata: { component: 'Tag', feature: 'Delete' },
-            },
-          }),
-          { successToast: 'Tag successfully deleted' },
-        )
-      } catch (error) {
-        // Leave empty: handleAction catches the error and automatically throws the toast
-      }
-    })
-  }
-
-  return (
-    <Button onClick={handleDelete} disabled={isPending}>
-      Delete
-    </Button>
+// Example: Usage in a component
+const onDelete = async (id: string) => {
+  const result = await handleAction(
+    deleteCourseById({
+      id,
+      loggingMetadata: { component: 'CourseCard' },
+    }),
   )
+
+  if (result) {
+    // Further logic on success (result corresponds to result.data)
+  }
 }
 ```
+
+---
+
+## 5. Best Practices & Rules
+
+1.  **No direct `createServerFn`:** Always use the fabrics so that the middleware chain (tracing) is not interrupted.
+2.  **Input Validation:** Use `.inputValidator(schema)` with Zod schemas created via `withLogging(baseSchema)`.
+3.  **GET for Queries:** Use `authGetFn` for pure data requests (queries) to enable browser caching and URL parameter support.
+4.  **Error Typing:** Use `ServerActionError` for validation errors that the user should see directly. Use standard `Error` for technical issues that must be masked.

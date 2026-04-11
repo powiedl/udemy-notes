@@ -1,8 +1,6 @@
 import { prisma } from '#/db'
-import { wrapServerAction, ServerActionError } from '#/lib/server-utils'
-import { authFnMiddleware } from '#/middlewares/auth'
+import { wrapServerAction, ServerActionError, authFn } from '#/lib/server-utils'
 import { withLogging } from '#/schemas/api-utils'
-import { createServerFn } from '@tanstack/react-start'
 import {
   TAG_PAGINATION_DEFAULTS,
   tagPaginationSchema,
@@ -23,8 +21,7 @@ const defaultTags = [
   'nest-js',
 ]
 
-export const createDefaultTags = createServerFn({ method: 'POST' })
-  .middleware([authFnMiddleware])
+export const createDefaultTags = authFn()
   // Kein Validator nötig, da diese Action keine Parameter braucht
   .handler(async ({ context }) => {
     return await wrapServerAction(
@@ -41,8 +38,7 @@ export const createDefaultTags = createServerFn({ method: 'POST' })
     )
   })
 
-export const getAvailableTagsFn = createServerFn({ method: 'GET' })
-  .middleware([authFnMiddleware])
+export const getAvailableTagsFn = authFn('GET')
   .inputValidator(
     // Wir nutzen unser Standard-Schema und geben ihm die globalen Defaults als Fallback für den leeren Aufruf
     withLogging(tagPaginationSchema).default(TAG_PAGINATION_DEFAULTS),
@@ -83,8 +79,7 @@ export const getAvailableTagsFn = createServerFn({ method: 'GET' })
     )
   })
 
-export const deleteTagFn = createServerFn({ method: 'POST' })
-  .middleware([authFnMiddleware])
+export const deleteTagFn = authFn()
   .inputValidator(withLogging(z.object({ id: z.string() })))
   .handler(async ({ data, context }) => {
     return await wrapServerAction('deleteTagFn', context, data, async () => {

@@ -55,10 +55,6 @@ const navItems: NavPrimaryProps['items'] = [
   },
 ]
 
-const adminItems: NavAdminProps['items'] = [
-  { title: 'seed Tags', callback: createDefaultTags, icon: BookmarkPlus },
-]
-
 export function AppSidebar({ user }: NavUserProps) {
   const seedTagsFn = useServerFn(createDefaultTags)
   const [isPending, startTransition] = useTransition()

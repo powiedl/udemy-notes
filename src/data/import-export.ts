@@ -1,19 +1,18 @@
 // import fs from 'node:fs'
 // import path from 'node:path'
 import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown' // Your existing function
-import { createServerFn } from '@tanstack/react-start'
 import {
   EMPTY_CLIENT_LOGGING_METADATA,
   MAX_FILE_SIZE_UPLOAD,
 } from '#/lib/constants'
-import { authFnMiddleware } from '#/middlewares/auth'
+
 import { prisma } from '#/db'
 import { Course, Note } from '#/generated/prisma/client'
 import { ImportNote } from '#/types/course'
 import { orderInfo } from '#/lib/udemy'
 import { exportMdFileSchema } from '#/schemas/export-file'
 import { processNoteForMarkdown } from '#/lib/export-helper'
-import { ServerActionError, wrapServerAction } from '#/lib/server-utils'
+import { authFn, ServerActionError, wrapServerAction } from '#/lib/server-utils'
 import { withLogging, clientLoggingMetadataSchema } from '#/schemas/api-utils'
 import z from 'zod'
 
@@ -31,8 +30,7 @@ function checkConflict(
 }
 
 const importHtmlSchema = z.instanceof(FormData)
-export const importHtmlFile = createServerFn({ method: 'POST' })
-  .middleware([authFnMiddleware])
+export const importHtmlFile = authFn()
   .inputValidator(importHtmlSchema)
   .handler(async ({ data, context }) => {
     let loggingMetadata = EMPTY_CLIENT_LOGGING_METADATA
@@ -161,8 +159,7 @@ export const importHtmlFile = createServerFn({ method: 'POST' })
     )
   })
 
-export const exportMdFile = createServerFn({ method: 'POST' })
-  .middleware([authFnMiddleware])
+export const exportMdFile = authFn()
   .inputValidator(withLogging(exportMdFileSchema))
   .handler(async ({ data, context }) => {
     return await wrapServerAction('exportMdFile', context, data, async () => {

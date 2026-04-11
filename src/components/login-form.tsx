@@ -16,6 +16,7 @@ import {
 import { Input } from '#/components/ui/input'
 import { authClient } from '#/lib/auth-client'
 import { loginSchema } from '#/schemas/auth'
+import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 import { useForm } from '@tanstack/react-form'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useTransition } from 'react'
@@ -41,7 +42,7 @@ export function LoginForm() {
           fetchOptions: {
             onSuccess: () => {
               toast.success('Logged in successfully')
-              navigate({ to: '/courses' })
+              navigate({ to: '/courses', search: PAGINATION_DEFAULTS })
             },
             onError: ({ error }) => {
               toast.error(error.message)
@@ -143,7 +144,11 @@ export function LoginForm() {
                 }}
               />
               <Field>
-                <Button disabled={isPending} type="submit">
+                <Button
+                  disabled={isPending}
+                  type="submit"
+                  className="hover:cursor-pointer"
+                >
                   {isPending ? 'Logging in ...' : 'Login'}
                 </Button>
                 <FieldDescription className="text-center">

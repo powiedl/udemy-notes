@@ -38,11 +38,34 @@ export async function handleAction<T>(
   try {
     const result = await promise
 
+    // --- FALL 1: FEHLER ---
     if (!result.success) {
-      if (showErrorToast) toast.error(options?.errorToast || result.error)
+      if (showErrorToast) {
+        const toastId = toast.error(options?.errorToast || result.error, {
+          duration: result.requestId ? 600000 : 5000, // 10 Min. wenn ID da ist
+          description: result.requestId
+            ? `Referenz: ${result.requestId}`
+            : undefined,
+          action: result.requestId
+            ? {
+                label: 'ID kopieren',
+                onClick: (e) => {
+                  e.preventDefault()
+                  if (result.requestId) {
+                    navigator.clipboard.writeText(result.requestId)
+                    toast.success('ID in Zwischenablage kopiert')
+                    toast.dismiss(toastId) // Schließt den Fehler-Toast automatisch
+                  }
+                },
+              }
+            : undefined,
+        })
+      }
       throw new ActionAbortedError(result.error)
     }
 
+    // --- FALL 2: ERFOLG ---
+    // Hier ist er wieder, der verlorene Sohn!
     if (showSuccessToast && (options?.successToast || result.message)) {
       toast.success(options?.successToast || result.message)
     }
@@ -52,7 +75,9 @@ export async function handleAction<T>(
     if (err instanceof ActionAbortedError) {
       throw err
     }
-    toast.error('Network or server error')
-    throw new ActionAbortedError('Network or server error')
+
+    // Unerwartete Fehler (Netzwerk-Timeout etc.)
+    toast.error('Netzwerk- oder Serverfehler')
+    throw new ActionAbortedError('Netzwerk- oder Serverfehler')
   }
 }
