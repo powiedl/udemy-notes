@@ -1,4 +1,4 @@
-import { prisma } from '#/db' // Importiere deine initialisierte Prisma-Instanz
+import { prisma } from '#/lib/db.server' // Importiere deine initialisierte Prisma-Instanz
 
 /**
  * Wir definieren die Struktur. 'as const' ist hier der Schlüssel,

@@ -1,10 +1,11 @@
 import { AwaitedReturnTypeGetCourseById } from '#/data/course'
+import { ExtractData } from '#/types/api' // Importiere den Helper
 import Note from './note'
 
 const NotesList = ({
   notes,
 }: {
-  notes: AwaitedReturnTypeGetCourseById['notes']
+  notes: ExtractData<AwaitedReturnTypeGetCourseById>['notes']
 }) => {
   if (notes?.length === 0)
     return <div>You don't have any notes for this course</div>

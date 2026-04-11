@@ -5,7 +5,7 @@ import { authFn, authGetFn } from '#/lib/rpc'
 import { withLogging } from '#/schemas/api-utils'
 import { paginationSchema } from '#/schemas/search-params'
 import { ServerActionError } from '#/types/errors'
-import { sleep } from '#/lib/utils'
+//import { sleep } from '#/lib/utils'
 
 // #region validation schemas
 export const courseIdSchema = withLogging(z.object({ id: z.string() }))

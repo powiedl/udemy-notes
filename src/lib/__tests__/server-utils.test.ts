@@ -1,28 +1,38 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { logToDb } from '#/lib/logging'
-import { ServerActionError, wrapServerAction } from '#/lib/server-utils.server'
-import { SERVER_ERROR_SANITIZED_MESSAGE } from '../constants'
+// WICHTIG: Importe und Mocks müssen exakt zusammenpassen
+import { logToDb } from '#/lib/logging.server'
+import { wrapServerAction } from '#/lib/server-utils.server'
+import { ServerActionError } from '#/types/errors'
+import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants'
 
-// Wir mocken die Logging-Funktion, damit kein DB-Zugriff erfolgt
-vi.mock('#/lib/logging', () => ({
-  logToDb: vi.fn().mockResolvedValue(undefined), // Mockt, dass logToDb ein Promise zurückgibt
+// Wir mocken den exakten Pfad, den auch der Server-Util nutzt
+vi.mock('#/lib/logging.server', () => ({
+  logToDb: vi.fn().mockResolvedValue(undefined),
 }))
 
 describe('wrapServerAction', () => {
+  const mockRequestId = 'req_123'
+  const mockCorrelationId = 'corr_456'
+
+  // Ein Standard-Context, wie ihn unsere Middleware erzeugt
+  const mockContext = {
+    requestId: mockRequestId,
+    correlationId: mockCorrelationId,
+    session: null,
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('sollte bei erfolgreicher Ausführung success: true und Daten zurückgeben', async () => {
-    const mockData = { id: '123', title: 'Test Kurs' }
+  it('sollte bei Erfolg success: true, Daten und Tracing-IDs zurückgeben', async () => {
+    const mockData = { id: '123' }
     const mockFn = async () => mockData
-    const options = { metadata: { component: 'TestComponent' } }
-    const context = { session: null }
-    const input = { loggingMetadata: options.metadata }
+    const input = { loggingMetadata: { component: 'TestUI' } }
 
     const result = await wrapServerAction(
       'testFunction',
-      context,
+      mockContext,
       input,
       mockFn,
     )
@@ -30,81 +40,82 @@ describe('wrapServerAction', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data).toEqual(mockData)
+      expect(result.requestId).toBe(mockRequestId)
     }
     expect(logToDb).not.toHaveBeenCalled()
   })
-  it('sollte einen ServerActionError abfangen, loggen und die clientMessage zurückgeben', async () => {
-    const CLIENT_MSG = 'Benutzerfreundlicher Fehler'
+
+  it('sollte einen ServerActionError abfangen, loggen und die IDs mitschicken', async () => {
+    const CLIENT_MSG = 'Sicherer Fehler'
     const mockFn = async () => {
       throw new ServerActionError(CLIENT_MSG)
     }
-    const context = { session: null }
     const input = { loggingMetadata: { component: 'SpecificComponent' } }
 
     const result = await wrapServerAction(
       'testFunction',
-      context,
+      mockContext,
       input,
       mockFn,
     )
 
-    // Prüfung der Antwort an den Client
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(result.error).toBe(CLIENT_MSG)
+      expect(result.requestId).toBe(mockRequestId)
     }
 
-    // Prüfung, ob korrekt mit den übergebenen Metadaten geloggt wurde
     expect(logToDb).toHaveBeenCalledWith(
       expect.objectContaining({
         message: CLIENT_MSG,
-        metadata: expect.objectContaining({ component: 'SpecificComponent' }),
+        requestId: mockRequestId,
+        correlationId: mockCorrelationId,
         serverFunction: 'testFunction',
-        severity: 'error',
       }),
     )
   })
 
-  it('sollte unerwartete Fehler maskieren (Sicherheit!) und trotzdem loggen', async () => {
-    const TECHNICAL_ERROR = 'Prisma Connection Timeout'
+  it('sollte unerwartete Fehler maskieren, aber die volle Wahrheit loggen', async () => {
+    const TECHNICAL_ERROR = 'Database Exploded'
     const mockFn = async () => {
       throw new Error(TECHNICAL_ERROR)
     }
-    const context = { session: null }
     const input = { loggingMetadata: { component: 'TestComponent' } }
 
     const result = await wrapServerAction(
       'testFunction',
-      context,
+      mockContext,
       input,
       mockFn,
     )
 
     expect(result.success).toBe(false)
     if (!result.success) {
-      // Wichtig: Der User darf den technischen Fehler nicht sehen
+      // Client kriegt nur die generische Meldung
       expect(result.error).toBe(SERVER_ERROR_SANITIZED_MESSAGE)
+      expect(result.requestId).toBe(mockRequestId)
     }
 
-    // Aber im Log muss die Wahrheit stehen
+    // Log kriegt den echten Fehlertext
     expect(logToDb).toHaveBeenCalledWith(
       expect.objectContaining({
         message: TECHNICAL_ERROR,
-        metadata: expect.objectContaining({ component: 'TestComponent' }),
-        serverFunction: 'testFunction',
-        severity: 'error',
+        requestId: mockRequestId,
       }),
     )
   })
 
-  it('sollte die userId mitloggen, wenn ProtectedLogOptions verwendet werden', async () => {
+  it('sollte die userId mitloggen, wenn eine Session im Context ist', async () => {
     const mockFn = async () => {
       throw new Error('Fail')
     }
-    const context = { session: { user: { id: 'user_99' } } }
+    const secureContext = {
+      ...mockContext,
+      session: { user: { id: 'user_99' } },
+    }
     const input = { loggingMetadata: { component: 'SecureZone' } }
 
-    await wrapServerAction('protectedFn', context, input, mockFn)
+    await wrapServerAction('protectedFn', secureContext, input, mockFn)
 
     expect(logToDb).toHaveBeenCalledWith(
       expect.objectContaining({

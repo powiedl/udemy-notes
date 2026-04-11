@@ -1,4 +1,5 @@
 import { AwaitedReturnTypeGetCourseById } from '#/data/course'
+import { ExtractData } from '#/types/api' // Importiere den Helper
 import { cn } from '#/lib/utils'
 import { Card, CardContent, CardDescription } from '../ui/card'
 import ReactMarkdown from 'react-markdown'
@@ -6,7 +7,7 @@ import ReactMarkdown from 'react-markdown'
 const Note = ({
   note,
 }: {
-  note: AwaitedReturnTypeGetCourseById['notes'][number]
+  note: ExtractData<AwaitedReturnTypeGetCourseById>['notes'][number]
 }) => {
   // mit MyArrayType[number] erhält man den Typ eines einzelnen Elements in dem Array
   return (
