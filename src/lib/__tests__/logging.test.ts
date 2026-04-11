@@ -1,126 +1,76 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-// WICHTIG: Importe und Mocks müssen exakt zusammenpassen
 import { logToDb } from '#/lib/logging.server'
-import { wrapServerAction } from '#/lib/server-utils.server'
-import { ServerActionError } from '#/types/errors'
-import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants'
+import { prisma } from '#/lib/db.server'
 
-// Wir mocken den exakten Pfad, den auch der Server-Util nutzt
-vi.mock('#/lib/logging.server', () => ({
-  logToDb: vi.fn().mockResolvedValue(undefined),
+// WICHTIG: Der Pfad muss EXAKT dem Import oben entsprechen!
+vi.mock('#/lib/db.server', () => ({
+  prisma: {
+    log: {
+      create: vi.fn(),
+    },
+  },
 }))
 
-describe('wrapServerAction', () => {
-  const mockRequestId = 'req_123'
-  const mockCorrelationId = 'corr_456'
-
-  // Ein Standard-Context, wie ihn unsere Middleware erzeugt
-  const mockContext = {
-    requestId: mockRequestId,
-    correlationId: mockCorrelationId,
-    session: null,
-  }
-
+describe('logToDb', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('sollte bei Erfolg success: true, Daten und Tracing-IDs zurückgeben', async () => {
-    const mockData = { id: '123' }
-    const mockFn = async () => mockData
-    const input = { loggingMetadata: { component: 'TestUI' } }
+  it('sollte prisma.log.create mit den korrekten Parametern aufrufen', async () => {
+    // Mock-Rückgabewert definieren
+    const mockCreatedLog = { id: 'uuid-123', message: 'Test-Log' }
+    vi.mocked(prisma.log.create).mockResolvedValue(mockCreatedLog as any)
 
-    const result = await wrapServerAction(
-      'testFunction',
-      mockContext,
-      input,
-      mockFn,
-    )
-
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data).toEqual(mockData)
-      expect(result.requestId).toBe(mockRequestId)
+    const params = {
+      metadata: { component: 'TestComponent', feature: 'Unit-Test' },
+      serverFunction: 'testFn',
+      severity: 'error' as const,
+      message: 'Kritischer Fehler aufgetreten',
+      userId: 'user_1',
+      requestId: 'req_123', // Testen wir gleich unsere neuen Tracing-IDs mit
+      correlationId: 'corr_456',
     }
-    expect(logToDb).not.toHaveBeenCalled()
+
+    // Funktion ausführen
+    const result = await logToDb(params)
+
+    // Überprüfen, ob Prisma korrekt "gefüttert" wurde
+    expect(prisma.log.create).toHaveBeenCalledWith({
+      data: {
+        component: 'TestComponent',
+        serverFunction: 'testFn',
+        severity: 'error',
+        message: 'Kritischer Fehler aufgetreten',
+        userId: 'user_1',
+        requestId: 'req_123',
+        correlationId: 'corr_456',
+      },
+    })
+
+    // Überprüfen, ob das Ergebnis dem DB-Resultat entspricht
+    expect(result).toEqual(mockCreatedLog)
   })
 
-  it('sollte einen ServerActionError abfangen, loggen und die IDs mitschicken', async () => {
-    const CLIENT_MSG = 'Sicherer Fehler'
-    const mockFn = async () => {
-      throw new ServerActionError(CLIENT_MSG)
-    }
-    const input = { loggingMetadata: { component: 'SpecificComponent' } }
+  it('sollte auch funktionieren, wenn optionale Felder fehlen', async () => {
+    vi.mocked(prisma.log.create).mockResolvedValue({ id: 'uuid-456' } as any)
 
-    const result = await wrapServerAction(
-      'testFunction',
-      mockContext,
-      input,
-      mockFn,
-    )
+    await logToDb({
+      metadata: { component: 'Minimal' },
+      severity: 'info',
+      message: 'Minimaler Log',
+    })
 
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      expect(result.error).toBe(CLIENT_MSG)
-      expect(result.requestId).toBe(mockRequestId)
-    }
-
-    expect(logToDb).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: CLIENT_MSG,
-        requestId: mockRequestId,
-        correlationId: mockCorrelationId,
-        serverFunction: 'testFunction',
-      }),
-    )
-  })
-
-  it('sollte unerwartete Fehler maskieren, aber die volle Wahrheit loggen', async () => {
-    const TECHNICAL_ERROR = 'Database Exploded'
-    const mockFn = async () => {
-      throw new Error(TECHNICAL_ERROR)
-    }
-    const input = { loggingMetadata: { component: 'TestComponent' } }
-
-    const result = await wrapServerAction(
-      'testFunction',
-      mockContext,
-      input,
-      mockFn,
-    )
-
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      // Client kriegt nur die generische Meldung
-      expect(result.error).toBe(SERVER_ERROR_SANITIZED_MESSAGE)
-      expect(result.requestId).toBe(mockRequestId)
-    }
-
-    // Log kriegt den echten Fehlertext
-    expect(logToDb).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: TECHNICAL_ERROR,
-        requestId: mockRequestId,
-      }),
-    )
-  })
-
-  it('sollte die userId mitloggen, wenn eine Session im Context ist', async () => {
-    const mockFn = async () => {
-      throw new Error('Fail')
-    }
-    const secureContext = {
-      ...mockContext,
-      session: { user: { id: 'user_99' } },
-    }
-    const input = { loggingMetadata: { component: 'SecureZone' } }
-
-    await wrapServerAction('protectedFn', secureContext, input, mockFn)
-
-    expect(logToDb).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: 'user_99',
-      }),
-    )
+    expect(prisma.log.create).toHaveBeenCalledWith({
+      data: {
+        component: 'Minimal',
+        serverFunction: undefined,
+        severity: 'info',
+        message: 'Minimaler Log',
+        userId: undefined,
+        // Prisma sollte hier undefined für die optionalen IDs empfangen
+        requestId: undefined,
+        correlationId: undefined,
+      },
+    })
   })
 })

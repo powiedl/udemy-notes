@@ -48,6 +48,8 @@ export async function wrapServerAction<T>(
       success: true,
       data,
       message: successMessage,
+      requestId: context.requestId, // NEU
+      correlationId: context.correlationId, // NEU
     }
   } catch (error: unknown) {
     const realErrorMessage =
