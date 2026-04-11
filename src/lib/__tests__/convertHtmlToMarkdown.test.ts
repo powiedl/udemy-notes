@@ -53,7 +53,7 @@ describe('prepareAndConvertHtmlToMarkdown', () => {
     // Udemy nutzt hier oft verschachtelte <li>.
     const codeHtml = `
       <div class="${CONSTANTS.NOTE_CODE_BLOCK_SELECTOR}">
-        <li>console.log("Hello World")</li>
+        <li>conso-log("Hello World")</li>
       </div>
     `
     const html = createMockHtml(codeHtml)
@@ -62,9 +62,7 @@ describe('prepareAndConvertHtmlToMarkdown', () => {
     if (result.status === 'ERROR') throw new Error(result.message)
 
     expect(result.course.notes[0].content).toContain('```')
-    expect(result.course.notes[0].content).toContain(
-      'console.log("Hello World")',
-    )
+    expect(result.course.notes[0].content).toContain('conso-log("Hello World")')
   })
 
   it('sollte fett und kursiv geschriebene HTML Tags richtig rendern', () => {
