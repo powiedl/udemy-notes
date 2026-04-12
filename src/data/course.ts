@@ -5,11 +5,40 @@ import { authFn, authGetFn } from '#/lib/rpc'
 import { withLogging } from '#/schemas/api-utils'
 import { paginationSchema } from '#/schemas/search-params'
 import { ServerActionError } from '#/types/errors'
+import type { Prisma } from '#/generated/prisma/client.js'
+
 //import { sleep } from '#/lib/utils'
 
 // #region validation schemas
 export const courseIdSchema = withLogging(z.object({ id: z.string() }))
 
+export const getTrainerSuggestionsSchema = withLogging(
+  z.object({
+    query: z.string(),
+  }),
+)
+// #endregion
+
+// #region Prisma Datentypen
+// 1. Basis-Include für Tags (wird in beiden Fällen genutzt)
+const courseBaseInclude = {
+  include: {
+    tags: {
+      include: {
+        tag: true,
+      },
+    },
+  },
+} satisfies Prisma.CourseDefaultArgs
+
+export type CourseHeaderData = Prisma.CourseGetPayload<
+  typeof courseBaseInclude
+> & {
+  _count?: {
+    notes: number
+  }
+  notes?: Prisma.NoteGetPayload<{}>[]
+}
 // #endregion
 
 // Wir nutzen das zentrale paginationSchema und reichern es mit Logging-Metadaten an.
@@ -35,7 +64,25 @@ export const getCoursesFn = authGetFn
           orderBy: {
             updatedAt: 'desc',
           },
-          include: { _count: { select: { notes: true } } },
+          include: {
+            _count: { select: { notes: true } },
+            tags: {
+              select: {
+                tag: {
+                  select: {
+                    id: true,
+                    name: true,
+                    userId: true,
+                  },
+                },
+              },
+              orderBy: {
+                tag: {
+                  name: 'asc',
+                },
+              },
+            },
+          },
         }),
         prisma.course.count({
           where: {
@@ -65,7 +112,15 @@ export const getCourseById = authGetFn
           id,
         },
 
-        include: { notes: { orderBy: { orderInfo: 'desc' } } },
+        include: {
+          notes: { orderBy: { orderInfo: 'desc' } },
+          tags: {
+            select: {
+              tag: { select: { id: true, name: true, userId: true } },
+            },
+            orderBy: { tag: { name: 'asc' } },
+          },
+        },
       })
       if (!course) throw new ServerActionError('Course not found')
       //throw new Error('Testfehler für Logging')
@@ -107,12 +162,6 @@ export const deleteCourseById = authFn
       },
     )
   })
-
-export const getTrainerSuggestionsSchema = withLogging(
-  z.object({
-    query: z.string(),
-  }),
-)
 
 export const getTrainerSuggestionsFn = authGetFn
   .inputValidator(getTrainerSuggestionsSchema)
@@ -185,6 +234,38 @@ export const getTrainerSuggestionsFn = authGetFn
         }
 
         return uniqueResults
+      },
+    )
+  })
+
+export const removeTagFromCourseFn = authFn
+  .inputValidator(
+    withLogging(
+      z.object({
+        courseId: z.string(),
+        tagId: z.string(),
+      }),
+    ),
+  )
+  .handler(async ({ data, context }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+
+    return await wrapServerAction(
+      'removeTagFromCourseFn',
+      context,
+      data,
+      async () => {
+        // Wir löschen nur den Eintrag in der Junction-Table
+        await prisma.courseTag.delete({
+          where: {
+            courseId_tagId: {
+              courseId: data.courseId,
+              tagId: data.tagId,
+            },
+          },
+        })
+        return { success: true }
       },
     )
   })
