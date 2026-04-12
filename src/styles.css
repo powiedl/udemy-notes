@@ -361,6 +361,10 @@ a {
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --text-xxs: 0.625rem;
+  --text-xxs--line-height: 0.75rem;
+  --text-xxs--font-weight: 300;
+  --text-xxs--letter-spacing: 0.05rem;
 }
 
 .dark {
