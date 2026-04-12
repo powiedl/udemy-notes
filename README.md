@@ -13,11 +13,12 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 - You can view your notes of the course - in the course details page
 - You can export your notes of the course - in the course details page
 - You can Delete a course - in the course details and overview page
+- You can add tags to a course - in the course details and overview page
+- You can create your own tags - in the Tags page (and also on demand where ever you can add existing tags)
 
 ## Next steps
 
-- [] Adding tags to a course (during import) or to single notes (after import)
-- [] Create your own tags
+- [] adding tags to single notes (after import)
 - [] FINALLY: Edit your notes in the App
 
 ## Learnings

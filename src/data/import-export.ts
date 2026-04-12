@@ -1,9 +1,6 @@
 // import fs from 'node:fs'
 // import path from 'node:path'
-import {
-  EMPTY_CLIENT_LOGGING_METADATA,
-  MAX_FILE_SIZE_UPLOAD,
-} from '#/lib/constants'
+import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 
 import { Course, Note } from '#/generated/prisma/client'
 import { ImportNote } from '#/types/course'
