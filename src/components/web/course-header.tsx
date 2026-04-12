@@ -7,7 +7,7 @@ import {
 } from '#/components/ui/card'
 import { Link, useRouter } from '@tanstack/react-router'
 import { Button } from '../ui/button'
-import { Delete, Download, Loader2 } from 'lucide-react'
+import { Delete, Download, Loader2, User } from 'lucide-react'
 import { cn } from '#/lib/utils'
 import { useState, useTransition } from 'react'
 import { CourseHeaderData, removeTagFromCourseFn } from '#/data/course'
@@ -121,8 +121,16 @@ const CourseHeader = ({
             />
           ))}
         </div>
-        <div className="mt-2 text-sm text-muted-foreground">
-          {countNotes} note{countNotes === 1 ? '' : 's'}
+        <div className="mt-4 flex w-full items-center gap-x-4">
+          {course.trainer && (
+            <div className="flex min-w-0 items-center gap-1.5 text-lg text-muted-foreground">
+              <User className="h-4 w-4 shrink-0" />
+              <span className="truncate">{course.trainer}</span>
+            </div>
+          )}
+          <div className="ml-auto whitespace-nowrap text-sm text-muted-foreground">
+            {countNotes} note{countNotes === 1 ? '' : 's'}
+          </div>
         </div>
       </CardContent>
       <CardFooter className="flex flex-row gap-4">
