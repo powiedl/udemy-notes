@@ -71,7 +71,7 @@ function CoursesList({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {courses.map((course) => (
           <CourseHeader
             course={course}
@@ -79,6 +79,7 @@ function CoursesList({
             key={course.id}
             onExport={() => handleExport(course.id)}
             onDelete={() => handleDelete(course.id)}
+            className="min-w-0"
           />
         ))}
       </div>

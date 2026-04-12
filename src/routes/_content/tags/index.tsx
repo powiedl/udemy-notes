@@ -1,12 +1,26 @@
 import { DataTablePagination } from '#/components/web/data-table-pagination'
 import { DataTableSearch } from '#/components/web/data-table-search'
-import Tag from '#/components/web/tag'
-import { getAvailableTagsFn } from '#/data/tag'
+import TagBadge from '#/components/web/tag-badge'
+import { deleteTagFn, getAvailableTagsFn } from '#/data/tag'
+import { handleAction } from '#/lib/client-utils'
 import { cn } from '#/lib/utils'
+import { ClientLoggingMetadata } from '#/schemas/api-utils'
 import { tagPaginationSchema } from '#/schemas/search-params'
-import { createFileRoute, useRouterState } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  useRouter,
+  useRouterState,
+} from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
 import { Loader2 } from 'lucide-react'
-import { Suspense, use, useDeferredValue, useEffect, useState } from 'react'
+import {
+  Suspense,
+  use,
+  useDeferredValue,
+  useEffect,
+  useState,
+  useTransition,
+} from 'react'
 
 export const Route = createFileRoute('/_content/tags/')({
   component: RouteComponent,
@@ -18,7 +32,33 @@ export const Route = createFileRoute('/_content/tags/')({
 })
 
 function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
+  const router = useRouter()
   const result = use(data)
+  const deleteTag = useServerFn(deleteTagFn)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [_, startDeleteTransition] = useTransition()
+  // Logging information für diese Komponente
+  const loggingMetadata: ClientLoggingMetadata = {
+    component: 'Tags', // Der Name der Komponente
+    actionSource: 'Tag-Badge, X-Button',
+    feature: 'DeleteTag', // Optional: Spezifische Aktion
+  }
+  const handleDeleteTag = async (id: string) => {
+    setDeletingId(id)
+    startDeleteTransition(async () => {
+      try {
+        await handleAction(deleteTag({ data: { id, loggingMetadata } }), {
+          successToast: 'Tag deleted successfully',
+        })
+        router.invalidate()
+      } catch (error) {
+        // Fehler wurde bereits durch handleAction via Toast gemeldet
+      } finally {
+        setDeletingId(null)
+      }
+    })
+  }
+
   if (!result.success)
     return (
       <div className="p-4 border border-red-500 bg-red-50 text-red-700 rounded">
@@ -32,7 +72,12 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
       {tags.items.map((t) => (
-        <Tag key={t.id} tag={t} />
+        <TagBadge
+          key={t.id}
+          tag={t}
+          onDelete={t.userId ? () => handleDeleteTag(t.id) : undefined}
+          isDeleting={deletingId === t.id}
+        />
       ))}
     </div>
   )
