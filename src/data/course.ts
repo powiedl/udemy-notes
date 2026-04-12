@@ -275,3 +275,83 @@ export const removeTagFromCourseFn = authFn
       },
     )
   })
+
+// src/data/course.ts
+
+export const linkTagToCourseFn = authFn
+  .inputValidator(
+    withLogging(
+      z.object({
+        courseId: z.string(),
+        tagId: z.string(),
+      }),
+    ),
+  )
+  .handler(async ({ data, context }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+
+    return await wrapServerAction(
+      'linkTagToCourseFn',
+      context,
+      data,
+      async () => {
+        await prisma.courseTag.create({
+          data: {
+            courseId: data.courseId,
+            tagId: data.tagId,
+          },
+        })
+        return { success: true }
+      },
+    )
+  })
+
+// B: Neues privates Tag erstellen und verknüpfen
+export const createAndLinkTagToCourseFn = authFn
+  .inputValidator(
+    withLogging(
+      z.object({
+        courseId: z.string(),
+        tagName: z.string(),
+      }),
+    ),
+  )
+  .handler(async ({ data, context }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+
+    return await wrapServerAction(
+      'createAndLinkTagToCourseFn',
+      context,
+      data,
+      async () => {
+        const userId = context.session.user.id
+
+        await prisma.courseTag.create({
+          data: {
+            // WICHTIG: Hier 'course' statt 'courseId' nutzen
+            course: {
+              connect: { id: data.courseId },
+            },
+            // Jetzt ist auch das 'tag' Objekt für TypeScript wieder sichtbar
+            tag: {
+              connectOrCreate: {
+                where: {
+                  name_userId: {
+                    name: data.tagName,
+                    userId: userId,
+                  },
+                },
+                create: {
+                  name: data.tagName,
+                  userId: userId,
+                },
+              },
+            },
+          },
+        })
+        return { success: true }
+      },
+    )
+  })
