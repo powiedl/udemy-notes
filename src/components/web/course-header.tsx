@@ -269,7 +269,7 @@ const CourseHeader = ({
                         <CommandItem
                           key={tag.id}
                           onSelect={() => handleLinkExisting(tag.id)}
-                          className="text-xs"
+                          className="text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground"
                         >
                           <Check className={cn('mr-2 h-3 w-3 opacity-0')} />
                           {tag.name}
