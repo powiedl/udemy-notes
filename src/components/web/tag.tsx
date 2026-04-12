@@ -10,8 +10,10 @@ import { handleAction } from '#/lib/client-utils'
 
 const Tag = ({
   tag,
+  className,
 }: {
   tag: ServerFnData<typeof getAvailableTagsFn>['items'][number]
+  className?: string
 }) => {
   const deleteTag = useServerFn(deleteTagFn)
   const [isDeleting, startDeleteTransition] = useTransition()
@@ -35,7 +37,7 @@ const Tag = ({
   return (
     <div className="relative w-fit">
       <Badge
-        className="px-4 py-3 uppercase mr-2"
+        className={cn('px-4 py-3 uppercase mr-2', className)}
         variant={tag.userId ? 'default' : 'secondary'}
       >
         {tag.name}

@@ -10,19 +10,22 @@ import { Button } from '../ui/button'
 import { Delete, Download, Loader2 } from 'lucide-react'
 import { cn } from '#/lib/utils'
 import { useTransition } from 'react'
+import { CourseHeaderData } from '#/data/course'
+import Tag from './tag'
 
-type Course = {
-  _count?: {
-    notes: number
-  }
-} & {
-  title: string
-  id: string
-  createdAt: Date
-  updatedAt: Date
-  userId: string
-  notes?: any[]
-}
+// type Course = {
+//   _count?: {
+//     notes: number
+//   }
+// } & {
+//   title: string
+//   id: string
+//   createdAt: Date
+//   updatedAt: Date
+//   userId: string
+//   notes?: any[]
+//   tags?: any[]
+// }
 
 const CourseHeader = ({
   course,
@@ -30,7 +33,7 @@ const CourseHeader = ({
   onExport,
   onDelete,
 }: {
-  course: Course
+  course: CourseHeaderData
   singleCourse?: boolean
   onExport: (id: string) => void
   onDelete: (id: string) => void
@@ -42,6 +45,8 @@ const CourseHeader = ({
     'notes' in course
       ? course.notes && course.notes.length
       : (course._count && course._count.notes) || 0
+  // course.id === 'b5a3e1fa-dfef-457f-9991-9195362456cd' &&
+  //   console.log('Course:', course)
   return (
     <Card
       key={course.id}
@@ -62,7 +67,15 @@ const CourseHeader = ({
           )}
         </CardTitle>
         <CardContent className="flex flex-col">
-          <div>Tags</div>
+          <div className="flex gap-2 flex-wrap">
+            {course.tags.map((t) => (
+              <Tag
+                key={t.tagId}
+                tag={t.tag}
+                className="px-2 py-1.5 text-xxs!"
+              />
+            ))}
+          </div>
           <div>
             {countNotes} note{countNotes === 1 ? '' : 's'}
           </div>

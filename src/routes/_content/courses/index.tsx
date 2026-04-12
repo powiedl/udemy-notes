@@ -1,7 +1,7 @@
 import CourseHeader from '#/components/web/course-header'
 import { DataTablePagination } from '#/components/web/data-table-pagination'
 import { DataTableSearch } from '#/components/web/data-table-search'
-import { getCoursesFn } from '#/data/course'
+import { CourseHeaderData, getCoursesFn } from '#/data/course'
 import { useCourseActions } from '#/hooks/use-course-actions'
 import { cn } from '#/lib/utils'
 import { paginationSchema } from '#/schemas/search-params'
