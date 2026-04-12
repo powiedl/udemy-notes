@@ -166,5 +166,28 @@ describe.only oder test.only schreibt (dann wird nur der .only Teil ausgeführt
 5. Im Test wird die Komponente gerendert und dann warten man darauf, dass das richtige Element sichtbar wird`,
     )
   })
+
+  it('sollte Einrückungen in mehrzeiligen Codeblöcken exakt erhalten', () => {
+    const html = createMockHtml(`
+      <div ${toAttr(CONSTANTS.NOTE_CODE_BLOCK_SELECTOR)}>
+        <pre>
+          <ol>
+            <li>const start = true;</li>
+            <li>  if (start) {</li>
+            <li>    console.log("Indented");</li>
+            <li>  }</li>
+          </ol>
+        </pre>
+      </div>
+    `)
+    const result = prepareAndConvertHtmlToMarkdown(html)
+
+    if (result.status === 'ERROR') throw new Error(result.message)
+
+    const content = result.course.notes[0].content
+    // Wir prüfen, ob die exakte Anzahl an Leerzeichen im Markdown-String ankommt
+    expect(content).toContain('  if (start) {')
+    expect(content).toContain('    console.log("Indented");')
+  })
   // ... weitere Tests wie oben
 })

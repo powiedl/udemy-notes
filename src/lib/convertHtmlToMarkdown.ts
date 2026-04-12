@@ -132,7 +132,8 @@ function processNode(node: CheerioSelection, $: CheerioAPI): string {
         codeText = child.text() || ''
       }
 
-      result += `\n\`\`\`\n${codeText.trim()}\n\`\`\`\n\n`
+      const sanitizedCode = codeText.replace(/^\n+|\n+$/g, '')
+      result += `\n\`\`\`\n${sanitizedCode}\n\`\`\`\n\n`
     } else if (tagName.match(/^H[1-6]$/)) {
       const level = Number(tagName[1])
       result += `${'#'.repeat(level)} ${child.text().trim()}\n\n`
@@ -218,19 +219,37 @@ function processInlineFormatting(
 function cleanUpMarkdown(markdown: string): string {
   if (!markdown) return ''
 
+  const lines = markdown.split('\n')
+  let inCodeBlock = false
+
+  const processedLines = lines.map((line) => {
+    const trimmedLine = line.trim()
+
+    // Prüfen, ob wir einen Code-Block betreten oder verlassen
+    if (trimmedLine.startsWith('```')) {
+      inCodeBlock = !inCodeBlock
+      return line.trimStart() // Die Backticks selbst dürfen links bündig sein
+    }
+
+    // Wenn wir im Code-Block sind, nichts verändern (Einrückung erhalten)
+    if (inCodeBlock) {
+      return line
+    }
+
+    // Außerhalb von Code-Blöcken: Standard-Cleanup (HTML-Einrückungen entfernen)
+    return line.trimStart()
+  })
+
   return (
-    markdown
-      // 1. Platzhalter in Markdown-Linebreaks umwandeln (2 Leerzeichen + Newline)
+    processedLines
+      .join('\n')
+      // 1. Platzhalter in Markdown-Linebreaks umwandeln
       .replace(/__BR__/g, '  \n')
       // 2. Mehr als zwei Newlines zu zwei Newlines reduzieren
       .replace(/\n{3,}/g, '\n\n')
-      // 3. Führende Leerzeichen am Anfang jeder Zeile entfernen (die oft durch HTML-Einrückung kommen)
-      .split('\n')
-      .map((line) => line.trimStart())
-      .join('\n')
-      // 4. Einzelne Leerzeichen am Zeilenende entfernen (ausser unsere gewollten 2 Leerzeichen)
+      // 4. Einzelne Leerzeichen am Zeilenende entfernen (außer gewollte 2 Leerzeichen)
       .replace(/(?<! ) {1}\n/g, '\n')
-      // 5. Sicherstellen, dass Überschriften und Listenpunkte keine Linebreak-Leerzeichen haben
+      // 5. Überschriften und Listenpunkte säubern
       .replace(/^(#+ .*?)  \n/gm, '$1\n')
       .replace(/^(\* .*?)  \n/gm, '$1\n')
       .replace(/^(\d+\. .*?)  \n/gm, '$1\n')
