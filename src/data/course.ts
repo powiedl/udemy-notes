@@ -24,8 +24,14 @@ export const getTrainerSuggestionsSchema = withLogging(
 const courseBaseInclude = {
   include: {
     tags: {
-      include: {
-        tag: true,
+      select: {
+        tag: {
+          select: {
+            id: true,
+            name: true,
+            userId: true,
+          },
+        },
       },
     },
   },
