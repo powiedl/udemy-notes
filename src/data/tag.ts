@@ -83,6 +83,30 @@ export const getAvailableTagsFn = authGetFn
     )
   })
 
+export const getTagsForSelectorFn = authGetFn
+  .inputValidator(withLogging(z.object({})))
+  .handler(async ({ data, context }) => {
+    const { prisma } = await import('#/lib/db.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+
+    return await wrapServerAction(
+      'getTagsForSelectorFn',
+      context,
+      data,
+      async () => {
+        const userId = context.session.user.id
+
+        // Wir holen alle Tags: Global (userId: null) ODER eigene (userId: userId)
+        return await prisma.tag.findMany({
+          where: {
+            OR: [{ userId: null }, { userId: userId }],
+          },
+          orderBy: { name: 'asc' },
+        })
+      },
+    )
+  })
+
 export const deleteTagFn = authFn
   .inputValidator(withLogging(z.object({ id: z.string() })))
   .handler(async ({ data, context }) => {
