@@ -1,12 +1,7 @@
-import { deleteTagFn, getAvailableTagsFn } from '#/data/tag'
-import { ClientLoggingMetadata, ServerFnData } from '#/types/api'
 import { Loader2, X } from 'lucide-react'
 import { Badge } from '../ui/badge'
-import { useServerFn } from '@tanstack/react-start'
-import { useTransition } from 'react'
 import { Button } from '../ui/button'
 import { cn } from '#/lib/utils'
-import { handleAction } from '#/lib/client-utils'
 
 interface TagBadgeProps {
   tag: { id: string; name: string; userId?: string | null }
