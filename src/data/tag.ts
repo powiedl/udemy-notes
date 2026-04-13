@@ -21,6 +21,10 @@ const defaultTags = [
   'nest-js',
 ]
 
+/**
+ * Initialisiert die Datenbank mit einem Satz vordefinierter globaler Tags.
+ * Diese Tags haben keine userId und sind somit für alle Benutzer sichtbar.
+ */
 export const createDefaultTags = authFn
   // Kein Validator nötig, da diese Action keine Parameter braucht
   .handler(async ({ context }) => {
@@ -31,15 +35,21 @@ export const createDefaultTags = authFn
       context,
       {},
       async () => {
+        // Transformation der String-Liste in das Prisma-Datenformat
         const data = defaultTags.map((t) => ({
           name: t,
         }))
+        // Massen-Einfügung, wobei bereits existierende Tags (skipDuplicates) ignoriert werden
         await prisma.tag.createMany({ data, skipDuplicates: true })
         return { success: true }
       },
     )
   })
 
+/**
+ * Ruft eine paginierte Liste aller verfügbaren Tags ab.
+ * Dies beinhaltet sowohl systemweite (globale) Tags als auch private Tags des aktuell angemeldeten Benutzers.
+ */
 export const getAvailableTagsFn = authGetFn
   .inputValidator(
     // Wir nutzen unser Standard-Schema und geben ihm die globalen Defaults als Fallback für den leeren Aufruf
@@ -58,6 +68,7 @@ export const getAvailableTagsFn = authGetFn
         const { search, page, pageSize } = data
         const skip = (page - 1) * pageSize
 
+        // Filter-Logik: Zeige Tags ohne userId (global) ODER Tags, die dem aktuellen User gehören
         const whereClause = {
           OR: [
             { userId: null, name: { contains: search } }, // Globale Tags
@@ -65,7 +76,7 @@ export const getAvailableTagsFn = authGetFn
           ],
         }
 
-        // Parallel laden für maximale Performance (wie bei den Kursen)
+        // Parallel laden von Daten und Gesamtanzahl für eine performante Pagination
         const [items, totalCount] = await Promise.all([
           prisma.tag.findMany({
             where: whereClause,
@@ -83,6 +94,10 @@ export const getAvailableTagsFn = authGetFn
     )
   })
 
+/**
+ * Ruft alle für den Benutzer relevanten Tags ohne Paginierung ab.
+ * Diese Funktion ist optimiert für die Verwendung in UI-Selektoren (z.B. Comboboxen oder Dropdowns).
+ */
 export const getTagsForSelectorFn = authGetFn
   .inputValidator(withLogging(z.object({})))
   .handler(async ({ data, context }) => {
@@ -96,7 +111,7 @@ export const getTagsForSelectorFn = authGetFn
       async () => {
         const userId = context.session.user.id
 
-        // Wir holen alle Tags: Global (userId: null) ODER eigene (userId: userId)
+        // Kombinierte Abfrage von globalen und benutzerspezifischen Tags, alphabetisch sortiert
         return await prisma.tag.findMany({
           where: {
             OR: [{ userId: null }, { userId: userId }],
@@ -107,6 +122,11 @@ export const getTagsForSelectorFn = authGetFn
     )
   })
 
+/**
+ * Löscht ein privates Tag des Benutzers anhand seiner ID.
+ * Globale Tags können über diese Funktion nicht gelöscht werden, da die Abfrage
+ * explizit die Übereinstimmung der userId des Besitzers erzwingt.
+ */
 export const deleteTagFn = authFn
   .inputValidator(withLogging(z.object({ id: z.string() })))
   .handler(async ({ data, context }) => {
@@ -115,6 +135,8 @@ export const deleteTagFn = authFn
     return await wrapServerAction('deleteTagFn', context, data, async () => {
       const userId = context.session.user.id
       const { id } = data
+
+      // Vorab-Check: Existiert das Tag und gehört es dem anfragenden User?
       const tag = await prisma.tag.findUnique({
         where: {
           userId,
@@ -122,7 +144,7 @@ export const deleteTagFn = authFn
         },
       })
 
-      // Client-freundlicher Fehler statt 404 Page-Redirect
+      // Falls das Tag nicht gefunden wurde (oder global ist), werfen wir einen maskierten Fehler für das Frontend
       if (!tag) throw new ServerActionError('Tag konnte nicht gefunden werden.')
 
       await prisma.tag.delete({ where: { id, userId } })

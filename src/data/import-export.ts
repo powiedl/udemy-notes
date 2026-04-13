@@ -11,6 +11,13 @@ import { ServerActionError } from '#/types/errors'
 import { withLogging } from '#/schemas/api-utils'
 import { importHtmlFileSchema } from '#/schemas/import-file'
 
+/**
+ * Prüft, ob eine neue Notiz von Udemy im Konflikt mit einer lokal bearbeiteten Notiz steht.
+ *
+ * Ein Konflikt entsteht, wenn:
+ * 1. Der neue Inhalt sich vom gespeicherten Original unterscheidet (Änderung auf Udemy).
+ * 2. Lokal bereits manuell Änderungen im `editedContent` vorgenommen wurden.
+ */
 function checkConflict(
   newNote: ImportNote,
   existingNote: Pick<Note, 'originalContent' | 'editedContent'>,
@@ -24,6 +31,14 @@ function checkConflict(
   return hasConflict
 }
 
+/**
+ * Importiert eine von Udemy exportierte HTML-Datei mit Kursnotizen.
+ *
+ * Der Prozess umfasst:
+ * 1. Validierung der Dateigröße und des Formats.
+ * 2. Konvertierung des HTML-Inhalts in Markdown und Extraktion der Metadaten.
+ * 3. Synchronisation des Kurses und der Notizen (Upsert-Logik) inkl. Konflikterkennung.
+ */
 export const importHtmlFile = authFn
   .inputValidator(importHtmlFileSchema)
   .handler(async ({ data, context }) => {
@@ -44,12 +59,12 @@ export const importHtmlFile = authFn
         newPrivateTags,
       } = data
 
-      // 1. Validierung (HTML-Check & Größe)
+      // --- 1. Validierung (Sicherheit & Integrität) ---
       // Da wir den String erhalten, prüfen wir hier die übergebene fileSize
       if (fileSize > MAX_FILE_SIZE_UPLOAD) {
         throw new ServerActionError('File too large. Maximum size exceeded.')
       }
-      // Einfacher Check, ob es nach HTML aussieht (da kein MIME-Type mehr am String)
+      // Minimalistischer Check auf HTML-Struktur
       if (!htmlContent.trim().toLowerCase().startsWith('<')) {
         throw new ServerActionError('Only HTML files are allowed.')
       }
@@ -64,7 +79,7 @@ export const importHtmlFile = authFn
 
       const { course, markdown } = conversionResult
 
-      // 3. Neue private Tags anlegen
+      // --- 3. Tag-Management ---
       let finalTagIds = [...tagIds]
       if (newPrivateTags.length > 0) {
         const createdTags = await Promise.all(
@@ -78,7 +93,7 @@ export const importHtmlFile = authFn
         finalTagIds = [...finalTagIds, ...createdTags.map((t) => t.id)]
       }
 
-      // 4. Kurs Upsert (Existierenden Kurs finden oder neu anlegen)
+      // --- 4. Kurs-Synchronisation (Upsert) ---
       const existingCourse = await prisma.course.findFirst({
         where: { userId, title: course.title },
       })
@@ -88,6 +103,7 @@ export const importHtmlFile = authFn
       const trainerName = trainer || 'Unbekannter Trainer'
 
       if (existingCourse) {
+        // Bei existierendem Kurs: Metadaten und Tags aktualisieren
         existingNotes = await prisma.note.findMany({
           where: { courseId: existingCourse.id },
         })
@@ -96,7 +112,7 @@ export const importHtmlFile = authFn
           data: {
             title: course.title,
             trainer: trainerName,
-            // Tags aktualisieren (wir ersetzen die bestehenden Tags durch die neue Auswahl)
+            // Alle alten Tag-Verknüpfungen lösen und durch neue Auswahl ersetzen
             tags: {
               deleteMany: {}, // Alle alten Verknüpfungen lösen
               create: finalTagIds.map((tagId) => ({ tagId })),
@@ -104,6 +120,7 @@ export const importHtmlFile = authFn
           },
         })
       } else {
+        // Neuen Kurs anlegen
         finishedCourse = await prisma.course.create({
           data: {
             title: course.title,
@@ -118,11 +135,12 @@ export const importHtmlFile = authFn
 
       const courseId = finishedCourse.id
 
-      // 5. Notizen verarbeiten (Update mit Konflikt-Check oder Create)
+      // --- 5. Notizen-Verarbeitung ---
       const notePromises = []
       let numberOfConflicts = 0
 
       for (const note of course.notes) {
+        // Identifikation einer existierenden Notiz anhand von Timestamp und Position
         const existingNote =
           existingNotes &&
           existingNotes.find(
@@ -139,6 +157,7 @@ export const importHtmlFile = authFn
         )
 
         if (existingNote) {
+          // Bestehende Notiz: Auf inhaltliche Konflikte prüfen
           const conflict = checkConflict(note, existingNote)
           if (conflict) numberOfConflicts++
 
@@ -153,6 +172,7 @@ export const importHtmlFile = authFn
             }),
           )
         } else {
+          // Neue Notiz: In DB anlegen
           notePromises.push(
             prisma.note.create({
               data: {
@@ -182,7 +202,13 @@ export const importHtmlFile = authFn
     })
   })
 
-export const exportMdFile = authFn()
+/**
+ * Generiert einen Markdown-Export für einen gesamten Kurs.
+ *
+ * Berücksichtigt dabei Kurs-Tags, Notiz-Metadaten (Zeitstempel, Lektion)
+ * und optional die Originalinhalte der Notizen.
+ */
+export const exportMdFile = authFn
   .inputValidator(withLogging(exportMdFileSchema))
   .handler(async ({ data, context }) => {
     const { prisma } = await import('#/lib/db.server')
@@ -198,7 +224,7 @@ export const exportMdFile = authFn()
       const course = await prisma.course.findUnique({
         where: {
           id: courseId,
-          userId: userId, // Sicherstellen, dass der Kurs dem User gehört
+          userId: userId,
         },
         include: {
           // 1. Tags des Kurses selbst laden
@@ -227,9 +253,11 @@ export const exportMdFile = authFn()
         },
       })
       if (!course) throw new ServerActionError('Course not found')
-      // title of the course
+
+      // --- Markdown-Generierung ---
       let markdown = `# ${course.title}\n\n`
-      // course tags
+
+      // Kurs-Tags hinzufügen
       if (includeTags) {
         if (course.tags.length > 0) {
           markdown += `Tags:\n\n`
@@ -239,7 +267,7 @@ export const exportMdFile = authFn()
         }
       }
 
-      //notes
+      // Notizen verarbeiten und mit Trennern zusammenfügen
       const notesMarkdownArray: string[] = []
 
       if (course.notes.length > 0) {
@@ -255,9 +283,9 @@ export const exportMdFile = authFn()
       } else {
         markdown += '## Notes\n\nNo notes found...'
       }
-      markdown = markdown.replace(/\n\n---\n\n$/, '') // remove the last seperator after the last note (it is not needed)
-      // because strings in Javascript are immutable, so we need to reassign the result of the replacement to the original variable
-      //throw new Error('Testfehler')
+
+      // Letzten Trenner entfernen
+      markdown = markdown.replace(/\n\n---\n\n$/, '')
       return { markdown }
     })
   })

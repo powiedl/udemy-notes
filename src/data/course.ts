@@ -49,6 +49,12 @@ export type CourseHeaderData = Prisma.CourseGetPayload<
 
 // Wir nutzen das zentrale paginationSchema und reichern es mit Logging-Metadaten an.
 const getCoursesSchema = withLogging(paginationSchema)
+
+/**
+ * Ruft eine paginierte Liste von Kursen für den aktuell angemeldeten Benutzer ab.
+ * Unterstützt die Suche nach dem Kurstitel (case-insensitive) und gibt zusätzlich
+ * die Anzahl der Notizen pro Kurs sowie die verknüpften Tags zurück.
+ */
 export const getCoursesFn = authGetFn
   .inputValidator(getCoursesSchema)
   .handler(async ({ data, context }) => {
@@ -104,6 +110,11 @@ export const getCoursesFn = authGetFn
     })
   })
 
+/**
+ * Ruft einen spezifischen Kurs anhand seiner ID ab.
+ * Stellt sicher, dass der Kurs dem angemeldeten Benutzer gehört.
+ * Inkludiert alle zugehörigen Notizen (absteigend sortiert) und Tags.
+ */
 export const getCourseById = authGetFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
@@ -137,6 +148,10 @@ export const getCourseById = authGetFn
 export type AwaitedReturnTypeGetCourseById = Awaited<
   ReturnType<typeof getCourseById>
 >
+
+/**
+ * Löscht einen Kurs anhand seiner ID, sofern dieser dem Benutzer gehört.
+ */
 export const deleteCourseById = authFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
@@ -169,6 +184,12 @@ export const deleteCourseById = authFn
     )
   })
 
+/**
+ * Liefert Vorschläge für Trainernamen basierend auf einer Suchanfrage.
+ * Durchsucht bestehende Kurse, filtert Platzhalter aus und gibt eine
+ * Liste von bis zu 5 eindeutigen Namen (case-insensitive geprüft) zurück.
+ * Erfordert mindestens 2 Zeichen im Suchstring.
+ */
 export const getTrainerSuggestionsFn = authGetFn
   .inputValidator(getTrainerSuggestionsSchema)
   .handler(async ({ data, context }) => {
@@ -244,6 +265,9 @@ export const getTrainerSuggestionsFn = authGetFn
     )
   })
 
+/**
+ * Entfernt die Verknüpfung zwischen einem Tag und einem Kurs (löscht den Eintrag in der Junction-Table).
+ */
 export const removeTagFromCourseFn = authFn
   .inputValidator(
     withLogging(
@@ -278,6 +302,9 @@ export const removeTagFromCourseFn = authFn
 
 // src/data/course.ts
 
+/**
+ * Verknüpft ein bereits existierendes Tag mit einem Kurs.
+ */
 export const linkTagToCourseFn = authFn
   .inputValidator(
     withLogging(
@@ -307,7 +334,10 @@ export const linkTagToCourseFn = authFn
     )
   })
 
-// B: Neues privates Tag erstellen und verknüpfen
+/**
+ * Erstellt ein neues privates Tag für den Benutzer (falls es noch nicht existiert)
+ * und verknüpft es sofort mit dem angegebenen Kurs.
+ */
 export const createAndLinkTagToCourseFn = authFn
   .inputValidator(
     withLogging(

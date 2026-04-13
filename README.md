@@ -19,6 +19,7 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 ## Next steps
 
 - [] adding tags to single notes (after import)
+- [] improve filtering (add specialized options for different routes)
 - [] FINALLY: Edit your notes in the App
 
 ## Learnings
