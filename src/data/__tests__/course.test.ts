@@ -16,7 +16,7 @@ import {
   removeTagFromCourseLogic,
   linkTagToCourseLogic,
   createAndLinkTagToCourseLogic,
-} from '../course'
+} from '../course.logic.server'
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>
 
@@ -270,7 +270,7 @@ describe('getTrainerSuggestionsLogic', () => {
   beforeEach(() => mockReset(prismaMock))
 
   it('Gibt leeres Array zurück bei zu kurzem Query (< 2 Zeichen)', async () => {
-    const result = await getTrainerSuggestionsLogic({ query: 'a' }, 'user_1')
+    const result = await getTrainerSuggestionsLogic({ query: 'a' })
     expect(result).toEqual([])
     expect(prismaMock.course.findMany).not.toHaveBeenCalled()
   })
@@ -287,7 +287,7 @@ describe('getTrainerSuggestionsLogic', () => {
     ]
     prismaMock.course.findMany.mockResolvedValue(mockSuggestions as any)
 
-    const result = await getTrainerSuggestionsLogic({ query: 'ma' }, 'user_1')
+    const result = await getTrainerSuggestionsLogic({ query: 'ma' })
 
     expect(result).toHaveLength(5)
     expect(result).toEqual([

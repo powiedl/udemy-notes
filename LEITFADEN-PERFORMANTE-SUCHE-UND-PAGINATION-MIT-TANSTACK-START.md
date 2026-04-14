@@ -1,6 +1,6 @@
 # Leitfaden: Performante Suche & Pagination mit TanStack Start
 
-**Version:** 26.410.1
+**Version:** 26.414.1
 
 ## Problembeschreibung
 
@@ -53,30 +53,40 @@ In TanStack Start will man bei der Behandlung der Search Params in der URL in fa
 
 ### B. Die Server Function (getCoursesFn)
 
-Die Server Function muss so umgebaut werden, dass sie nicht nur die Items, sondern auch die **Gesamtanzahl** (totalCount) zurückgibt, damit die Pagination weiß, wie viele Seiten existieren. Zudem muss sie unsere neue `wrapServerAction` Architektur und die direkte Übergabe im `.inputValidator` nutzen.
+Die Server Function wird in **Logik** und **Handler** aufgeteilt. Die Logik berechnet die Pagination und führt die Abfragen parallel aus.
 
 **Datei:** `src/data/course.ts`
 
 ```typescript
-export const getCoursesFn = createServerFn({ method: 'GET' })
-  .inputValidator(paginationSchema) // Validierung direkt am Eingang (ohne Pfeilfunktion!)
+// 1. Die extrahierte Logik (für Unit-Tests zugänglich)
+export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
+  const { prisma } = await import('#/lib/db.server')
+  const { page, pageSize, search } = data
+  const skip = (page - 1) * pageSize
+
+  // Parallel ausführen für bessere Performance
+  const [items, totalCount] = await Promise.all([
+    prisma.course.findMany({
+      where: { userId, title: { contains: search, mode: 'insensitive' } },
+      skip,
+      take: pageSize,
+      orderBy: { updatedAt: 'desc' },
+    }),
+    prisma.course.count({
+      where: { userId, title: { contains: search, mode: 'insensitive' } },
+    }),
+  ])
+
+  return { items, totalCount }
+}
+
+// 2. Die Server Function (RPC-Entrypoint)
+export const getCoursesFn = authGetFn
+  .inputValidator(paginationSchema)
   .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction('getCoursesFn', context, data, async () => {
-      const { page, pageSize, search } = data
-      const skip = (page - 1) * pageSize
-
-      // Parallel ausführen für bessere Performance
-      const [items, totalCount] = await Promise.all([
-        db.course.findMany({
-          where: { title: { contains: search } },
-          skip,
-          take: pageSize,
-        }),
-        db.course.count({ where: { title: { contains: search } } }),
-      ])
-
-      // success: true wird automatisch von wrapServerAction hinzugefügt
-      return { items, totalCount }
+      return getCoursesLogic(data, context.session.user.id)
     })
   })
 ```

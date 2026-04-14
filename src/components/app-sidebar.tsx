@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { NavPrimary } from './nav-primary'
 import { SidebarSeparator } from './ui/sidebar-ori'
-import { createDefaultTags } from '#/data/tag'
+import { createDefaultTagsFn } from '#/data/tag'
 import { NavAdmin } from './nav-admin'
 import { handleAction } from '#/lib/client-utils'
 import { useServerFn } from '@tanstack/react-start'
@@ -56,7 +56,7 @@ const navItems: NavPrimaryProps['items'] = [
 ]
 
 export function AppSidebar({ user }: NavUserProps) {
-  const seedTagsFn = useServerFn(createDefaultTags)
+  const seedTagsFn = useServerFn(createDefaultTagsFn)
   const [isPending, startTransition] = useTransition()
 
   // Das Array zieht in die Komponente um, damit wir Hooks nutzen können

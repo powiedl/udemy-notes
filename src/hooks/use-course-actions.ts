@@ -1,6 +1,6 @@
 import { useServerFn } from '@tanstack/react-start'
 import { exportMdFile } from '#/data/import-export'
-import { deleteCourseById } from '#/data/course'
+import { deleteCourseByIdFn } from '#/data/course'
 import { handleAction } from '#/lib/client-utils'
 import { useRouter } from '@tanstack/react-router'
 
@@ -8,7 +8,7 @@ export function useCourseActions() {
   const router = useRouter()
   // Wir sagen dem Hook explizit, welches Schema die Funktion hat
   const exportFn = useServerFn<typeof exportMdFile>(exportMdFile)
-  const deleteFn = useServerFn<typeof deleteCourseById>(deleteCourseById)
+  const deleteFn = useServerFn<typeof deleteCourseByIdFn>(deleteCourseByIdFn)
 
   const handleDelete = async (id: string) => {
     try {

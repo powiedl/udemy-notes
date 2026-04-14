@@ -1,6 +1,6 @@
 # Server Function System
 
-**Version:** 26.411.2
+**Version:** 26.414.1
 
 Dieses Dokument beschreibt die Architektur für die Server-Kommunikation in dieser Applikation. Das System stellt sicher, dass jeder Request über alle Ebenen hinweg (Client -> Middleware -> Server -> DB) rückverfolgbar ist, Fehler sicher behandelt werden und **kein Server-Code (wie Prisma oder Secrets) in den Browser-Bundle gelangt**.
 
@@ -15,7 +15,7 @@ Jeder Log-Eintrag in der Datenbank ist über die `request_id` eindeutig einem Cl
 model Log {
   id              String   @id @default(uuid())
   component       String?  // Frontend-Komponente (z.B. "CourseCard")
-  serverFunction  String?  @map("server_function") // Name der Fn (z.B. "deleteCourseById")
+  serverFunction  String?  @map("server_function") // Name der Fn (z.B. "deleteCourseByIdFn")
   severity        String?  // info, warning, error, critical
   message         String?  // Maskierte oder technische Nachricht
 
@@ -55,7 +55,7 @@ export type ActionResponse<T = void> = {
 
 ### Fabrics (Server Function Fabriken)
 
-Um Tracing und Middlewares konsistent zu halten, werden Server Functions ausschließlich über vordefinierte Fabrics in `src/lib/server-utils.ts` erstellt.
+Um Tracing und Middlewares konsistent zu halten, werden Server Functions ausschließlich über vordefinierte Fabrics in `src/lib/rpc.ts` (oder `server-utils.ts`) erstellt.
 
 | Fabric        | Methode | Schutz     | Enthaltene Middlewares                    |
 | :------------ | :------ | :--------- | :---------------------------------------- |
@@ -64,34 +64,55 @@ Um Tracing und Middlewares konsistent zu halten, werden Server Functions ausschl
 | `authFn`      | POST    | Geschützt  | `requestIdMiddleware`, `authFnMiddleware` |
 | `authGetFn`   | GET     | Geschützt  | `requestIdMiddleware`, `authFnMiddleware` |
 
-### Das Isolation Pattern (Leak Prevention)
+### Das File-Splitting Pattern (Testbarkeit & Client-Schutz)
 
-Um zu verhindern, dass Server-Bibliotheken (wie Prisma) in den Client-Bundle geladen werden, verwenden wir innerhalb der Handler konsequent **Dynamic Imports**. Jede Business-Logik wird zudem in `wrapServerAction` gehüllt.
+Um Ausbrechversuche von Server-Code in den Client-Bundle (`[import-protection] Import denied`) zu verhindern und eine 100%ige Testbarkeit zu garantieren, trennen wir die **Business Logik** physisch in zwei Dateien auf:
 
-**Wichtig:** Importiere Server-Utilities NIEMALS auf Top-Level Ebene der Datei.
+1.  **`*.logic.server.ts` (Reine Business Logik):** Enthält die eigentliche DB-Interaktion. Diese Datei wird **niemals** vom Frontend importiert. Hier sind normale Top-Level-Imports (`import { prisma } ...`) ausdrücklich erlaubt.
+2.  **`*.ts` (Transport & Server Function):** Dient als "Entry Point" für den Client, definiert Typen, Zod-Schemas und die RPC-Hülle. Die Logik-Datei wird hier **ausschließlich dynamisch im Handler** importiert.
 
 ```typescript
-// Beispiel: Implementierung einer geschützten Action mit Isolation Pattern
-export const deleteCourseById = authFn
+// 1. REINE BUSINESS LOGIK (src/data/course.logic.server.ts)
+// -> Top-Level Imports von Server-Paketen sind hier sicher und gewollt!
+import { prisma } from '#/lib/db.server'
+import { ServerActionError } from '#/types/errors'
+import type { CourseIdInput } from './course'
+
+export const deleteCourseByIdLogic = async (
+  data: CourseIdInput,
+  userId: string,
+) => {
+  const { id } = data
+  const course = await prisma.course.findUnique({
+    where: { id, userId },
+  })
+
+  if (!course) throw new ServerActionError('Kurs nicht gefunden.')
+
+  await prisma.course.delete({ where: { id } })
+  return 'Kurs erfolgreich gelöscht.'
+}
+```
+
+```typescript
+// 2. TRANSPORT & INFRASTRUKTUR (src/data/course.ts)
+// -> Wird vom Client importiert. Keine Top-Level Server-Imports!
+import { authFn } from '#/lib/rpc'
+import { courseIdSchema } from './schemas' // Beispiel
+
+export const deleteCourseByIdFn = authFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
-    // 1. Server-only Utilities erst INNERHALB des Handlers laden
-    const { prisma } = await import('#/lib/db.server')
+    // Dynamische Imports INSIDE handler schützen den Client-Bundle
     const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { deleteCourseByIdLogic } = await import('./course.logic.server')
 
     return await wrapServerAction(
-      'deleteCourseById',
+      'deleteCourseByIdFn',
       context, // Enthält requestId, correlationId und session
       data, // Enthält loggingMetadata
       async () => {
-        const { id } = data
-        const userId = context.session.user.id
-
-        const course = await prisma.course.findUnique({ where: { id, userId } })
-        if (!course) throw new ServerActionError('Kurs nicht gefunden.')
-
-        await prisma.course.delete({ where: { id } })
-        return 'Kurs erfolgreich gelöscht.'
+        return deleteCourseByIdLogic(data, context.session.user.id)
       },
     )
   })
@@ -116,8 +137,10 @@ Im Frontend werden alle Server Function Aufrufe über `handleAction` (in `src/li
 
 ## 5. Best Practices & Regeln
 
-1.  **Kein direktes `createServerFn`:** Nutze immer die Fabrics, damit die Middleware-Kette (Tracing) nicht unterbrochen wird.
-2.  **Strict Isolation:** Importiere `prisma` oder andere `.server`-Module **niemals am Dateianfang**. Nutze immer `await import(...)` innerhalb des Handlers.
-3.  **Input Validierung:** Nutze `.inputValidator(schema)` mit Zod-Schemas, die via `withLogging(baseSchema)` erstellt wurden.
-4.  **GET für Queries:** Verwende `authGetFn` für reine Datenabfragen (Queries), um Browser-Caching und URL-Parameter-Support zu ermöglichen.
-5.  **Fehler-Typing:** Nutze `ServerActionError` für Validierungsfehler, die der User direkt sehen soll. Nutze Standard-`Error` für technische Probleme, die maskiert werden müssen.
+1.  **File-Splitting ist Pflicht:** Lagere jegliche Datenbank- und Backendlogik in `*.logic.server.ts`-Dateien aus. Nutze die normalen `*.ts`-Dateien nur für Schemas, Typen und die `createServerFn`/`authFn`-Wrapper.
+2.  **Dynamische Handler-Imports:** Importiere Hilfsfunktionen wie `wrapServerAction` und deine Logik in den Transport-Dateien **immer dynamisch** (`await import(...)`) innerhalb des `.handler()`-Callbacks.
+3.  **Client-Sichere Prisma-Typen:** Wenn das Frontend Prisma-Payload-Typen (inkl. Includes) benötigt, definiere diese explizit in der Transport-Datei (`*.ts`) und nutze ausschließlich `import type { Prisma } from '#/generated/prisma/client'`. So wird der Compiler befriedigt, ohne Laufzeit-Code zu importieren.
+4.  **Einheitliche Namensgebung:** Alle Server Functions (die Hüllen in den Transport-Dateien) müssen konsistent auf **`Fn`** enden (z.B. `getCourseByIdFn`), damit sie im Client sofort als RPC-Endpunkt erkannt werden.
+5.  **Input Validierung:** Nutze `.inputValidator(schema)` mit Zod-Schemas, die via `withLogging(baseSchema)` erstellt wurden.
+6.  **GET für Queries:** Verwende `authGetFn` für reine Datenabfragen (Queries), um Browser-Caching und URL-Parameter-Support (in Verbindung mit TanStack Router `validateSearch`) zu ermöglichen.
+7.  **Fehler-Typing:** Nutze `ServerActionError` für Validierungsfehler, die der User direkt sehen soll. Nutze Standard-`Error` für technische Probleme, die durch `wrapServerAction` maskiert werden müssen.

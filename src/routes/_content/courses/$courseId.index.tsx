@@ -1,19 +1,19 @@
 import { Card, CardContent, CardHeader } from '#/components/ui/card'
 import CourseHeader from '#/components/web/course-header'
 import NotesList from '#/components/web/notes-list'
-import { getCourseById } from '#/data/course'
+import { getCourseByIdFn } from '#/data/course'
 import { useCourseActions } from '#/hooks/use-course-actions'
 import { ServerFnData } from '#/types/api'
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { Suspense, use } from 'react'
 
-type CourseWithNotes = ServerFnData<typeof getCourseById>
+type CourseWithNotes = ServerFnData<typeof getCourseByIdFn>
 
 export const Route = createFileRoute('/_content/courses/$courseId/')({
   component: RouteComponent,
   loader: ({ params }) => ({
-    coursePromise: getCourseById({
+    coursePromise: getCourseByIdFn({
       data: {
         id: params.courseId,
         loggingMetadata: { component: 'CoursePage' },
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_content/courses/$courseId/')({
   },
 })
 
-function Course({ data }: { data: ReturnType<typeof getCourseById> }) {
+function Course({ data }: { data: ReturnType<typeof getCourseByIdFn> }) {
   const result = use(data)
   // useEffect(() => {
   //   document.title = course.title || 'Course Details'
