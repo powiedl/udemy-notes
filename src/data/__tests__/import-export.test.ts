@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended'
 import type { PrismaClient } from '#/generated/prisma/client'
-import { ServerActionError } from '#/types/errors'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 
 // 1. Mocks definieren
