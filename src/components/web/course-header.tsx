@@ -35,6 +35,7 @@ import { CommandGroup, CommandItem } from 'cmdk'
 
 interface CourseHeaderProps {
   course: CourseHeaderData
+  variant?: 'default' | 'compact'
   singleCourse?: boolean
   onExport: (id: string) => void
   onDelete: (id: string) => void
@@ -42,6 +43,7 @@ interface CourseHeaderProps {
 }
 const CourseHeader = ({
   course,
+  variant = 'default',
   singleCourse = true,
   onExport,
   onDelete,
@@ -159,6 +161,48 @@ const CourseHeader = ({
 
     fetchTags()
   }, [])
+
+  if (variant === 'compact') {
+    return (
+      <div
+        className={cn(
+          'flex flex-col gap-2 p-4 border-b bg-muted/30 rounded-t-lg',
+          className,
+        )}
+      >
+        <div>
+          <Link
+            to="/courses/$courseId"
+            params={{ courseId: course.id }}
+            className="text-lg font-semibold hover:underline"
+          >
+            {course.title}
+          </Link>
+          {course.trainer && (
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+              <User className="h-3.5 w-3.5" />
+              <span>{course.trainer}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Read-Only Tags - Keine Add-Buttons, kein onDelete */}
+        {course.tags && course.tags.length > 0 && (
+          <div className="flex gap-1.5 flex-wrap mt-2">
+            {course.tags.map((t) => (
+              <TagBadge
+                key={`${course.id}-${t.tag.id}`}
+                tag={t.tag}
+                size="sm"
+                // KEIN onDelete hier!
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <Card
       key={course.id}
