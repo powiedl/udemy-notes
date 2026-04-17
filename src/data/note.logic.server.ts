@@ -1,6 +1,56 @@
 import { prisma } from '#/lib/db.server'
 import type { Prisma } from '#/generated/prisma/client'
 import type { NoteSearchInput } from '#/schemas/search-params'
+import { ServerActionError } from '#/types/errors'
+
+// Hilfstyp, um TypeScript glücklich zu machen, egal aus welcher Query die Notiz kommt
+// Minimale Anforderung an ein Tag-Item, das aus der DB kommt
+type MinimalTagRelation = {
+  tag: { id: string; name: string }
+}
+
+// Minimale Anforderung an die Notiz, damit das Mapping funktioniert
+type NoteWithTagsConstraint = {
+  tags: MinimalTagRelation[]
+  course?: { tags?: MinimalTagRelation[] } | null
+}
+
+/**
+ * Kombiniert direkte Notiz-Tags und vererbte Kurs-Tags, dedupliziert sie
+ * und fügt das Flag `isInherited` hinzu.
+ */
+export function mapNoteDisplayTags<T extends NoteWithTagsConstraint>(note: T) {
+  const courseTags =
+    note.course?.tags?.map((t: any) => ({
+      ...t,
+      isInherited: true,
+    })) || []
+  const courseTagIds = new Set(courseTags.map((t) => t.tag.id))
+
+  const directTags =
+    note.tags?.map((t: any) => ({
+      ...t,
+      isInherited: false,
+      isAlsoInherited: courseTagIds.has(t.tag.id),
+    })) || []
+  const directTagIds = new Set(directTags.map((t) => t.tag.id))
+  const uniqueCourseTags = courseTags
+    .filter((t) => !directTagIds.has(t.tag.id))
+    .map((t) => ({
+      ...t,
+      isInherited: true as const,
+      isAlsoInherited: false as const,
+    }))
+
+  const displayTags = [...directTags, ...uniqueCourseTags].sort((a, b) =>
+    a.tag.name.localeCompare(b.tag.name),
+  )
+
+  return {
+    ...note,
+    displayTags,
+  }
+}
 
 /**
  * Kern-Logik für den paginierten Abruf von Notizen.
@@ -82,6 +132,7 @@ export async function getNotesLogic(data: NoteSearchInput, userId: string) {
             id: true,
             title: true,
             userId: true, // Wichtig fürs Frontend, um zu erkennen, ob es ein fremder Kurs ist
+            trainer: true,
             tags: {
               include: { tag: true },
               orderBy: { tag: { name: 'asc' } },
@@ -96,6 +147,52 @@ export async function getNotesLogic(data: NoteSearchInput, userId: string) {
     }),
     prisma.note.count({ where }),
   ])
+  //throw new ServerActionError('This is a test Server Action Error')
 
-  return { items, totalCount }
+  const mappedItems = items.map(mapNoteDisplayTags)
+  return { items: mappedItems, totalCount }
+}
+
+export async function toggleNoteTagLogic(
+  data: { noteId: string; tagId: string; action: 'add' | 'remove' },
+  userId: string,
+) {
+  // 1. Sicherheits-Check: Gehört die Notiz zu einem Kurs des Users?
+  const note = await prisma.note.findFirst({
+    where: { id: data.noteId, course: { userId: userId } },
+    select: { id: true },
+  })
+
+  if (!note) {
+    throw new ServerActionError('Note not found for this user.')
+  }
+
+  // 2. Aktion ausführen
+  if (data.action === 'add') {
+    // Passe dies an das exakte Prisma-Schema an (z.B. Upsert auf der Join-Tabelle)
+    await prisma.note
+      .update({
+        where: { id: data.noteId },
+        data: {
+          tags: {
+            // create oder connectOrCreate, je nach Schema der Join-Tabelle
+            create: { tagId: data.tagId },
+          },
+        },
+      })
+      .catch(() => {}) // Ignorieren, falls die Verknüpfung schon existiert
+  } else {
+    // action === 'remove'
+    // Passe dies an dein Prisma-Schema an (Löschen des Eintrags in der Join-Tabelle)
+    await prisma.note.update({
+      where: { id: data.noteId },
+      data: {
+        tags: {
+          deleteMany: { tagId: data.tagId },
+        },
+      },
+    })
+  }
+
+  return { success: true }
 }

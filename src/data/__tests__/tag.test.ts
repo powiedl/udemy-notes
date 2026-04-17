@@ -162,7 +162,7 @@ describe('Tag Logik Funktionen', () => {
 
       // WHEN & THEN: Es muss ein Fehler fliegen und delete() darf NIE aufgerufen werden!
       await expect(deleteTagLogic({ id: tagId }, userId)).rejects.toThrow(
-        'Tag konnte nicht gefunden werden.',
+        'Tag could not be found.',
       )
 
       expect(prismaMock.tag.delete).not.toHaveBeenCalled()

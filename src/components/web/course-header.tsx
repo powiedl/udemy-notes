@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
-import { Link, useRouter } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { Button } from '../ui/button'
 import {
   Check,
@@ -17,150 +17,50 @@ import {
   User,
 } from 'lucide-react'
 import { cn } from '#/lib/utils'
-import { startTransition, useEffect, useState, useTransition } from 'react'
-import {
-  CourseHeaderData,
-  removeTagFromCourseFn,
-  linkTagToCourseFn,
-  createAndLinkTagToCourseFn,
-} from '#/data/course'
-import { getTagsForSelectorFn } from '#/data/tag' // Pfad anpassen
+import { useTransition } from 'react'
+import { CourseHeaderData } from '#/data/course'
 import TagBadge from './tag-badge'
-import { handleAction } from '#/lib/client-utils'
-import { useServerFn } from '@tanstack/react-start'
-import { ClientLoggingMetadata } from '#/schemas/api-utils'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import { Command, CommandEmpty, CommandInput, CommandList } from '../ui/command'
 import { CommandGroup, CommandItem } from 'cmdk'
+import { useTagManagement } from '#/hooks/use-tag-management'
 
 interface CourseHeaderProps {
-  course: CourseHeaderData
+  course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'> // so, dass es nicht stört, wenn createdAt und updatedAt nicht vorhanden sind
   variant?: 'default' | 'compact'
   singleCourse?: boolean
-  onExport: (id: string) => void
-  onDelete: (id: string) => void
+  onExport?: (id: string) => void
+  onDelete?: (id: string) => void
   className?: string
 }
 const CourseHeader = ({
   course,
   variant = 'default',
   singleCourse = true,
-  onExport,
-  onDelete,
+  onExport = async () => {},
+  onDelete = async () => {},
   className,
 }: CourseHeaderProps) => {
-  const router = useRouter()
-  const [deletingTagAssociationId, setDeletingTagAssociationId] = useState<
-    string | null
-  >(null)
-  const [_, startDeleteTagAssociation] = useTransition()
+  const {
+    availableTags,
+    isAdding,
+    setIsAdding,
+    tagQuery,
+    setTagQuery,
+    isPending: isTagPending, // Umbenannt, um Konflikte mit isExporting zu vermeiden
+    deletingTagId,
+    handleLink,
+    handleCreateAndLink,
+    handleDeleteTagAssociation,
+  } = useTagManagement(course.id, 'course', 'CourseHeader')
   const [isDeleting, startDeleteTransition] = useTransition()
   const [isExporting, startExportTransition] = useTransition()
-  const removeTagFromCourse = useServerFn(removeTagFromCourseFn)
-  const isPending = isDeleting || isExporting
-  const loggingMetadata: ClientLoggingMetadata = {
-    component: 'Course-Header', // Der Name der Komponente
-    actionSource: 'Tag-Badge, X-Button',
-    feature: 'DeleteTagAssociation', // Optional: Spezifische Aktion
-  }
-  const [isAdding, setIsAdding] = useState(false)
-  const [tagQuery, setTagQuery] = useState('')
-  const [availableTags, setAvailableTags] = useState<
-    { id: string; name: string; userId: string | null }[]
-  >([])
+  const isPending = isDeleting || isExporting || isTagPending
 
   const countNotes =
     'notes' in course
       ? course.notes && course.notes.length
       : (course._count && course._count.notes) || 0
-  const handleDeleteTagAssociation = async (
-    courseId: string,
-    tagId: string,
-  ) => {
-    const deleteId = `${courseId}-${tagId}`
-    setDeletingTagAssociationId(deleteId)
-    startDeleteTagAssociation(async () => {
-      try {
-        await handleAction(
-          removeTagFromCourse({ data: { courseId, tagId, loggingMetadata } }),
-          {
-            successToast: 'Tag deleted successfully from course',
-          },
-        )
-        router.invalidate()
-      } catch (error) {
-      } finally {
-        setDeletingTagAssociationId(null)
-      }
-    })
-  }
-  const handleLinkExisting = async (tagId: string) => {
-    startTransition(async () => {
-      const result = await handleAction(
-        linkTagToCourseFn({
-          data: {
-            courseId: course.id,
-            tagId,
-            loggingMetadata: { component: 'CourseHeader' },
-          },
-        }),
-        { successToast: 'Tag hinzugefügt' },
-      )
-
-      if (result) {
-        setIsAdding(false) // Popover schließen
-        setTagQuery('') // Input leeren
-        router.invalidate() // UI aktualisieren
-      }
-    })
-  }
-
-  // Handler für neue Tags
-  const handleCreateAndLink = async (name: string) => {
-    if (!name.trim()) return
-
-    startTransition(async () => {
-      const result = await handleAction(
-        createAndLinkTagToCourseFn({
-          data: {
-            courseId: course.id,
-            tagName: name,
-            loggingMetadata: { component: 'CourseHeader' },
-          },
-        }),
-        { successToast: 'Neues Tag erstellt und verknüpft' },
-      )
-
-      if (result) {
-        setIsAdding(false)
-        setTagQuery('')
-        router.invalidate()
-      }
-    })
-  }
-  // course.id === 'b5a3e1fa-dfef-457f-9991-9195362456cd' &&
-  //   console.log('Course:', course)
-  useEffect(() => {
-    const fetchTags = async () => {
-      // handleAction nutzt die getTagsForSelectorFn
-      // Wir übergeben ein leeres Objekt für die data, da der Validator z.object({}) verlangt
-      const result = await handleAction(
-        getTagsForSelectorFn({
-          data: {
-            loggingMetadata: { component: 'CourseHeader' },
-          },
-        }),
-      )
-
-      if (result) {
-        // getTagsForSelectorFn gibt direkt das Array von Prisma zurück (kein .items nötig)
-        // result ist hier also direkt Tag[]
-        setAvailableTags(result)
-      }
-    }
-
-    fetchTags()
-  }, [])
 
   if (variant === 'compact') {
     return (
@@ -232,10 +132,8 @@ const CourseHeader = ({
             <TagBadge
               key={`${course.id}-${t.tag.id}`}
               tag={t.tag}
-              onDelete={() => handleDeleteTagAssociation(course.id, t.tag.id)}
-              isDeleting={
-                deletingTagAssociationId === `${course.id}-${t.tag.id}`
-              }
+              onDelete={() => handleDeleteTagAssociation(t.tag.id)}
+              isDeleting={deletingTagId === `${course.id}-${t.tag.id}`}
               size="sm"
             />
           ))}
@@ -246,9 +144,9 @@ const CourseHeader = ({
                 // ml-1 für den extra Abstand zum letzten Tag
                 // size="sm" als Basis, aber mit h-4 überschrieben für die Badge-Optik
                 className="ml-2 h-4 w-6 rounded-md border-dashed border-px-0 hover:border-primary transition-all group/add cursor-pointer"
-                disabled={isPending}
+                disabled={isTagPending}
               >
-                {isPending ? (
+                {isTagPending ? (
                   <Loader2 className="h-2.5 w-2.5 animate-spin" />
                 ) : (
                   <Plus className="h-3 w-3" />
@@ -312,7 +210,7 @@ const CourseHeader = ({
                       .map((tag) => (
                         <CommandItem
                           key={tag.id}
-                          onSelect={() => handleLinkExisting(tag.id)}
+                          onSelect={() => handleLink(tag.id)}
                           className="text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground"
                         >
                           <Check className={cn('mr-2 h-3 w-3 opacity-0')} />

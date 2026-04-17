@@ -78,7 +78,7 @@ export const deleteTagLogic = async (data: DeleteTagInput, userId: string) => {
     where: { userId, id },
   })
 
-  if (!tag) throw new ServerActionError('Tag konnte nicht gefunden werden.')
+  if (!tag) throw new ServerActionError('Tag could not be found.')
 
   await prisma.tag.delete({ where: { id, userId } })
   return 'tag deleted successfully'

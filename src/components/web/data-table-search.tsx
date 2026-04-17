@@ -3,11 +3,15 @@ import { Input } from '../ui/input'
 
 interface DataTableSearchProps {
   value?: string
+  children?: React.ReactNode
+  placeholder?: string
   onSearchChange: (value: string) => void
 }
 
 export function DataTableSearch({
   value = '',
+  children,
+  placeholder = 'Search...',
   onSearchChange,
 }: DataTableSearchProps) {
   const [localSearch, setLocalSearch] = useState(value)
@@ -18,10 +22,17 @@ export function DataTableSearch({
   }, [localSearch])
 
   return (
-    <Input
-      placeholder="Suchen..."
-      value={localSearch}
-      onChange={(e) => setLocalSearch(e.target.value)}
-    />
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
+      <Input
+        placeholder={placeholder}
+        value={localSearch}
+        onChange={(e) => setLocalSearch(e.target.value)}
+      />
+      {children && (
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          {children}
+        </div>
+      )}
+    </div>
   )
 }

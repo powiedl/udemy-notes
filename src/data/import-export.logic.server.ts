@@ -89,7 +89,7 @@ export const importHtmlFileLogic = async (
 
   let finishedCourse: Course
   let existingNotes = null
-  const trainerName = trainer || 'Unbekannter Trainer'
+  const trainerName = trainer || 'Unknown Trainer'
 
   if (existingCourse) {
     existingNotes = await prisma.note.findMany({

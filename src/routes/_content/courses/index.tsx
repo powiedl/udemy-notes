@@ -49,7 +49,7 @@ function CoursesList({
   if (!result.success) {
     return (
       <div className="p-4 text-destructive bg-destructive/10 rounded-md">
-        Fehler beim Laden der Kurse: {result.error}
+        Error while loading courses: {result.error}
       </div>
     )
   }

@@ -14,12 +14,13 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 - You can export your notes of the course - in the course details page
 - You can Delete a course - in the course details and overview page
 - You can add tags to a course - in the course details and overview page
+- You can add tags to a single note - everywhere you see the note
 - You can create your own tags - in the Tags page (and also on demand where ever you can add existing tags)
+- You can get a list of all notes from all your courses (and have multiple filtering and sorting options for this list)
 
 ## Next steps
 
-- [] adding tags to single notes (after import)
-- [] improve filtering (add specialized options for different routes)
+- [] search for courses and notes with tags assigned
 - [] FINALLY: Edit your notes in the App
 
 ## Learnings
@@ -28,3 +29,9 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
   - [German original](SERVER-FUNCTION-SYSTEM.md)
 - [LEITFADEN PERFORMANTE SUCHE UND PAGINATION MIT TANSTACK START](GUIDE-PERFORMANT-SEARCH-AND-PAGINATION-WITH-TANSTACK-START_ENGLISH) - how to setup a general search and pagination container for "all" of your pages, where this makes sense. Right now it is only implemented in the Courses page, but will be added to additional routes in the future (to see if it is really "general")
   - [German original](LEITFADEN-PERFORMANTE-SUCHE-UND-PAGINATION-MIT-TANSTACK-START.md)
+
+### Misc knowledge gems
+
+#### useNavigate
+
+If you use the `useNavigate` function (which returns the navigate function, which you can use to navigate to a different route or to the same route but with different searchParams) it is useful to pass an object with the current route - otherwise Typescript gets nervous, because it doesn't know if it is safe to call the new navigation target: `const navigate = useNavigate({from: Route.fullPath})`

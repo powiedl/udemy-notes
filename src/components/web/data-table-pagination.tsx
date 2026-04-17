@@ -34,7 +34,7 @@ export function DataTablePagination({
   return (
     <div
       className={cn(
-        totalPages === 1
+        totalPages <= 1
           ? 'hidden'
           : 'flex items-center justify-between px-2 py-4',
       )}

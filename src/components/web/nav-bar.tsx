@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { cn } from '#/lib/utils'
 import {
+  NOTE_SEARCH_DEFAULTS,
   PAGINATION_DEFAULTS,
   TAG_PAGINATION_DEFAULTS,
 } from '#/schemas/search-params'
@@ -91,6 +92,7 @@ const Navbar = ({ className }: { className: string }) => {
           </Link>
           <Link
             to="/notes"
+            search={NOTE_SEARCH_DEFAULTS}
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
           >
