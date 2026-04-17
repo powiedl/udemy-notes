@@ -1,30 +1,11 @@
 import { ActionResponse, ClientLoggingMetadata } from '#/types/api'
-import { requestIdMiddleware } from '#/middlewares/request-id'
-import { authFnMiddleware } from '#/middlewares/auth'
 import { logToDb } from '#/lib/logging.server' // Stelle sicher, dass logging.ts intern db.server nutzt
 import {
   EMPTY_CLIENT_LOGGING_METADATA,
   SERVER_ERROR_SANITIZED_MESSAGE,
 } from './constants'
 import { Session } from './auth'
-import { createServerFn } from '@tanstack/react-start'
 import { ServerActionError } from '#/types/errors'
-
-export const publicFn = createServerFn().middleware([requestIdMiddleware])
-// GET (für Abfragen/Queries)
-export const publicGetFn = createServerFn({ method: 'GET' }).middleware([
-  requestIdMiddleware,
-])
-
-export const authFn = createServerFn().middleware([
-  requestIdMiddleware,
-  authFnMiddleware,
-])
-// GET (für Abfragen/Queries)
-export const authGetFn = createServerFn({ method: 'GET' }).middleware([
-  requestIdMiddleware,
-  authFnMiddleware,
-])
 
 /**
  * Ein globaler Wrapper für Server Actions, der Logging und standardisierte

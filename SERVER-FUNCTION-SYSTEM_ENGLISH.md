@@ -1,45 +1,28 @@
 # Server Function System
 
-**Version:** 26.414.1
+**Version:** 26.417.1
 
-This document describes the architecture for server communication in this application. The system ensures that every request is traceable across all layers (Client -> Middleware -> Server -> DB), errors are handled securely, and **no server code (such as Prisma or secrets) leaks into the browser bundle**.
+This document describes the architecture, the strict separation of client and server code, the communication types, and the comprehensive error handling for our Server Functions within the TanStack Start application.
+
+Our system is based on a strict separation of layers and a **two-layer model** ("Scalpel and Safety Net") for error handling. This ensures that developers have maximum context during logging, while the system never leaks sensitive data or crashes uncontrollably.
 
 ---
 
-## 1. Tracing & Logging (Data Model)
+## 1. Strict File Separation (Client vs. Server)
 
-Every log entry in the database can be uniquely mapped to a client request via the `request_id`. The schema allows correlation between frontend components and server logic.
+To prevent server code (such as Prisma ORM or Node modules) from "leaking" into the client bundle and to avoid issues with the Vite bundler (`@tanstack/start-vite-plugin`), we utilize strict file splitting:
 
-```prisma
-// prisma/schema.prisma
-model Log {
-  id              String   @id @default(uuid())
-  component       String?  // Frontend component (e.g., "CourseCard")
-  serverFunction  String?  @map("server_function") // Name of the Fn (e.g., "deleteCourseByIdFn")
-  severity        String?  // info, warning, error, critical
-  message         String?  // Masked or technical message
-
-  requestId       String?  @map("request_id")
-  correlationId   String?  @map("correlation_id")
-
-  userId          String?  @map("user_id")
-  user            User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  @@map("log")
-}
-```
+1.  **`*.logic.server.ts` (Pure Business Logic):** Contains the actual database interaction. This file is **never** imported by the frontend. Normal top-level imports (`import { prisma } ...`) are explicitly allowed here.
+2.  **`*.ts` (Transport & Server Function):** Serves as the "Entry Point" for the client, defining types, Zod schemas, and the RPC shell. The logic file and wrapper functions are imported here **exclusively dynamically within the handler**.
 
 ---
 
 ## 2. Communication Types
 
-We use an **Intersection** type so that the tracing IDs are always available in both success and error cases.
+To ensure that the client and server communicate in a type-safe and predictable manner, we use a standardized return interface for all mutations and complex logic calls.
 
 ```typescript
-// src/types/api.ts
+// The standard interface for server responses
 export type ActionResponse<T = void> = {
   requestId?: string
   correlationId?: string
@@ -49,98 +32,288 @@ export type ActionResponse<T = void> = {
 )
 ```
 
----
-
-## 3. Server-Side Architecture
-
-### Fabrics (Server Function Factories)
-
-To keep tracing and middlewares consistent, Server Functions are created exclusively via predefined fabrics in `src/lib/rpc.ts` (or `server-utils.ts`).
-
-| Fabric        | Method | Protection | Included Middlewares                      |
-| :------------ | :----- | :--------- | :---------------------------------------- |
-| `publicFn`    | POST   | Public     | `requestIdMiddleware`                     |
-| `publicGetFn` | GET    | Public     | `requestIdMiddleware`                     |
-| `authFn`      | POST   | Protected  | `requestIdMiddleware`, `authFnMiddleware` |
-| `authGetFn`   | GET    | Protected  | `requestIdMiddleware`, `authFnMiddleware` |
-
-### The File-Splitting Pattern (Testability & Client Protection)
-
-To prevent server code from leaking into the client bundle (`[import-protection] Import denied`) and to guarantee 100% testability, we physically separate the business logic into two files:
-
-1.  **`*.logic.server.ts` (Pure Business Logic):** Contains the actual DB interaction. This file is **never** imported by the frontend. Normal top-level imports (`import { prisma } ...`) are explicitly allowed here.
-2.  **`*.ts` (Transport & Server Function):** Serves as the "Entry Point" for the client, defines types, Zod schemas, and the RPC wrapper. The logic file is imported here **exclusively dynamically within the handler**.
+For known, user-caused errors (e.g., validation, missing permissions) that can be safely sent to the frontend, a specific error class exists:
 
 ```typescript
-// 1. PURE BUSINESS LOGIC (src/data/course.logic.server.ts)
-// -> Top-level imports of server packages are safe and intended here!
-import { prisma } from '#/lib/db.server'
-import { ServerActionError } from '#/types/errors'
-import type { CourseIdInput } from './course'
-
-export const deleteCourseByIdLogic = async (
-  data: CourseIdInput,
-  userId: string,
-) => {
-  const { id } = data
-  const course = await prisma.course.findUnique({
-    where: { id, userId },
-  })
-
-  if (!course) throw new ServerActionError('Course not found.')
-
-  await prisma.course.delete({ where: { id } })
-  return 'Course successfully deleted.'
+export class ServerActionError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ServerActionError'
+  }
 }
 ```
 
+---
+
+## 3. Server Function Fabrics (The Factories)
+
+In the `src/lib/rpc.ts` file (or similar), we define base factories that serve as the foundation for all server calls. **All factories now build upon `baseServerFn`** to inherit the global safety net for error handling.
+
+| Fabric         | HTTP Method     | Auth Required? | Description / Use Case                                                                                                                      |
+| :------------- | :-------------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
+| `baseServerFn` | POST (Standard) | No             | The absolute base. Includes the global error middleware. Used directly for public endpoints (e.g., Login) or as a base for other factories. |
+| `authGetFn`    | GET             | Yes            | For fetching data (Queries). Checks the session. Results can be cached by the browser/router.                                               |
+| `authPostFn`   | POST            | Yes            | For mutations (Create, Update, Delete). Checks the session.                                                                                 |
+
+_Example of creating a function in the transport file (`_.ts`):\*
+
 ```typescript
-// 2. TRANSPORT & INFRASTRUCTURE (src/data/course.ts)
-// -> Imported by the client. No top-level server imports!
-import { authFn } from '#/lib/rpc'
-import { courseIdSchema } from './schemas' // Example
+import { authGetFn } from '#/lib/rpc'
 
-export const deleteCourseByIdFn = authFn
-  .inputValidator(courseIdSchema)
-  .handler(async ({ context, data }) => {
-    // Dynamic imports INSIDE the handler protect the client bundle
+export const getNotesFn = authGetFn
+  .inputValidator(getNotesSchema)
+  .handler(async ({ data, context }) => {
+    // Dynamic import protects the client bundle!
     const { wrapServerAction } = await import('#/lib/server-utils.server')
-    const { deleteCourseByIdLogic } = await import('./course.logic.server')
+    const { getNotesLogic } = await import('./note.logic.server')
 
-    return await wrapServerAction(
-      'deleteCourseByIdFn',
-      context, // Contains requestId, correlationId, and session
-      data, // Contains loggingMetadata
-      async () => {
-        return deleteCourseByIdLogic(data, context.session.user.id)
-      },
-    )
+    return await wrapServerAction('getNotesFn', context, data, async () => {
+      return getNotesLogic(data, context.session.user.id)
+    })
   })
 ```
 
 ---
 
-## 4. Client-Side Handling
+## 4. The Error Handling System (Two-Layer Model)
 
-### The `handleAction` Utility
+To maximize security and traceability, we separate error handling into two interlocking levels:
 
-In the frontend, all Server Function calls are processed via `handleAction` (in `src/lib/client-utils.ts`). This controls the UI feedback via **Sonner Toasts**.
+### Layer 1: The Global Middleware (The Safety Net)
 
-- **Success:** Shows a green toast (disappears after 5s).
-- **Client Error (Safe):** Shows a red toast (disappears after 5s).
-- **Server Error (Hard):** - The toast remains permanently visible (`duration: Infinity`).
-  - Displays the `requestId` as a reference.
-  - Provides a **"Copy ID"** button.
-  - **UX Optimization:** Upon clicking "Copy", the ID is copied to the clipboard, a "Copied" success toast is shown, and the original error toast is immediately closed (`dismiss`).
+Located at the very top of the network edge (`rpc.ts`). It catches everything that crashes due to Zod validation or was accidentally thrown by developers outside of the deep logic.
+
+```typescript
+// src/lib/rpc.ts
+import { createMiddleware, createServerFn } from '@tanstack/start'
+import { ServerActionError } from '#/types/errors'
+import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants'
+
+export async function handleGlobalError(error: any): Promise<never> {
+  const isSafeError = error instanceof ServerActionError
+  const isZodError = error?.name === 'ZodError'
+
+  console.error('[GlobalErrorHandler] UNCAUGHT:', error)
+
+  // 1. Log EVERYTHING (Dynamic import to protect client bundle)
+  const { logToDb } = await import('#/lib/logging.server')
+  const realErrorMessage =
+    error instanceof Error ? error.message : String(error)
+
+  await logToDb({
+    metadata: {
+      component: 'Global-Error-Boundary',
+      actionSource: 'Uncaught Exception',
+    },
+    serverFunction: isZodError ? 'Validator' : 'Unknown/Outside Action',
+    severity: isSafeError || isZodError ? 'warning' : 'critical',
+    message: realErrorMessage,
+  }).catch((logError) => {
+    console.error('Critical: Fallback log could not be written:', logError)
+  })
+
+  // 2. Apply Error Masking or throw original
+  if (isSafeError || isZodError) {
+    throw error // Must reach the client so UI (e.g., forms) can react
+  } else {
+    throw new Error(SERVER_ERROR_SANITIZED_MESSAGE) // Maintain secrecy
+  }
+}
+
+export const errorHandlingMiddleware = createMiddleware().server(
+  async ({ next }) => {
+    try {
+      return await next()
+    } catch (error: any) {
+      return await handleGlobalError(error)
+    }
+  },
+)
+
+// Base for ALL Server Functions!
+export const baseServerFn = createServerFn().middleware([
+  errorHandlingMiddleware,
+])
+```
+
+### Layer 2: The Precision Tool (`wrapServerAction`)
+
+Used as a wrapper within the transport file handler. It has full access to the request context. If an error occurs in the executing logic, it logs it in detail and returns a controlled `ActionResponse` object. It **does not re-throw errors**, which is why the global middleware does not intervene here.
+
+```typescript
+// src/lib/server-utils.server.ts
+export async function wrapServerAction<T>(
+  actionName: string,
+  context: {
+    session?: { user: { id: string } } | null
+    requestId: string
+    correlationId: string
+  },
+  input: { loggingMetadata?: ClientLoggingMetadata },
+  action: () => Promise<T>,
+  successMessage?: string,
+): Promise<ActionResponse<T>> {
+  try {
+    const data = await action()
+    return {
+      success: true,
+      data,
+      message: successMessage,
+      requestId: context.requestId,
+      correlationId: context.correlationId,
+    }
+  } catch (error: unknown) {
+    const realErrorMessage =
+      error instanceof Error ? error.message : String(error)
+
+    // 1. Log technical error with IDs to the DB
+    await logToDb({
+      metadata: input.loggingMetadata ?? {},
+      serverFunction: actionName,
+      severity: 'error',
+      message: realErrorMessage,
+      userId: context?.session?.user?.id,
+      requestId: context.requestId,
+      correlationId: context.correlationId,
+    }).catch(console.error)
+
+    const isSafeError =
+      error instanceof ServerActionError ||
+      (error !== null &&
+        typeof error === 'object' &&
+        'isSafeForClient' in error)
+
+    // 2. Error Masking
+    const clientErrorMessage = isSafeError
+      ? realErrorMessage
+      : SERVER_ERROR_SANITIZED_MESSAGE
+
+    return {
+      success: false,
+      error: clientErrorMessage,
+      requestId: context.requestId,
+      correlationId: context.correlationId,
+    }
+  }
+}
+```
 
 ---
 
-## 5. Best Practices & Rules
+## 5. Database Logging & Log Schema
 
-1.  **File-Splitting is mandatory:** Outsource all database and backend logic into `*.logic.server.ts` files. Use the normal `*.ts` files only for schemas, types, and the `createServerFn`/`authFn` wrappers.
-2.  **Dynamic Handler Imports:** Always import helper functions like `wrapServerAction` and your logic dynamically (`await import(...)`) within the `.handler()` callback in the transport files.
-3.  **Client-Safe Prisma Types:** If the frontend requires Prisma payload types (incl. includes), define them explicitly in the transport file (`*.ts`) and exclusively use `import type { Prisma } from '#/generated/prisma/client'`. This satisfies the compiler without importing runtime code.
-4.  **Consistent Naming:** All Server Functions (the wrappers in the transport files) must consistently end with **`Fn`** (e.g., `getCourseByIdFn`) so they are immediately recognized as RPC endpoints in the client.
-5.  **Input Validation:** Use `.inputValidator(schema)` with Zod schemas created via `withLogging(baseSchema)`.
-6.  **GET for Queries:** Use `authGetFn` for pure data fetching (queries) to enable browser caching and URL parameter support (in conjunction with TanStack Router `validateSearch`).
-7.  **Error Typing:** Use `ServerActionError` for validation errors that the user should see directly. Use standard `Error` for technical problems that must be masked by `wrapServerAction`.
+**Every** error is logged in the database.
+
+### Prisma Log Schema
+
+```prisma
+model Log {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  component      String?
+  serverFunction String?
+  severity       String   // 'warning' | 'error' | 'critical'
+  message        String
+  userId         String?
+  requestId      String?
+  correlationId  String?
+}
+```
+
+### The logToDb Function
+
+```typescript
+// src/lib/logging.server.ts
+import { prisma } from '#/lib/db.server'
+
+export async function logToDb(params: {
+  metadata: ClientLoggingMetadata
+  serverFunction?: string
+  severity: LogSeverity
+  message: string
+  userId?: string
+  requestId?: string
+  correlationId?: string
+}) {
+  return await prisma.log.create({
+    data: {
+      component: params.metadata.component,
+      serverFunction: params.serverFunction,
+      severity: params.severity,
+      message: params.message,
+      userId: params.userId,
+      requestId: params.requestId,
+      correlationId: params.correlationId,
+    },
+  })
+}
+```
+
+---
+
+## 6. Client-Side Integration (`handleAction`)
+
+On the frontend, we use a standardized utility function to process the `ActionResponse` objects returned by the server uniformly. It automatically handles toast notifications and extracts the payloads.
+
+```typescript
+// src/lib/client-utils.ts
+import { toast } from 'sonner'
+import { ActionResponse } from '#/types/api'
+
+export async function handleAction<T>(
+  actionPromise: Promise<ActionResponse<T>>,
+  options?: {
+    showSuccessToast?: boolean
+    showErrorToast?: boolean
+    onSuccess?: (data: T) => void
+    onError?: (error: string) => void
+  },
+): Promise<T | null> {
+  const {
+    showSuccessToast = true,
+    showErrorToast = true,
+    onSuccess,
+    onError,
+  } = options || {}
+
+  try {
+    const result = await actionPromise
+
+    if (result.success) {
+      if (showSuccessToast && result.message) {
+        toast.success(result.message)
+      }
+      if (onSuccess) onSuccess(result.data)
+      return result.data
+    } else {
+      if (showErrorToast) {
+        toast.error(result.error || 'An error occurred.')
+      }
+      if (onError) onError(result.error)
+      return null
+    }
+  } catch (error) {
+    // Catches errors thrown directly (e.g., from the global ErrorHandler)
+    const errorMsg =
+      error instanceof Error ? error.message : 'An unexpected error occurred.'
+    if (showErrorToast) {
+      toast.error(errorMsg)
+    }
+    if (onError) onError(errorMsg)
+    return null
+  }
+}
+```
+
+**Example call in a React component:**
+
+```tsx
+const onSubmit = async (values: FormValues) => {
+  await handleAction(updateProfileFn({ data: values }), {
+    showSuccessToast: true,
+    onSuccess: (data) => {
+      // Reset form, refresh router, etc.
+    },
+  })
+}
+```
