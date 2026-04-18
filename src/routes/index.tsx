@@ -17,8 +17,8 @@ function App() {
             <span className="text-xl font-600 mx-2 text-(--lagoon)">
               Udemy Notes
             </span>
-            you can import your notes from Udemy, edit and tag them and search
-            inside of them.
+            you can import your notes from Udemy, edit and tag them, search
+            inside of them and export them to Markdown files.
           </p>
         </section>
         <section className="island-shell rounded-2xl p-6 sm:p-8">
@@ -35,7 +35,8 @@ function App() {
               Select the root node (html) by clicking on it and then copy the
               element (<strong>inner html</strong>) - normally you find this
               option in the context menu (do <strong>NOT</strong> copy the page
-              source code, because it doesn't contain the notes)
+              source code, because it doesn't contain the notes - it only
+              contains the scripts which load the notes)
             </li>
             <li>
               Open an editor, paste the root element into and save the file as

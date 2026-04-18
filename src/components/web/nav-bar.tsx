@@ -8,7 +8,7 @@ import {
   BookOpenText,
   CloudUpload,
   GithubIcon,
-  House,
+  Info,
   LogOut,
   NotebookPen,
 } from 'lucide-react'
@@ -65,14 +65,6 @@ const Navbar = ({ className }: { className: string }) => {
         </div>
         <div className="flex gap-x-4">
           <Link
-            to="/"
-            className="nav-link"
-            activeProps={{ className: 'nav-link is-active' }}
-          >
-            <House className="size-4 mr-1" />
-            <span className="hidden lg:inline">Home</span>
-          </Link>
-          <Link
             to="/courses"
             className="nav-link"
             activeProps={{ className: 'nav-link is-active' }}
@@ -110,6 +102,14 @@ const Navbar = ({ className }: { className: string }) => {
           </Link>
         </div>
         <div className="order-3 flex flex-wrap items-center gap-x-4 gap-y-1 pb-1 text-sm font-semibold sm:w-auto sm:flex-nowrap sm:pb-0">
+          <Link
+            to="/documentation"
+            className="nav-link"
+            activeProps={{ className: 'nav-link is-active' }}
+          >
+            <Info className="size-4 mr-1" />
+            <span className="hidden lg:inline">Docs</span>
+          </Link>
           <ThemeToggle />
           {isPending ? null : session ? (
             <>

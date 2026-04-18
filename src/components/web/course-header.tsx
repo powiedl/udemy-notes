@@ -10,7 +10,7 @@ import { Button } from '../ui/button'
 import {
   Check,
   CornerDownLeft,
-  Delete,
+  Trash2,
   Download,
   Loader2,
   Plus,
@@ -276,7 +276,7 @@ const CourseHeader = ({
               )}
             />
           ) : (
-            <Delete className="size-4 mr-1" />
+            <Trash2 className="size-4 mr-1" />
           )}
           <span
             className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
