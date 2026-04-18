@@ -17,7 +17,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { z } from 'zod'
-
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -72,7 +72,7 @@ const importHtmlFormSchema = z.object({
   newPrivateTags: z.array(z.string()),
 })
 
-export function ImportHtmlForm() {
+export function ImportHtmlForm({ selector }: { selector: string }) {
   const navigate = useNavigate()
   const [isPending, startTransition] = useTransition()
   const uploadFile = useServerFn(importHtmlFile)
@@ -101,13 +101,40 @@ export function ImportHtmlForm() {
 
       startTransition(async () => {
         try {
-          const htmlContent = await value.file.text()
+          // 1. Gesamtes HTML einlesen
+          const rawHtml = await value.file.text()
+
+          // 2. Client-seitiges Ausdünnen mit DOMParser
+          const parser = new DOMParser()
+          const doc = parser.parseFromString(rawHtml, 'text/html')
+
+          const title = doc.title || 'Udemy Course'
+          const notesContainer = doc.querySelector(selector)
+
+          if (!notesContainer) {
+            throw new Error(
+              'No notes found. Are you sure the file is a Udemy HTML file (from the browsers Dev Tools)?',
+            )
+          }
+
+          // Minimales HTML zusammenbauen
+          const strippedHtml = `
+            <!DOCTYPE html>
+            <html>
+              <head><title>${title}</title></head>
+              <body>
+                ${notesContainer.outerHTML}
+              </body>
+            </html>
+          `.trim()
+
+          // 3. Nur das "gedünnte" HTML an den Server senden
           const result = await handleAction(
             uploadFile({
               data: {
-                htmlContent,
+                htmlContent: strippedHtml, // Hier senden wir den bereinigten String
                 fileName: value.file.name,
-                fileSize: value.file.size,
+                fileSize: new Blob([strippedHtml]).size, // Neue Größe berechnen
                 trainer: value.trainer,
                 tagIds: value.tagIds,
                 newPrivateTags: value.newPrivateTags,
@@ -125,6 +152,13 @@ export function ImportHtmlForm() {
           }
         } catch (error) {
           console.error('Submit Error:', error)
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : 'Ein unerwarteter Fehler ist aufgetreten.'
+
+          toast.error(errorMessage)
+          // Hier könnte man noch einen Toast mit dem Error werfen
         }
       })
     },
@@ -225,7 +259,7 @@ export function ImportHtmlForm() {
           {/* Tags Sektion */}
           <div className="space-y-2">
             <FieldLabel>Kurs-Tags</FieldLabel>
-            <div className="flex flex-wrap gap-2 min-h-[1.5rem]">
+            <div className="flex flex-wrap gap-2 min-h-6">
               {tagIds.map((id: string) => {
                 // Typisierung hier löst den Error
                 const tag = availableTags.find((t) => t.id === id)
@@ -286,7 +320,7 @@ export function ImportHtmlForm() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                className="p-0 w-[var(--radix-popover-trigger-width)]"
+                className="p-0 w-(--radix-popover-trigger-width)"
                 align="start"
               >
                 <Command>
