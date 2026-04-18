@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
 import ThemeToggle from '../ThemeToggle'
 import { Button, buttonVariants } from '../ui/button'
 import { authClient } from '#/lib/auth-client'
@@ -21,6 +21,9 @@ import {
 
 const Navbar = ({ className }: { className: string }) => {
   const { data: session, isPending } = authClient.useSession()
+  const pathname = useLocation({ select: (s) => s.pathname })
+  const isCoursesActive =
+    pathname.startsWith('/courses') && pathname !== '/courses/import'
   const handleSignOut = async () => {
     await authClient.signOut({
       fetchOptions: {
@@ -66,10 +69,8 @@ const Navbar = ({ className }: { className: string }) => {
         <div className="flex gap-x-4">
           <Link
             to="/courses"
-            className="nav-link"
-            activeProps={{ className: 'nav-link is-active' }}
-            activeOptions={{ exact: true }}
-            search={PAGINATION_DEFAULTS}
+            className={cn('nav-link', isCoursesActive && 'is-active')}
+            search={{ ...PAGINATION_DEFAULTS, tagIds: [], trainer: '' }}
           >
             <BookOpenText className="size-4 mr-1" />
             <span className="hidden lg:inline">Courses</span>
@@ -86,6 +87,7 @@ const Navbar = ({ className }: { className: string }) => {
             to="/notes"
             search={NOTE_SEARCH_DEFAULTS}
             className="nav-link"
+            activeOptions={{ includeSearch: false }}
             activeProps={{ className: 'nav-link is-active' }}
           >
             <NotebookPen className="size-4 mr-1" />
@@ -94,6 +96,7 @@ const Navbar = ({ className }: { className: string }) => {
           <Link
             to="/tags"
             className="nav-link"
+            activeOptions={{ includeSearch: false }}
             activeProps={{ className: 'nav-link is-active' }}
             search={TAG_PAGINATION_DEFAULTS}
           >

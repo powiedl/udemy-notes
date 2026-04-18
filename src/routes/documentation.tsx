@@ -41,10 +41,7 @@ function RouteComponent() {
           </h2>
           <p className="text-base leading-8 text-(--sea-ink-soft) mb-4">
             To get started, follow the instructions on the{' '}
-            <Link
-              to="/"
-              className="text-(--lagoon) font-semibold hover:underline"
-            >
+            <Link to="/" className="text-lagoon font-semibold hover:underline">
               Home page
             </Link>{' '}
             to obtain your Udemy notes HTML file.
@@ -176,6 +173,11 @@ function RouteComponent() {
             <li>
               Sort notes by "Newest first", "Oldest first", or "Grouped by
               course".
+            </li>
+            <li>
+              If you search for (multiple) tags, the found tags in the
+              course/note tags are highlighted - so you can see immediately why
+              a specific course/note is listed as a search result
             </li>
           </ul>
         </section>

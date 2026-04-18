@@ -1,19 +1,46 @@
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '#/components/ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '#/components/ui/popover'
 import CourseHeader from '#/components/web/course-header'
 import { DataTablePagination } from '#/components/web/data-table-pagination'
 import { DataTableSearch } from '#/components/web/data-table-search'
 import { getCoursesFn } from '#/data/course'
 import { useCourseActions } from '#/hooks/use-course-actions'
 import { cn } from '#/lib/utils'
-import { paginationSchema } from '#/schemas/search-params'
+import { courseSearchSchema } from '#/schemas/search-params'
 import { ActionResponse, ServerFnData } from '#/types/api'
-import { createFileRoute, Link, useRouterState } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  getRouteApi,
+  Link,
+  useRouterState,
+} from '@tanstack/react-router'
+import { CommandEmpty } from 'cmdk'
+import { Check, TagIcon, X } from 'lucide-react'
 import { Suspense, use, useDeferredValue, useEffect, useState } from 'react'
 
 export const Route = createFileRoute('/_content/courses/')({
   component: RouteComponent,
-  validateSearch: (search) => paginationSchema.parse(search),
+  validateSearch: courseSearchSchema,
   // Hier definieren wir, von welchen Parametern der Loader abhängt
-  loaderDeps: ({ search }) => ({ search }),
+  loaderDeps: ({ search: { search, page, pageSize, tagIds, trainer } }) => ({
+    search,
+    page,
+    pageSize,
+    tagIds,
+    trainer,
+  }),
   staleTime: 60000,
   loader: ({ deps }) => {
     // deps ist hier das Objekt, das loaderDeps zurückgegeben hat.
@@ -21,7 +48,7 @@ export const Route = createFileRoute('/_content/courses/')({
     return {
       coursesPromise: getCoursesFn({
         data: {
-          ...deps.search,
+          ...deps,
           loggingMetadata: { component: 'CoursesPage' },
         },
       }),
@@ -80,6 +107,7 @@ function CoursesList({
             onExport={() => handleExport(course.id)}
             onDelete={() => handleDelete(course.id)}
             className="min-w-0"
+            activeTagIds={searchParams.tagIds || []}
           />
         ))}
       </div>
@@ -95,38 +123,149 @@ function CoursesList({
   )
 }
 
+const layoutRouteApi = getRouteApi('/_content')
 function RouteComponent() {
   const { coursesPromise } = Route.useLoaderData()
   const searchParams = Route.useSearch()
   const navigate = Route.useNavigate()
+  const { availableTags } = layoutRouteApi.useLoaderData() // Globale Tags laden
 
-  // Hier passiert die Magie:
-  // deferredPromise hinkt dem eigentlichen coursesPromise hinterher.
-  // React behält das alte Promise so lange "aktiv", bis das neue aufgelöst ist.
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const deferredPromise = useDeferredValue(coursesPromise)
-
-  // Status-Check
   const pending = useRouterState({ select: (s) => s.status === 'pending' })
-
-  // Hydration-Schutz:
   const [mounted, setMounted] = useState(false)
+
   useEffect(() => {
     setMounted(true)
   }, [])
 
   const isNavigating = mounted && pending
+  const tagIds = searchParams.tagIds || []
+
+  // Helper zum Setzen der URL-Parameter
+  const toggleTag = (id: string) => {
+    const nextTags = tagIds.includes(id)
+      ? tagIds.filter((t) => t !== id)
+      : [...tagIds, id]
+
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        tagIds: nextTags,
+        page: 1, // Immer auf Seite 1 springen bei neuem Filter
+      }),
+      replace: true,
+    })
+  }
 
   return (
-    <div className="space-y-4">
-      <DataTableSearch
-        value={searchParams.search}
-        onSearchChange={(text) => {
-          navigate({
-            search: (prev) => ({ ...prev, search: text, page: 1 }),
-            replace: true,
-          })
-        }}
-      />
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4">
+        {/* --- SUCHLEISTE & DROPDOWN --- */}
+        <DataTableSearch
+          value={searchParams.search}
+          onSearchChange={(text) => {
+            navigate({
+              search: (prev) => ({ ...prev, search: text, page: 1 }),
+              replace: true,
+            })
+          }}
+        >
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-10 border-dashed px-2 sm:px-4"
+                >
+                  <TagIcon className="mr-1 sm:mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Tags</span>
+                  {tagIds.length > 0 && (
+                    <>
+                      <div className="mx-1 sm:mx-2 h-4 w-px bg-border" />
+                      <Badge
+                        variant="secondary"
+                        className="rounded-sm px-1 font-normal"
+                      >
+                        {tagIds.length}
+                      </Badge>
+                    </>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-50 p-0" align="end">
+                <Command>
+                  <CommandInput placeholder="Filter tags..." />
+                  <CommandList>
+                    <CommandEmpty>No tags found.</CommandEmpty>
+                    <CommandGroup>
+                      {availableTags.map((tag) => {
+                        const isSelected = tagIds.includes(tag.id)
+                        return (
+                          <CommandItem
+                            key={tag.id}
+                            onSelect={() => toggleTag(tag.id)}
+                          >
+                            <div
+                              className={cn(
+                                'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                isSelected
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'opacity-50',
+                              )}
+                            >
+                              {isSelected && <Check className="h-3 w-3" />}
+                            </div>
+                            <span>{tag.name}</span>
+                          </CommandItem>
+                        )
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </DataTableSearch>
+
+        {/* --- AKTIVE FILTER (Die leuchtenden Badges) --- */}
+        {tagIds.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground mr-1">
+              Active filters:
+            </span>
+            {availableTags
+              .filter((t) => tagIds.includes(t.id))
+              .map((tag) => (
+                <Badge
+                  key={tag.id}
+                  variant="secondary"
+                  className="pl-2 pr-1 py-1 gap-1"
+                >
+                  {tag.name}
+                  <button
+                    onClick={() => toggleTag(tag.id)}
+                    className="hover:bg-muted rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                navigate({
+                  search: (prev) => ({ ...prev, tagIds: [], page: 1 }),
+                })
+              }
+              className="h-8 px-2 text-xs text-destructive hover:text-destructive"
+            >
+              Clear all
+            </Button>
+          </div>
+        )}
+      </div>
 
       <div
         className={cn(
@@ -135,11 +274,6 @@ function RouteComponent() {
         )}
       >
         <Suspense fallback={null}>
-          {/* WICHTIG: Wir übergeben das DEFERRED Promise.
-            Dadurch "suspensed" diese Komponente nicht sofort, 
-            sondern zeigt die alten Daten (die durch das div oben 
-            ausgegraut sind), bis die neuen Daten bereit sind.
-          */}
           <CoursesList
             data={deferredPromise}
             page={searchParams.page}

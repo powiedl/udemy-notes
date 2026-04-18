@@ -28,11 +28,7 @@ export function DataTableSearch({
         value={localSearch}
         onChange={(e) => setLocalSearch(e.target.value)}
       />
-      {children && (
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          {children}
-        </div>
-      )}
+      {children && children}
     </div>
   )
 }

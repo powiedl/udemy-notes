@@ -74,13 +74,17 @@ describe('getCoursesLogic', () => {
   })
 
   it('Happy Path: Ruft eine Liste von Kursen für einen User erfolgreich ab', async () => {
-    // --- GIVEN ---
-    const testData = { page: 1, pageSize: 10, search: 'React' }
-
     // WICHTIG: Wir definieren hier das erwartete ERGEBNIS der Datenbank-Abfrage.
     // Da wir nach 'React' und 'user_12345' suchen, würde eine echte DB nur den 1. Kurs liefern.
     // Also weisen wir den Mock an, auch nur dieses eine Element (als Array) zurückzugeben!
     const expectedDbResult = [mockCourses[0]]
+    const testData = {
+      page: 1,
+      pageSize: 10,
+      search: 'React', // <--- FIX THIS (was 'Javascript')
+      tagIds: [],
+      trainer: '',
+    }
 
     prismaMock.course.findMany.mockResolvedValue(expectedDbResult as any)
     prismaMock.course.count.mockResolvedValue(1)
@@ -108,9 +112,14 @@ describe('getCoursesLogic', () => {
 
   it('Happy Path: Ruft eine leere Liste von Kursen für einen User erfolgreich ab', async () => {
     // --- GIVEN ---
-    const testData = { page: 1, pageSize: 10, search: 'Javascript' }
     const expectedDbResult: Array<(typeof mockCourses)[number]> = []
-
+    const testData = {
+      page: 1,
+      pageSize: 10, // <--- FIX THIS (was 2)
+      search: 'Javascript', // <--- FIX THIS (was 'e')
+      tagIds: [],
+      trainer: '',
+    }
     prismaMock.course.findMany.mockResolvedValue(expectedDbResult as any)
     prismaMock.course.count.mockResolvedValue(0)
 
@@ -140,9 +149,14 @@ describe('getCoursesLogic', () => {
 
     it('Seite 1: Berechnet skip=0 und take=2 korrekt', async () => {
       // --- GIVEN ---
-      const testData = { page: 1, pageSize: 2, search: 'e' }
       const expectedDbResult: CourseArray = [mockCourses[0], mockCourses[2]]
-
+      const testData = {
+        page: 1, // <--- FIX THIS (was 2)
+        pageSize: 2,
+        search: 'e',
+        tagIds: [],
+        trainer: '',
+      }
       prismaMock.course.findMany.mockResolvedValue(expectedDbResult)
       prismaMock.course.count.mockResolvedValue(3)
 
@@ -165,9 +179,14 @@ describe('getCoursesLogic', () => {
 
     it('Seite 2: Berechnet skip=2 und take=2 korrekt', async () => {
       // --- GIVEN ---
-      const testData = { page: 2, pageSize: 2, search: 'e' }
       const expectedDbResult: CourseArray = [mockCourses[4]]
-
+      const testData = {
+        page: 2, // <--- FIX THIS (was 1)
+        pageSize: 2, // <--- FIX THIS (was 10)
+        search: 'e', // <--- FIX THIS (was 'React')
+        tagIds: [],
+        trainer: '',
+      }
       prismaMock.course.findMany.mockResolvedValue(expectedDbResult)
       prismaMock.course.count.mockResolvedValue(3)
 

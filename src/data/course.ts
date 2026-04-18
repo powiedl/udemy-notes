@@ -3,7 +3,7 @@
 import z from 'zod'
 import { authFn, authGetFn } from '#/lib/rpc'
 import { withLogging } from '#/schemas/api-utils'
-import { paginationSchema } from '#/schemas/search-params'
+import { courseSearchSchema } from '#/schemas/search-params'
 import type { Prisma } from '#/generated/prisma/client'
 
 // #region validation schemas
@@ -20,7 +20,7 @@ export const linkTagToCourseSchema = withLogging(
 export const createAndLinkTagToCourseSchema = withLogging(
   z.object({ courseId: z.string(), tagName: z.string() }),
 )
-export const getCoursesSchema = withLogging(paginationSchema)
+export const getCoursesSchema = withLogging(courseSearchSchema)
 // #endregion
 
 // #region Prisma Types

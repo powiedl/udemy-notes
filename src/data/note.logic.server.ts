@@ -20,31 +20,27 @@ type NoteWithTagsConstraint = {
  * und fügt das Flag `isInherited` hinzu.
  */
 export function mapNoteDisplayTags<T extends NoteWithTagsConstraint>(note: T) {
-  const courseTags =
-    note.course?.tags?.map((t: any) => ({
-      ...t,
-      isInherited: true,
-    })) || []
-  const courseTagIds = new Set(courseTags.map((t) => t.tag.id))
+  // 1. Extrahiere die eigentlichen Tag-Objekte (ohne die Prisma-Verknüpfungs-Hülle)
+  const directTags = note.tags?.map((t: any) => t.tag) || []
+  const courseTags = note.course?.tags?.map((t: any) => t.tag) || []
 
-  const directTags =
-    note.tags?.map((t: any) => ({
-      ...t,
-      isInherited: false,
-      isAlsoInherited: courseTagIds.has(t.tag.id),
-    })) || []
-  const directTagIds = new Set(directTags.map((t) => t.tag.id))
-  const uniqueCourseTags = courseTags
-    .filter((t) => !directTagIds.has(t.tag.id))
-    .map((t) => ({
-      ...t,
-      isInherited: true as const,
-      isAlsoInherited: false as const,
+  // 2. Erstelle Sets für blitzschnellen O(1) Abgleich
+  const directTagIds = new Set(directTags.map((t: any) => t.id))
+  const courseTagIds = new Set(courseTags.map((t: any) => t.id))
+
+  // 3. Fasse alle Tags zusammen und nutze eine Map, um Duplikate automatisch zu filtern
+  const allTagsMap = new Map()
+  directTags.forEach((t: any) => allTagsMap.set(t.id, t))
+  courseTags.forEach((t: any) => allTagsMap.set(t.id, t))
+
+  // 4. Bilde das neue logische Format und sortiere alphabetisch
+  const displayTags = Array.from(allTagsMap.values())
+    .map((tag) => ({
+      tag,
+      isDirect: directTagIds.has(tag.id),
+      isFromCourse: courseTagIds.has(tag.id),
     }))
-
-  const displayTags = [...directTags, ...uniqueCourseTags].sort((a, b) =>
-    a.tag.name.localeCompare(b.tag.name),
-  )
+    .sort((a, b) => a.tag.name.localeCompare(b.tag.name))
 
   return {
     ...note,

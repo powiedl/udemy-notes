@@ -2,27 +2,36 @@ import { AppSidebar } from '#/components/app-sidebar'
 import Footer from '#/components/Footer'
 import { SidebarInset, SidebarProvider } from '#/components/ui/sidebar'
 import { getSessionFn } from '#/data/session'
+import { getTagsForSelectorFn } from '#/data/tag'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_content')({
   component: RouteComponent,
   loader: async () => {
     // 1. Das Ergebnis der Server Function abrufen
-    const result = await getSessionFn()
+    const [sessionResult, tagsResult] = await Promise.all([
+      getSessionFn(),
+      getTagsForSelectorFn({
+        data: { loggingMetadata: { component: 'MainLayoutLoader' } },
+      }),
+    ])
 
     // 2. Prüfen, ob der Aufruf erfolgreich war
-    if (!result.success) {
+    if (!sessionResult.success) {
       // Falls die Session nicht geladen werden konnte,
       // werfen wir einen Error oder redirecten.
       // Hinweis: Da authFnMiddleware bereits redirectet,
       // sollte dieser Fall hier selten eintreten.
-      throw new Error(result.error || 'Session konnte nicht geladen werden')
+      throw new Error(
+        sessionResult.error || 'Session konnte nicht geladen werden',
+      )
     }
 
     // 3. Die Daten aus dem .data Feld extrahieren
     // result.data ist hier vom Typ 'Session'
     return {
-      user: result.data.user,
+      user: sessionResult.data.user,
+      availableTags: tagsResult?.success ? tagsResult.data : [],
     }
   },
 })

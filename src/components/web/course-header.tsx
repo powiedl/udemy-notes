@@ -32,6 +32,7 @@ interface CourseHeaderProps {
   onExport?: (id: string) => void
   onDelete?: (id: string) => void
   className?: string
+  activeTagIds?: string[]
 }
 const CourseHeader = ({
   course,
@@ -40,6 +41,7 @@ const CourseHeader = ({
   onExport = async () => {},
   onDelete = async () => {},
   className,
+  activeTagIds = [],
 }: CourseHeaderProps) => {
   const {
     availableTags,
@@ -89,14 +91,20 @@ const CourseHeader = ({
         {/* Read-Only Tags - Keine Add-Buttons, kein onDelete */}
         {course.tags && course.tags.length > 0 && (
           <div className="flex gap-1.5 flex-wrap mt-2">
-            {course.tags.map((t) => (
-              <TagBadge
-                key={`${course.id}-${t.tag.id}`}
-                tag={t.tag}
-                size="sm"
-                // KEIN onDelete hier!
-              />
-            ))}
+            {course.tags.map((t) => {
+              const isHighlighted = activeTagIds.includes(t.tag.id)
+              return (
+                <TagBadge
+                  key={`${course.id}-${t.tag.id}`}
+                  tag={t.tag}
+                  className={cn(
+                    isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
+                  )}
+                  size="sm"
+                  // KEIN onDelete hier!
+                />
+              )
+            })}
           </div>
         )}
       </div>
@@ -128,15 +136,21 @@ const CourseHeader = ({
       </CardHeader>
       <CardContent className="flex flex-col min-w-0">
         <div className="flex gap-2 flex-wrap min-w-0">
-          {course.tags.map((t) => (
-            <TagBadge
-              key={`${course.id}-${t.tag.id}`}
-              tag={t.tag}
-              onDelete={() => handleDeleteTagAssociation(t.tag.id)}
-              isDeleting={deletingTagId === `${course.id}-${t.tag.id}`}
-              size="sm"
-            />
-          ))}
+          {course.tags.map((t) => {
+            const isHighlighted = activeTagIds.includes(t.tag.id)
+            return (
+              <TagBadge
+                key={`${course.id}-${t.tag.id}`}
+                tag={t.tag}
+                onDelete={() => handleDeleteTagAssociation(t.tag.id)}
+                isDeleting={deletingTagId === `${course.id}-${t.tag.id}`}
+                size="sm"
+                className={cn(
+                  isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
+                )}
+              />
+            )
+          })}
           {/* Der Add-Button mit Popover */}
           <Popover open={isAdding} onOpenChange={setIsAdding}>
             <PopoverTrigger asChild>

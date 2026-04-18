@@ -42,7 +42,10 @@ export function LoginForm() {
           fetchOptions: {
             onSuccess: () => {
               toast.success('Logged in successfully')
-              navigate({ to: '/courses', search: PAGINATION_DEFAULTS })
+              navigate({
+                to: '/courses',
+                search: { ...PAGINATION_DEFAULTS, tagIds: [], trainer: '' },
+              })
             },
             onError: ({ error }) => {
               toast.error(error.message)

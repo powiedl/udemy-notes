@@ -21,16 +21,24 @@ import { Plus, Loader2, Check } from 'lucide-react'
 
 interface NoteProps {
   note: ExtractData<AwaitedReturnTypeGetCourseById>['notes'][number] & {
-    course?: { id: string; title: string }
-    displayTags?: Array<{
-      isInherited: boolean
-      isAlsoInherited: boolean
-      tag: { id: string; name: string }
-    }>
+    course?: { id: string; title: string } | undefined
+    displayTags?:
+      | {
+          isDirect: boolean
+          isFromCourse: boolean
+          tag: { id: string; name: string }
+        }[]
+      | undefined
   }
+  // ... andere Props
+  activeTagIds?: string[]
   showCourseLink?: boolean
 }
-const Note = ({ note, showCourseLink = true }: NoteProps) => {
+const Note = ({
+  note,
+  showCourseLink = true,
+  activeTagIds = [],
+}: NoteProps) => {
   const {
     availableTags,
     isAdding,
@@ -43,6 +51,15 @@ const Note = ({ note, showCourseLink = true }: NoteProps) => {
     handleDeleteTagAssociation,
   } = useTagManagement(note.id, 'note', 'NoteCard')
   // mit MyArrayType[number] erhält man den Typ eines einzelnen Elements in dem Array
+
+  const directTags = note.tags?.map((t: any) => t.tag) || []
+  const courseTags = note.course?.tags?.map((t: any) => t.tag) || []
+
+  // 2. Alle eindeutigen Tags zusammenfassen (Map verhindert Duplikate)
+  const allTagsMap = new Map()
+  directTags.forEach((t: any) => allTagsMap.set(t.id, t))
+  courseTags.forEach((t: any) => allTagsMap.set(t.id, t))
+
   return (
     <Card className="relative pt-12">
       {/* Schwebend Oben Links */}
@@ -72,8 +89,13 @@ const Note = ({ note, showCourseLink = true }: NoteProps) => {
             {/* Interaktive Tag-Anzeige */}
             {note.displayTags && (
               <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {note.displayTags.map(
-                  ({ tag, isInherited, isAlsoInherited }) => (
+                {note.displayTags.map(({ tag, isDirect, isFromCourse }) => {
+                  const isHighlighted = activeTagIds.includes(tag.id)
+                  const isInherited = !isDirect && isFromCourse
+                  const isAlsoInherited = isDirect && isFromCourse
+
+                  //console.log(note.id, tag.id, isHighlighted)
+                  return (
                     <TagBadge
                       key={`note-${note.id}-${tag.id}`}
                       tag={tag}
@@ -82,6 +104,7 @@ const Note = ({ note, showCourseLink = true }: NoteProps) => {
                         'transition-all duration-200',
                         isInherited &&
                           'opacity-70 grayscale-20 dark:opacity-90 dark:brightness-125 hover:opacity-75',
+                        isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
                       )}
                       title={
                         isInherited
@@ -91,20 +114,20 @@ const Note = ({ note, showCourseLink = true }: NoteProps) => {
                             : 'Direktes Tag'
                       }
                       onDelete={
-                        !isInherited
+                        isDirect
                           ? () => handleDeleteTagAssociation(tag.id)
                           : undefined
                       }
                       isDeleting={deletingTagId === tag.id}
                       // NEU: Das Icon für redundante Tags
                       icon={
-                        isAlsoInherited ? (
+                        isInherited || isAlsoInherited ? (
                           <Link2 className="mr-1 h-3 w-3 opacity-70" />
                         ) : undefined
                       }
                     />
-                  ),
-                )}
+                  )
+                })}
 
                 {/* Der + Button für die Notiz */}
                 <Popover open={isAdding} onOpenChange={setIsAdding}>

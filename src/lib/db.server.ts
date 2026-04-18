@@ -1,7 +1,7 @@
-// Diese Datei ist nun explizit serverseitig
+// src/lib/db.server.ts
 
-import { PrismaClient } from '#/generated/prisma/client.js'
-
+// 1. Füge "Prisma" hier zum Import hinzu
+import { PrismaClient, Prisma } from '#/generated/prisma/client.js'
 import { PrismaPg } from '@prisma/adapter-pg'
 
 const adapter = new PrismaPg({
@@ -17,3 +17,6 @@ export const prisma = globalThis.__prisma || new PrismaClient({ adapter })
 if (process.env.NODE_ENV !== 'production') {
   globalThis.__prisma = prisma
 }
+
+// 2. Exportiere den Namespace, damit du überall an die Typen kommst
+export { Prisma }

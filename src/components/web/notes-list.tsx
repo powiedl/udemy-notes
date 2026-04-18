@@ -44,11 +44,13 @@ interface NotesListProps {
   notes: FlexibleNote[]
   sortBy?: string
   emptyListMessage?: string
+  activeTagIds?: string[]
 }
 
 const NotesList = ({
   notes,
   sortBy,
+  activeTagIds,
   emptyListMessage = "You don't have any notes for this course",
 }: NotesListProps) => {
   if (notes?.length === 0) return <div>{emptyListMessage}</div>
@@ -68,6 +70,7 @@ const NotesList = ({
                   <CourseHeader
                     course={note.course} // (Je nach TypeScript-Strenge evtl. casten)
                     variant="compact"
+                    activeTagIds={activeTagIds}
                   />
                 </div>
               )}
@@ -75,6 +78,7 @@ const NotesList = ({
               note={note}
               key={note.id}
               showCourseLink={sortBy !== 'course'}
+              activeTagIds={activeTagIds}
             />
           </Fragment>
         )

@@ -1,4 +1,4 @@
-import { prisma } from '#/lib/db.server'
+import { prisma, Prisma } from '#/lib/db.server'
 import { ServerActionError } from '#/types/errors'
 import type {
   GetCoursesInput,
@@ -14,13 +14,26 @@ import { mapNoteDisplayTags } from './note.logic.server'
  * Kern-Logik für den Abruf von Kursen (paginiert & gefiltert).
  */
 export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
-  const { page, pageSize, search } = data
+  // Beachte: Wir destrukturieren hier auch tagIds (bzw. greifen darauf zu)
+  const { page, pageSize, search, tagIds } = data
   const skip = (page - 1) * pageSize
   const take = pageSize
 
-  const where = {
+  // 1. Basis-Where-Bedingung erstellen
+  const where: Prisma.CourseWhereInput = {
     userId: userId,
-    title: { contains: search, mode: 'insensitive' as const },
+    title: { contains: search, mode: 'insensitive' },
+  }
+
+  // 2. Tag-Filterung hinzufügen (OR-Logik)
+  if (tagIds && tagIds.length > 0) {
+    where.tags = {
+      some: {
+        tagId: {
+          in: tagIds,
+        },
+      },
+    }
   }
 
   const [courses, totalCount] = await Promise.all([

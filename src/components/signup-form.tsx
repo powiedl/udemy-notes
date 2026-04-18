@@ -53,7 +53,10 @@ export function SignupForm() {
           fetchOptions: {
             onSuccess: () => {
               toast.success('Account created successfully')
-              navigate({ to: '/courses', search: PAGINATION_DEFAULTS })
+              navigate({
+                to: '/courses',
+                search: { ...PAGINATION_DEFAULTS, tagIds: [], trainer: '' },
+              })
             },
             onError: ({ error: err }) => {
               toast.error(err.message)
