@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { handleGlobalError } from '#/lib/rpc'
+import { handleGlobalError } from '#/lib/error-handler.server'
 import { ServerActionError } from '#/types/errors'
 import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants'
 

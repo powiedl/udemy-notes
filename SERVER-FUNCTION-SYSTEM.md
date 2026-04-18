@@ -1,10 +1,10 @@
 # Server Function System
 
-**Version:** 26.417.1
+**Version:** 26.418.1
 
 Dieses Dokument beschreibt die Architektur, die strikte Trennung von Client- und Server-Code, die Kommunikationstypen sowie das umfassende Error-Handling für unsere Server Functions in der TanStack Start Applikation.
 
-Unser System basiert auf einer strikten Trennung der Schichten und einem **Zwei-Schichten-Modell** ("Skalpell und Sicherheitsnetz") bei der Fehlerbehandlung, das garantiert, dass Entwickler maximalen Kontext beim Logging haben, aber das System niemals sensible Daten leakt oder unkontrolliert abstürzt.
+Unser System basiert auf einer **strikten Trennung zwischen Client und Server** und einem **Zwei-Schichten-Modell** ("Skalpell und Sicherheitsnetz") bei der Fehlerbehandlung, das garantiert, dass Entwickler maximalen Kontext beim Logging haben, aber das System niemals sensible Daten leakt oder unkontrolliert abstürzt.
 
 ---
 
@@ -45,6 +45,11 @@ export class ServerActionError extends Error {
 
 ---
 
+Der beste und logischste Platz für diesen Hinweis ist in Abschnitt 3, direkt nach der Tabelle mit den Fabriken und bevor das Code-Beispiel kommt. So sieht der Entwickler erst, welche Fabriken es gibt, lernt dann die Regel für die Zod-Schemas kennen und sieht beides zusammen im anschließenden Code-Block in Aktion.
+
+Hier ist der komplette, überarbeitete Abschnitt 3. Du kannst ihn 1:1 kopieren und den alten Abschnitt 3 damit ersetzen:
+Markdown
+
 ## 3. Server Function Fabrics (Die Fabriken)
 
 In der Datei `src/lib/rpc.ts` (oder ähnlich) definieren wir Basis-Fabriken, die als Grundlage für alle Server-Aufrufe dienen. **Alle Fabriken bauen nun auf der `baseServerFn` auf**, um das globale Sicherheitsnetz für Fehler zu erben.
@@ -55,11 +60,27 @@ In der Datei `src/lib/rpc.ts` (oder ähnlich) definieren wir Basis-Fabriken, die
 | `authGetFn`    | GET             | Ja                 | Für das Laden von Daten (Queries). Prüft die Session. Ergebnisse können vom Browser/Router gecacht werden.                                                   |
 | `authPostFn`   | POST            | Ja                 | Für Mutationen (Create, Update, Delete). Prüft die Session.                                                                                                  |
 
+### Das `withLogging` Zod-Schema (Wichtig!)
+
+Damit unser Ausführungs-Wrapper (`wrapServerAction`, siehe Schicht 2) im Fehlerfall detaillierte UI-Metadaten loggen kann, muss das Frontend diese typsicher an den Server übergeben dürfen.
+
+Dafür wickeln wir **jedes** Zod-Schema in der Transport-Datei (`*.ts`) in unsere `withLogging`-Hilfsfunktion ein. Diese erweitert das Basis-Schema automatisch um das optionale `loggingMetadata`-Feld (`component`, `feature`, `actionSource`).
+
 _Beispiel für die Erstellung einer Funktion in der Transport-Datei (`_.ts`):\*
 
-```typescript
+````typescript
+import { z } from 'zod'
 import { authGetFn } from '#/lib/rpc'
+import { withLogging } from '#/schemas/api-utils' // Pfad anpassen
 
+// 1. Schema definieren und mit Logging-Metadaten anreichern
+export const getNotesSchema = withLogging(
+  z.object({
+    courseId: z.string().optional()
+  })
+)
+
+// 2. Server Function zusammenbauen
 export const getNotesFn = authGetFn
   .inputValidator(getNotesSchema)
   .handler(async ({ data, context }) => {
@@ -67,12 +88,11 @@ export const getNotesFn = authGetFn
     const { wrapServerAction } = await import('#/lib/server-utils.server')
     const { getNotesLogic } = await import('./note.logic.server')
 
+    // 'data' enthält jetzt typsicher unsere Parameter UND die loggingMetadata
     return await wrapServerAction('getNotesFn', context, data, async () => {
       return getNotesLogic(data, context.session.user.id)
     })
   })
-```
-
 ---
 
 ## 4. Das Fehlerbehandlungs-System (Zwei-Schichten-Modell)
@@ -81,13 +101,13 @@ Um die Sicherheit und Nachvollziehbarkeit zu maximieren, trennen wir die Fehlerb
 
 ### Schicht 1: Die Globale Middleware (Das Sicherheitsnetz)
 
-Sitzt ganz oben an der Netzwerkkante (`rpc.ts`). Sie fängt alles ab, was durch Zod-Validierungen crasht oder von Entwicklern versehentlich außerhalb der tiefen Logik geworfen wurde.
+Sitzt ganz oben an der Netzwerkkante (`rpc.ts`). Sie fängt alles ab, was durch Zod-Validierungen crasht oder von Entwicklern versehentlich außerhalb der tiefen Logik geworfen wurde. Da diese aber in die Datenbank loggen soll (und dafür primsa importieren muss), müssen wir die eigentliche Logik wieder in eine `**.server.ts**` Datei auslagern.
 
 ```typescript
-// src/lib/rpc.ts
-import { createMiddleware, createServerFn } from '@tanstack/start'
+// src/lib/error-handler.server.ts
 import { ServerActionError } from '#/types/errors'
 import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants'
+import { logToDb } from '#/lib/logging.server'
 
 export async function handleGlobalError(error: any): Promise<never> {
   const isSafeError = error instanceof ServerActionError
@@ -95,8 +115,6 @@ export async function handleGlobalError(error: any): Promise<never> {
 
   console.error('[GlobalErrorHandler] UNCAUGHT:', error)
 
-  // 1. ALLES loggen (Dynamischer Import zum Schutz des Client-Bundles)
-  const { logToDb } = await import('#/lib/logging.server')
   const realErrorMessage =
     error instanceof Error ? error.message : String(error)
 
@@ -122,12 +140,19 @@ export async function handleGlobalError(error: any): Promise<never> {
     throw new Error(SERVER_ERROR_SANITIZED_MESSAGE) // Geheimnis wahren
   }
 }
+````
+
+In der **#/lib/rpc.ts** erzeugen wir die entsprechende Middleware (wo wir die handleGlobalError dynamisch im `.server()` importieren - was "safe" ist, weil der Bundler den Inhalt von `.server()` für das Client-Image entfernt).
+
+```typescript
+// /src/lib/rpc.ts
 
 export const errorHandlingMiddleware = createMiddleware().server(
   async ({ next }) => {
     try {
       return await next()
     } catch (error: any) {
+      const { handleGlobalError } = await import('#/lib/error-handler.server')
       return await handleGlobalError(error)
     }
   },
@@ -314,11 +339,20 @@ export async function handleAction<T>(
 
 ```tsx
 const onSubmit = async (values: FormValues) => {
-  await handleAction(updateProfileFn({ data: values }), {
-    showSuccessToast: true,
-    onSuccess: (data) => {
-      // Formular zurücksetzen, Router refreshen etc.
+  await handleAction(
+    updateProfileFn({
+      data: values,
+      loggingMetadata: {
+        component: 'ProfileForm',
+        actionSource: 'SubmitButton',
+      },
+    }),
+    {
+      showSuccessToast: true,
+      onSuccess: (data) => {
+        // Formular zurücksetzen, Router refreshen etc.
+      },
     },
-  })
+  )
 }
 ```
