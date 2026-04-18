@@ -14,7 +14,7 @@ export const errorHandlingMiddleware = createMiddleware().server(
   },
 )
 
-export const baseServerFn = createServerFn().middleware([
+export const baseServerFn = createServerFn({ method: 'POST' }).middleware([
   errorHandlingMiddleware,
 ])
 
