@@ -49,6 +49,12 @@ function RouteComponent() {
             </Link>{' '}
             to obtain your Udemy notes HTML file.
           </p>
+          <p className="text-base leading-8 text-(--sea-ink-soft) mb-4">
+            The HTML file is preprocessed on your computer (only the title and
+            the notes itself get passed to the server). This is done to keep
+            your mail address (which is stored in the Udemy HTML file) at your
+            computer and to reduce network traffic.
+          </p>
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/50">
             <ul className="list-disc ml-5 space-y-2 text-sm text-blue-900 dark:text-blue-100">
               <li>
