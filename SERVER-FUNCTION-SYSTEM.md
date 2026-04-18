@@ -45,11 +45,6 @@ export class ServerActionError extends Error {
 
 ---
 
-Der beste und logischste Platz für diesen Hinweis ist in Abschnitt 3, direkt nach der Tabelle mit den Fabriken und bevor das Code-Beispiel kommt. So sieht der Entwickler erst, welche Fabriken es gibt, lernt dann die Regel für die Zod-Schemas kennen und sieht beides zusammen im anschließenden Code-Block in Aktion.
-
-Hier ist der komplette, überarbeitete Abschnitt 3. Du kannst ihn 1:1 kopieren und den alten Abschnitt 3 damit ersetzen:
-Markdown
-
 ## 3. Server Function Fabrics (Die Fabriken)
 
 In der Datei `src/lib/rpc.ts` (oder ähnlich) definieren wir Basis-Fabriken, die als Grundlage für alle Server-Aufrufe dienen. **Alle Fabriken bauen nun auf der `baseServerFn` auf**, um das globale Sicherheitsnetz für Fehler zu erben.
