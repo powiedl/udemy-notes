@@ -1,23 +1,63 @@
 # Guide: Performant Search & Pagination with TanStack Start
 
-**Version:** 26.410.1
+**Version:** 26.419.2
 
 ## Problem Description
 
-Standard implementations of pagination in client-side apps often lead to a poor user experience:
+Standard implementations of pagination in client-side apps often lead to a poor user experience and hidden bugs:
 
 - **Hard transitions:** When changing pages, the content disappears and a loading spinner appears.
-- **URL inconsistency:** Invalid parameters (e.g., ?page=abc) cause crashes or errors.
+- **URL inconsistency:** Invalid parameters (e.g., ?page=abc) lead to crashes or errors.
 - **Redundancy:** Default values are scattered throughout the project.
-- **Performance:** Every search triggers a complete "re-fetch", which blocks or flickers the UI.
+- **Performance:** Every search triggers a complete "re-fetch", which blocks the UI or causes flickering.
+- **Hydration Errors:** The server often sorts URL parameters alphabetically (e.g., `?a=1&b=2`), while the client generates a different order via Zod schemas or object spreads (`?b=2&a=1`). This leads to React hydration crashes during initial load.
 
 ## The Solution: Architectural Components
 
-The solution is based on a **Single Source of Truth** in the schema, **Streaming** in the Server Function, and **UI retention** (keeping the old data) during loading.
+The solution is based on a **Single Source of Truth** in the schema, **global URL stabilization** in the router, **streaming** in the server function, and **UI retention** (keeping the old data) during loading.
 
-### The Central Schema (search-params.ts)
+### A. Global URL Stabilization (Router Configuration)
 
-Instead of setting defaults in components, we define them centrally in the Zod schema. We use `z.coerce` to automatically convert URL strings (from the browser) into numbers.
+To eliminate hydration errors (different URL string orders between server and client) once and for all, we force the TanStack Router to **always sort** search parameters alphabetically when generating links.
+
+As a result, we are completely free in schema definition and parameter passing in the code, and no longer need to worry about the order of object keys.
+
+**File:** `src/router.tsx` (or wherever the router is created)
+
+```tsx
+import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import { routeTree } from './routeTree.gen'
+
+export function createRouter() {
+  return createTanStackRouter({
+    routeTree,
+    // This function globally irons out all ordering problems!
+    stringifySearch: (search) => {
+      const keys = Object.keys(search).sort() // Alphabetical sorting is strictly required
+
+      const pairs = keys
+        .map((key) => {
+          const value = search[key]
+          if (value === undefined || value === null) return null
+
+          const valString =
+            typeof value === 'object' ? JSON.stringify(value) : String(value)
+
+          return `${encodeURIComponent(key)}=${encodeURIComponent(valString)}`
+        })
+        .filter(Boolean)
+
+      return pairs.length > 0 ? `?${pairs.join('&')}` : ''
+    },
+  })
+}
+```
+
+### B. The Central Schema (search-params.ts)
+
+Instead of setting defaults in components, we define them centrally in the Zod schema. We use `z.coerce` to automatically convert URL strings into numbers.
+
+Since the router now handles parameter sorting, we can (and should) use practical Zod methods like `.extend()` to cleanly extend base schemas.
 
 **File:** `src/schemas/search-params.ts`
 
@@ -30,6 +70,7 @@ export const PAGINATION_DEFAULTS = {
   search: '',
 } as const
 
+// 1. Standard pagination schema (for simple lists)
 export const paginationSchema = z.object({
   page: z.coerce
     .number()
@@ -44,60 +85,78 @@ export const paginationSchema = z.object({
     .catch(PAGINATION_DEFAULTS.search)
     .default(PAGINATION_DEFAULTS.search),
 })
+
+// 2. Extended schema (Example: notes with tags and sorting)
+// Thanks to stringifySearch in the router, we can use .extend() without fear of hydration errors!
+export const notesSearchSchema = paginationSchema.extend({
+  courseId: z.string().optional(),
+  sortBy: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+  tagIds: z.array(z.string()).optional(),
+})
 ```
 
-- **.catch()**: Catches invalid types and resets them to the default instead of throwing an error.
-- **.default()**: Applies when the parameter is completely missing from the URL.
+- **`.catch()`**: Catches invalid types and resets them to the default instead of throwing an error.
+- **`.default()`**: Applies when the parameter is completely missing from the URL.
 
-In TanStack Start, when handling search params in the URL, you almost 100% of the time want to do both.
+### C. The Server Function (getCoursesFn)
 
-### B. The Server Function (getCoursesFn)
-
-The Server Function must be refactored so that it returns not only the items but also the **total count** (`totalCount`), so the pagination knows how many pages exist. Furthermore, it must use our new `wrapServerAction` architecture and direct passing in `.inputValidator`.
+The server function is split into **Logic** and **Handler**. The logic calculates the pagination and executes the queries in parallel.
 
 **File:** `src/data/course.ts`
 
 ```typescript
-export const getCoursesFn = createServerFn({ method: 'GET' })
-  .inputValidator(paginationSchema) // Validation directly at the input (no arrow function!)
+// 1. The extracted logic (accessible for unit tests)
+export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
+  const { prisma } = await import('#/lib/db.server')
+  const { page, pageSize, search } = data
+  const skip = (page - 1) * pageSize
+
+  // Execute in parallel for better performance
+  const [items, totalCount] = await Promise.all([
+    prisma.course.findMany({
+      where: { userId, title: { contains: search, mode: 'insensitive' } },
+      skip,
+      take: pageSize,
+      orderBy: { updatedAt: 'desc' },
+    }),
+    prisma.course.count({
+      where: { userId, title: { contains: search, mode: 'insensitive' } },
+    }),
+  ])
+
+  return { items, totalCount }
+}
+
+// 2. The Server Function (RPC Entrypoint)
+export const getCoursesFn = authGetFn
+  .inputValidator(paginationSchema)
   .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction('getCoursesFn', context, data, async () => {
-      const { page, pageSize, search } = data
-      const skip = (page - 1) * pageSize
-
-      // Execute in parallel for better performance
-      const [items, totalCount] = await Promise.all([
-        db.course.findMany({
-          where: { title: { contains: search } },
-          skip,
-          take: pageSize,
-        }),
-        db.course.count({ where: { title: { contains: search } } }),
-      ])
-
-      // success: true is automatically added by wrapServerAction
-      return { items, totalCount }
+      return getCoursesLogic(data, context.session.user.id)
     })
   })
 ```
 
-### C. The Type-Safe Pagination Component
+### D. The Type-Safe Pagination Component
 
-We use the TanStack \<Link\>-component instead of buttons. This enables **preloading**: When the user hovers over "Next page", the router already loads the data in the background.
+We use the TanStack `<Link>` component instead of buttons. This enables **preloading**: When the user hovers over "Next Page", the router already loads the data in the background.
+
+Since the router now globally handles sorting, we can safely extend the `currentSearch` object using the spread operator without worrying about hydration errors.
 
 **File:** `src/components/web/data-table-pagination.tsx`
 
 ```typescript
 export function DataTablePagination({ totalCount, pageSize, page, currentSearch }: Props) {
- const totalPages = Math.ceil(totalCount / pageSize)
-
+  const totalPages = Math.ceil(totalCount / pageSize)
   const chevronClass = 'h-4 w-4'
 
   return (
     <div
       className={cn(
-        totalPages === 1
-          ? 'hidden'
+        totalPages <= 1
+          ? 'hidden' // Hide if everything fits on one page
           : 'flex items-center justify-between px-2 py-4',
       )}
     >
@@ -108,8 +167,7 @@ export function DataTablePagination({ totalCount, pageSize, page, currentSearch 
       <div className="flex items-center space-x-2">
         {/* First page */}
         <Link
-          // We pass the target object directly.
-          // By spreading currentSearch we keep filters like 'search' or 'tagIds'.
+          // Simple spread is now 100% safe thanks to stringifySearch in the router!
           search={{ ...currentSearch, page: 1 }}
           preload="intent"
           className={linkStyles(page <= 1)}
@@ -117,18 +175,16 @@ export function DataTablePagination({ totalCount, pageSize, page, currentSearch 
         >
           <ChevronFirst className={chevronClass} />
         </Link>
-        ...
+        {/* ... additional links (Previous, Next, Last) ... */}
       </div>
     </div>
   )
 }
 ```
 
-With the specified `className` in the outermost `div`, we hide the pagination component if everything fits on one page (there is nothing to switch between pages then - so we can "yield" the space of the pagination component to the content).
+### E. The Route Configuration
 
-### D. The Route Configuration
-
-In the route, we define `loaderDeps` so the loader knows it has to re-fire on every change of the search parameters. `staleTime` ensures that already loaded pages remain in the cache.
+In the route, we define `loaderDeps` so the loader knows it must re-fire whenever the search parameters change. `staleTime` ensures that already loaded pages remain in the cache.
 
 **File:** `src/routes/courses/index.tsx`
 
@@ -143,9 +199,9 @@ export const Route = createFileRoute('/_content/courses/')({
 })
 ```
 
-### E. The "Flicker-Free" UI (RouteComponent)
+### F. The "Flicker-Free" UI (RouteComponent)
 
-This is the most important part for the user feel. We use `useDeferredValue` to display the old courses while the new ones are loaded in the background. `useRouterState` provides the status for the "graying out".
+This is the most important part for the user experience. We use `useDeferredValue` to display the old data while the new data is loading in the background. `useRouterState` provides the status for "graying out" the UI.
 
 **File:** `src/routes/_content/courses/index.tsx`
 
@@ -178,7 +234,7 @@ function RouteComponent() {
         onSearchChange={(text) => {
           navigate({
             search: (prev) => ({ ...prev, search: text, page: 1 }),
-            replace: true, // prevents every typed letter from creating an entry in the browser history
+            replace: true, // prevents spam in the browser history
           })
         }}
       />
@@ -191,8 +247,8 @@ function RouteComponent() {
       >
         <Suspense fallback={null}>
           {/* IMPORTANT: We pass the DEFERRED promise.
-            This way, this component doesn't "suspense" immediately,
-            but shows the old data (which is grayed out by the div above),
+            This way, this component doesn't "suspend" immediately,
+            but instead shows the old data (which is grayed out by the div above)
             until the new data is ready.
           */}
           <CoursesList
@@ -207,15 +263,13 @@ function RouteComponent() {
 }
 ```
 
-To prevent a **Hydration Mismatch** (the server rendering something different than the client), we must ensure that `isPending` is only activated on the client. We achieve this through the `useEffect`, which sets `mounted` to `true` as soon as the initial render on the client is complete. We then use this to set `isNavigating` to `true` only if the router is in the `pending` state and the initial render has already been completed.
-
 ## Checklist for Additional Pages
 
-To apply this pattern to other pages (e.g., /tags):
+To apply this pattern to other pages (e.g., `/tags` or `/notes`):
 
-1. **Check schema:** Is `paginationSchema` sufficient or do new filters (e.g., `sort`) need to be added?
-2. **Server Function:** Does it return `{ items, totalCount }` inside `wrapServerAction`? Is the schema passed directly into `.inputValidator()`?
-3. **Loader:** Are `loaderDeps` set to the search params?
-4. **DeferredValue:** Is `useDeferredValue` used for the loader promise in the main component?
+1. **Schema Architecture:** Was the base schema (`paginationSchema`) correctly extended using `.extend()` for specific routes?
+2. **Server Function:** Does it return `{ items, totalCount }` within `wrapServerAction`? Is the schema passed directly into `.inputValidator()`?
+3. **Loader:** Are `loaderDeps` set to the `search` params?
+4. **DeferredValue:** Is `useDeferredValue` being used in the main component for the loader promise?
 5. **Suspense:** Is the fallback set to `null` so that the `opacity-50` feedback takes the lead?
-6. **Pagination:** Is the `currentSearch` object passed to the pagination so that existing filters are not lost when changing pages?
+6. **Pagination:** Is the `currentSearch` object passed to the pagination (`search={{ ...currentSearch, page: X }}`), to avoid losing existing filters when changing pages?

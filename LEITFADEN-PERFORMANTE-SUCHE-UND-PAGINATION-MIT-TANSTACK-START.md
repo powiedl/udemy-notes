@@ -1,23 +1,63 @@
 # Leitfaden: Performante Suche & Pagination mit TanStack Start
 
-**Version:** 26.419.1
+**Version:** 26.419.2
 
 ## Problembeschreibung
 
-Standard-Implementierungen von Pagination in Client-Side-Apps führen oft zu einer schlechten User Experience:
+Standard-Implementierungen von Pagination in Client-Side-Apps führen oft zu einer schlechten User Experience und versteckten Bugs:
 
 - **Harte Umbrüche:** Beim Seitenwechsel verschwindet der Inhalt und ein Lade-Spinner erscheint.
 - **URL-Inkonsistenz:** Ungültige Parameter (z.B. ?page=abc) führen zu Abstürzen oder Fehlern.
 - **Redundanz:** Standardwerte (Defaults) sind über das ganze Projekt verstreut.
 - **Performance:** Jede Suche triggert einen kompletten "Re-Fetch", der die UI blockiert oder flackern lässt.
+- **Hydration Errors:** Der Server sortiert URL-Parameter oft alphabetisch (z.B. `?a=1&b=2`), während der Client durch Zod-Schemata oder Object-Spreads eine andere Reihenfolge generiert (`?b=2&a=1`). Dies führt zu React-Hydration-Crashes beim initialen Laden.
 
 ## Die Lösung: Architektur-Komponenten
 
-Die Lösung basiert auf einer **Single Source of Truth** im Schema, **Streaming** in der Server Function und **UI-Retention** (Beibehalten der alten Daten) während des Ladens.
+Die Lösung basiert auf einer **Single Source of Truth** im Schema, **globaler URL-Stabilisierung** im Router, **Streaming** in der Server Function und **UI-Retention** (Beibehalten der alten Daten) während des Ladens.
 
-### Das zentrale Schema (search-params.ts)
+### A. Globale URL-Stabilisierung (Router-Konfiguration)
 
-Anstatt Defaults in Komponenten zu setzen, definieren wir sie zentral im Zod-Schema. Wir nutzen z.coerce, um URL-Strings (aus dem Browser) automatisch in Zahlen umzuwandeln.
+Um Hydration-Errors (unterschiedliche URL-String-Reihenfolgen zwischen Server und Client) ein für alle Mal zu eliminieren, zwingen wir den TanStack Router dazu, Search-Parameter beim Generieren von Links **immer alphabetisch** zu sortieren.
+
+Dadurch sind wir bei der Schema-Definition und beim Übergeben von Parametern im Code völlig frei und müssen nicht auf die Reihenfolge der Objekt-Schlüssel achten.
+
+**Datei:** `src/router.tsx` (bzw. dort, wo der Router erstellt wird)
+
+```tsx
+import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import { routeTree } from './routeTree.gen'
+
+export function createRouter() {
+  return createTanStackRouter({
+    routeTree,
+    // Diese Funktion bügelt alle Reihenfolge-Probleme global glatt!
+    stringifySearch: (search) => {
+      const keys = Object.keys(search).sort() // Alphabetische Sortierung zwingend erforderlich
+
+      const pairs = keys
+        .map((key) => {
+          const value = search[key]
+          if (value === undefined || value === null) return null
+
+          const valString =
+            typeof value === 'object' ? JSON.stringify(value) : String(value)
+
+          return `${encodeURIComponent(key)}=${encodeURIComponent(valString)}`
+        })
+        .filter(Boolean)
+
+      return pairs.length > 0 ? `?${pairs.join('&')}` : ''
+    },
+  })
+}
+```
+
+### B. Das zentrale Schema (search-params.ts)
+
+Anstatt Defaults in Komponenten zu setzen, definieren wir sie zentral im Zod-Schema. Wir nutzen `z.coerce`, um URL-Strings automatisch in Zahlen umzuwandeln.
+
+Da der Router nun die Sortierung der Parameter übernimmt, können (und sollten) wir die praktischen Methoden von Zod wie `.extend()` nutzen, um Basis-Schemata sauber zu erweitern.
 
 **Datei:** `src/schemas/search-params.ts`
 
@@ -30,6 +70,7 @@ export const PAGINATION_DEFAULTS = {
   search: '',
 } as const
 
+// 1. Standard-Pagination-Schema (für einfache Listen)
 export const paginationSchema = z.object({
   page: z.coerce
     .number()
@@ -44,14 +85,21 @@ export const paginationSchema = z.object({
     .catch(PAGINATION_DEFAULTS.search)
     .default(PAGINATION_DEFAULTS.search),
 })
+
+// 2. Erweitertes Schema (Beispiel: Notizen mit Tags und Sortierung)
+// Dank stringifySearch im Router können wir .extend() ohne Angst vor Hydration-Errors nutzen!
+export const notesSearchSchema = paginationSchema.extend({
+  courseId: z.string().optional(),
+  sortBy: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+  tagIds: z.array(z.string()).optional(),
+})
 ```
 
 - **.catch()**: Fängt ungültige Typen ab und setzt sie auf den Default zurück, anstatt einen Error zu werfen.
 - **.default()**: Greift, wenn der Parameter in der URL komplett fehlt.
 
-In TanStack Start will man bei der Behandlung der Search Params in der URL in fast 100% der Fälle immer beides machen.
-
-### B. Die Server Function (getCoursesFn)
+### C. Die Server Function (getCoursesFn)
 
 Die Server Function wird in **Logik** und **Handler** aufgeteilt. Die Logik berechnet die Pagination und führt die Abfragen parallel aus.
 
@@ -91,23 +139,24 @@ export const getCoursesFn = authGetFn
   })
 ```
 
-### C. Die typsichere Pagination-Komponente
+### D. Die typsichere Pagination-Komponente
 
-Wir nutzen die TanStack \<Link\>-Komponente anstelle von Buttons. Das ermöglicht **Preloading**: Wenn der User über "Nächste Seite" hovert, lädt der Router die Daten bereits im Hintergrund.
+Wir nutzen die TanStack `<Link>`-Komponente anstelle von Buttons. Das ermöglicht **Preloading**: Wenn der User über "Nächste Seite" hovert, lädt der Router die Daten bereits im Hintergrund.
+
+Da der Router nun global die Sortierung übernimmt, können wir das `currentSearch`-Objekt gefahrlos mit dem Spread-Operator erweitern, ohne uns um Hydration Errors zu sorgen.
 
 **Datei:** `src/components/web/data-table-pagination.tsx`
 
 ```typescript
 export function DataTablePagination({ totalCount, pageSize, page, currentSearch }: Props) {
- const totalPages = Math.ceil(totalCount / pageSize)
-
+  const totalPages = Math.ceil(totalCount / pageSize)
   const chevronClass = 'h-4 w-4'
 
   return (
     <div
       className={cn(
-        totalPages === 1
-          ? 'hidden'
+        totalPages <= 1
+          ? 'hidden' // Ausblenden, wenn alles auf eine Seite passt
           : 'flex items-center justify-between px-2 py-4',
       )}
     >
@@ -118,67 +167,24 @@ export function DataTablePagination({ totalCount, pageSize, page, currentSearch 
       <div className="flex items-center space-x-2">
         {/* Erste Seite */}
         <Link
-          // Wir übergeben das Ziel-Objekt direkt.
-          // Durch den Spread von currentSearch behalten wir Filter wie 'search' oder 'tagIds' bei.
-          // Das spreaden kann aber dazu führen, dass das neue Objekt am Client und am Server die Attribute
-          // in unterschiedlicher Reihenfolge enthält - das führt zu einem HydrationError in TanStack Start/React
-          // die Hilfsfunktion normalizeObject stellt sicher, dass die Reihenfolge der Attribute immer gleich ist
-          search={normalizeObject({ ...currentSearch, page: 1 })}
+          // Einfacher Spread ist jetzt 100% sicher dank `stringifySearch` im Router!
+          search={{ ...currentSearch, page: 1 }}
           preload="intent"
           className={linkStyles(page <= 1)}
           to="."
         >
           <ChevronFirst className={chevronClass} />
         </Link>
-        ...
+        {/* ... weitere Links (Vorherige, Nächste, Letzte) ... */}
       </div>
     </div>
   )
 }
 ```
 
-Mit dem angegebenen className im äußersten div blenden wir die Pagination-Komponente aus, wenn sich alles auf einer Seite ausgeht (es gibt dann nichts wo man zwischen den Seiten wechseln muss - also können wir den Platz der Pagination Komponente dem Inhalt "überlassen")
+### E. Die Route-Konfiguration
 
-#### Hilfsfunktion normalizeObject
-
-Wie im vorigen Codebeispiel erwähnt, ist es wichtig, dass die Attributreihenfolge bei den searchParams immer gleich ist (weil die Attributreihenfolge bestimmt, wie der resultierende URL String am Ende aussieht) und die Hydration Kontrolle die beiden URL Strings (am Server und am Client) miteinander "stringmäßig vergleicht". Das führt dazu, dass "a=A&b=B" als **unterschiedlich** zu "b=B&a=A" interpretiert wird. Das unterbinden wir, indem wir die Keys alphabetisch sortieren (**ACHTUNG:Das kann theoretisch zu einem Problem werden, wenn die Reihenfolge der Keys im URL String wichtig wäre**).
-
-```typescript
-export function normalizeObject<T extends Record<string, any>>(obj: T): T {
-  // 1. Sicherheitscheck: Wenn kein Objekt da ist, gib es einfach zurück.
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj
-
-  // 2. Alle Schlüssel extrahieren und alphabetisch sortieren.
-  // Das ist der entscheidende Schritt für die Deterministik!
-  const sortedKeys = Object.keys(obj).sort()
-
-  // 3. Ein neues, leeres Objekt erstellen.
-  const normalizedObj = {} as T
-
-  // 4. Die sortierten Schlüssel durchlaufen und die Werte übertragen.
-  for (const key of sortedKeys) {
-    const value = obj[key]
-
-    // 5. Rekursion (optional, aber empfohlen):
-    // Falls ein Wert selbst ein Objekt ist, wird auch dieses sortiert.
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      normalizedObj[key as keyof T] = normalizeObject(value)
-    } else {
-      normalizedObj[key as keyof T] = value
-    }
-  }
-
-  return normalizedObj
-}
-```
-
-##### Woran erkennt man, wann man die Hilfsfunktion verwenden muss?
-
-Zumindest überall dort, wo ein Search-Objekt mittels Spread-Operator verändert wird, sollte das Ergebnis normalisiert werden.
-
-### D. Die Route-Konfiguration
-
-In der Route definieren wir loaderDeps, damit der Loader weiß, dass er bei jeder Änderung der Suchparameter neu feuern muss. staleTime sorgt dafür, dass bereits geladene Seiten im Cache bleiben.
+In der Route definieren wir `loaderDeps`, damit der Loader weiß, dass er bei jeder Änderung der Suchparameter neu feuern muss. `staleTime` sorgt dafür, dass bereits geladene Seiten im Cache bleiben.
 
 **Datei:** `src/routes/courses/index.tsx`
 
@@ -193,9 +199,9 @@ export const Route = createFileRoute('/_content/courses/')({
 })
 ```
 
-### E. Die "flackerfreie" UI (RouteComponent)
+### F. Die "flackerfreie" UI (RouteComponent)
 
-Dies ist der wichtigste Teil für das User-Gefühl. Wir nutzen useDeferredValue, um die alten Kurse anzuzeigen, während die neuen im Hintergrund geladen werden. useRouterState liefert den Status für das "Ausgrauen".
+Dies ist der wichtigste Teil für das User-Gefühl. Wir nutzen `useDeferredValue`, um die alten Daten anzuzeigen, während die neuen im Hintergrund geladen werden. `useRouterState` liefert den Status für das "Ausgrauen".
 
 **Datei:** `src/routes/_content/courses/index.tsx`
 
@@ -228,7 +234,7 @@ function RouteComponent() {
         onSearchChange={(text) => {
           navigate({
             search: (prev) => ({ ...prev, search: text, page: 1 }),
-            replace: true, // verhindert, dass jeder getippte Buchstabe einen Eintrag in der Browser-Historie erzeugt
+            replace: true, // verhindert Spam in der Browser-Historie
           })
         }}
       />
@@ -257,15 +263,13 @@ function RouteComponent() {
 }
 ```
 
-Um **Hydration Mismatch** zu verhindern (der Server rendert etwas anderes wie der Client) müssen wir sicherstellen, dass `isPending` nur auf dem Client aktiviert wird. Das erreichen wir durch den useEffect, der `mounted` auf `true` setzt, sobald der Initial Render am Client abgeschlossen wurde. Das verwenden wir dann um `isNavigating` nur dann auf `true` zu setzen, wenn der Router im `pending` State ist und der initial Render schon abgeschlossen wurde.
-
 ## Checkliste für weitere Seiten
 
-Um dieses Muster auf andere Seiten (z.B. /tags) zu übertragen:
+Um dieses Muster auf andere Seiten (z.B. `/tags` oder `/notes`) zu übertragen:
 
-1. **Schema prüfen:** Reicht paginationSchema aus oder müssen neue Filter (z.B. sort) dazu?
+1. **Schema Architektur:** Wurde das Basis-Schema (`paginationSchema`) korrekt mit `.extend()` für spezifische Routen erweitert?
 2. **Server Function:** Gibt sie `{ items, totalCount }` innerhalb von `wrapServerAction` zurück? Ist das Schema direkt in `.inputValidator()` übergeben?
-3. **Loader:** Sind loaderDeps auf die search-Params gesetzt?
-4. **DeferredValue:** Wird in der Hauptkomponente useDeferredValue für das Loader-Promise genutzt?
-5. **Suspense:** Ist der Fallback auf null gesetzt, damit das opacity-50 Feedback die Führung übernimmt?
-6. **Pagination:** Wird das currentSearch Objekt an die Pagination übergeben, um bestehende Filter beim Seitenwechsel nicht zu verlieren?
+3. **Loader:** Sind `loaderDeps` auf die `search`-Params gesetzt?
+4. **DeferredValue:** Wird in der Hauptkomponente `useDeferredValue` für das Loader-Promise genutzt?
+5. **Suspense:** Ist der Fallback auf `null` gesetzt, damit das `opacity-50` Feedback die Führung übernimmt?
+6. **Pagination:** Wird das `currentSearch` Objekt an die Pagination übergeben (`search={{ ...currentSearch, page: X }}`), um bestehende Filter beim Seitenwechsel nicht zu verlieren?
