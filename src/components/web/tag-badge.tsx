@@ -99,7 +99,8 @@ const TagBadge = ({
         )}
       </Badge> */}
       <Badge
-        variant={isPrivate ? 'secondary' : 'secondary'}
+        // variant={isPrivate ? 'secondary' : 'secondary'}
+        variant="outline"
         className={cn(
           'flex items-center uppercase gap-1 transition-all',
 
@@ -116,16 +117,17 @@ const TagBadge = ({
             ? cn(
                 'border-blue-200 dark:border-blue-800',
                 isInherited
-                  ? // Nur Background und Text werden 80% (bzw. abgedunkelt), nicht das ganze Element
-                    'bg-blue-100/80 text-blue-700/80 dark:bg-blue-900/30 dark:text-blue-300/80'
+                  ? 'bg-blue-100/80 text-blue-700/80 dark:bg-blue-900/30 dark:text-blue-300/80'
                   : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
               )
             : cn(
+                // DIE GLASSMORPHISMUS LÖSUNG:
+                // Anstatt eines harten, deckenden Graus nutzen wir eine weiße Transparenz im Dark Mode.
+                // Dadurch verschmelzen sie optisch perfekt mit dem Farbverlauf dahinter.
                 isInherited
-                  ? 'bg-secondary/80 text-secondary-foreground/80'
-                  : 'bg-secondary text-secondary-foreground',
+                  ? 'bg-slate-200/50 text-slate-600 dark:bg-white/5 dark:text-white/50 border-transparent'
+                  : 'bg-slate-200/80 text-slate-800 dark:bg-white/10 dark:text-white/80 border-transparent',
               ),
-
           isDeleting && 'opacity-50 pointer-events-none',
           className,
         )}
