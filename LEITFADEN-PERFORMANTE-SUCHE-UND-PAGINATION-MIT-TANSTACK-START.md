@@ -1,6 +1,6 @@
 # Leitfaden: Performante Suche & Pagination mit TanStack Start
 
-**Version:** 26.414.1
+**Version:** 26.419.1
 
 ## Problembeschreibung
 
@@ -120,7 +120,10 @@ export function DataTablePagination({ totalCount, pageSize, page, currentSearch 
         <Link
           // Wir übergeben das Ziel-Objekt direkt.
           // Durch den Spread von currentSearch behalten wir Filter wie 'search' oder 'tagIds' bei.
-          search={{ ...currentSearch, page: 1 }}
+          // Das spreaden kann aber dazu führen, dass das neue Objekt am Client und am Server die Attribute
+          // in unterschiedlicher Reihenfolge enthält - das führt zu einem HydrationError in TanStack Start/React
+          // die Hilfsfunktion normalizeObject stellt sicher, dass die Reihenfolge der Attribute immer gleich ist
+          search={normalizeObject({ ...currentSearch, page: 1 })}
           preload="intent"
           className={linkStyles(page <= 1)}
           to="."
@@ -135,6 +138,43 @@ export function DataTablePagination({ totalCount, pageSize, page, currentSearch 
 ```
 
 Mit dem angegebenen className im äußersten div blenden wir die Pagination-Komponente aus, wenn sich alles auf einer Seite ausgeht (es gibt dann nichts wo man zwischen den Seiten wechseln muss - also können wir den Platz der Pagination Komponente dem Inhalt "überlassen")
+
+#### Hilfsfunktion normalizeObject
+
+Wie im vorigen Codebeispiel erwähnt, ist es wichtig, dass die Attributreihenfolge bei den searchParams immer gleich ist (weil die Attributreihenfolge bestimmt, wie der resultierende URL String am Ende aussieht) und die Hydration Kontrolle die beiden URL Strings (am Server und am Client) miteinander "stringmäßig vergleicht". Das führt dazu, dass "a=A&b=B" als **unterschiedlich** zu "b=B&a=A" interpretiert wird. Das unterbinden wir, indem wir die Keys alphabetisch sortieren (**ACHTUNG:Das kann theoretisch zu einem Problem werden, wenn die Reihenfolge der Keys im URL String wichtig wäre**).
+
+```typescript
+export function normalizeObject<T extends Record<string, any>>(obj: T): T {
+  // 1. Sicherheitscheck: Wenn kein Objekt da ist, gib es einfach zurück.
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj
+
+  // 2. Alle Schlüssel extrahieren und alphabetisch sortieren.
+  // Das ist der entscheidende Schritt für die Deterministik!
+  const sortedKeys = Object.keys(obj).sort()
+
+  // 3. Ein neues, leeres Objekt erstellen.
+  const normalizedObj = {} as T
+
+  // 4. Die sortierten Schlüssel durchlaufen und die Werte übertragen.
+  for (const key of sortedKeys) {
+    const value = obj[key]
+
+    // 5. Rekursion (optional, aber empfohlen):
+    // Falls ein Wert selbst ein Objekt ist, wird auch dieses sortiert.
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      normalizedObj[key as keyof T] = normalizeObject(value)
+    } else {
+      normalizedObj[key as keyof T] = value
+    }
+  }
+
+  return normalizedObj
+}
+```
+
+##### Woran erkennt man, wann man die Hilfsfunktion verwenden muss?
+
+Zumindest überall dort, wo ein Search-Objekt mittels Spread-Operator verändert wird, sollte das Ergebnis normalisiert werden.
 
 ### D. Die Route-Konfiguration
 

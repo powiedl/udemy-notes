@@ -12,6 +12,17 @@ export const getAvailableTagsSchema = withLogging(tagPaginationSchema).default(
 )
 export const getTagsForSelectorSchema = withLogging(z.object({}))
 export const deleteTagSchema = withLogging(z.object({ id: z.string() }))
+
+export const createAndLinkTagToTargetSchema = withLogging(
+  z.object({
+    targetId: z.string(),
+    targetType: z.enum(['course', 'note']),
+    tagName: z.string().min(1),
+  }),
+)
+export type CreateAndLinkTagToTargetInput = z.infer<
+  typeof createAndLinkTagToTargetSchema
+>
 // #endregion
 
 // Typen exportieren, damit die .server.ts Datei sie nutzen kann
@@ -67,5 +78,16 @@ export const deleteTagFn = authFn
 
     return await wrapServerAction('deleteTagFn', context, data, async () =>
       deleteTagLogic(data, context.session.user.id),
+    )
+  })
+
+export const createAndLinkTagToTargetFn = authFn
+  .inputValidator(createAndLinkTagToTargetSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { createAndLinkTagLogic } = await import('./tag.logic.server') // Pfad anpassen
+
+    return await wrapServerAction('createAndLinkTagFn', context, data, () =>
+      createAndLinkTagLogic(data, context.session.user.id),
     )
   })

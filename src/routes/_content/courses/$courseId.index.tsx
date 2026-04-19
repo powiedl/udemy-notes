@@ -3,10 +3,11 @@ import CourseHeader from '#/components/web/course-header'
 import NotesList from '#/components/web/notes-list'
 import { getCourseByIdFn } from '#/data/course'
 import { useCourseActions } from '#/hooks/use-course-actions'
+import { cn } from '#/lib/utils'
 import { ServerFnData } from '#/types/api'
 import { createFileRoute } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
-import { Suspense, use } from 'react'
+import { Suspense, use, useDeferredValue } from 'react'
 
 type CourseWithNotes = ServerFnData<typeof getCourseByIdFn>
 
@@ -76,11 +77,14 @@ function CourseContent({ course }: { course: CourseWithNotes }) {
 
 function RouteComponent() {
   const { coursePromise } = Route.useLoaderData()
+  const deferredCoursePromise = useDeferredValue(coursePromise)
+  const isUpdating = deferredCoursePromise !== coursePromise
   //console.log(data)
+
   return (
-    <div className="px-4">
+    <div className={cn('px-4 transition-opacity', isUpdating && 'opacity-50')}>
       <Suspense fallback={<Loader2 className="size-40 animate-spin mx-auto" />}>
-        <Course data={coursePromise} />
+        <Course data={deferredCoursePromise} />
       </Suspense>
     </div>
   )

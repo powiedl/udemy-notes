@@ -10,6 +10,8 @@ interface TagBadgeProps {
   title?: string
   size?: 'default' | 'sm'
   isDeleting?: boolean
+  isHighlighted?: boolean
+  isInherited?: boolean
   icon?: React.ReactNode
 }
 const TagBadge = ({
@@ -19,31 +21,49 @@ const TagBadge = ({
   title,
   size,
   isDeleting,
+  isHighlighted,
+  isInherited,
   icon,
 }: TagBadgeProps) => {
   const isPrivate = !!tag.userId
-  // tag.id === 'tt2' &&
-  //   console.log('TagBadge, mein tag,isPrivate', tag, isPrivate)
 
   return (
-    <div className="relative w-fit">
-      <Badge
-        variant={isPrivate ? 'default' : 'secondary'}
+    <div
+      className={cn(
+        'relative w-fit group',
+        size === 'sm'
+          ? isHighlighted
+            ? 'mr-4'
+            : 'mr-1' // Bei Highlight mehr Platz fürs X lassen
+          : isHighlighted
+            ? 'mr-5'
+            : 'mr-2',
+      )}
+    >
+      {/* group hinzugefügt für hover-effekte */}
+      {/* <Badge
+        variant={isPrivate ? 'secondary' : 'secondary'} // Wir überschreiben die Farbe via CN
         className={cn(
           'flex items-center uppercase gap-1 transition-all',
-          // --- Größen-Mapping ---
           size === 'sm'
-            ? 'text-xxs! px-1.5 py-0 h-4 mr-1' // Dein spezial-kleiner Style für den Header
-            : 'text-xs px-2.5 py-0.5 h-6 mr-2', // Standard-Style für die /tags Route
+            ? 'text-xxs! px-1.5 py-0 h-4 mr-1'
+            : 'text-xs px-2.5 py-0.5 h-6 mr-2',
 
-          // Private Tags visuell abheben
-          isPrivate && 'border-primary/50',
+          isInherited && 'opacity-80 brightness-90',
+          isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
+
+          // NEU: Blau für private Tags (Info-Charakter, nicht lila)
+          isPrivate
+            ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800'
+            : 'bg-secondary text-secondary-foreground',
+
           isDeleting && 'opacity-50 pointer-events-none',
+
           className,
         )}
         title={title}
       >
-        <span className="truncate max-w-40 flex flex-row gap-0.5">
+        <span className="truncate max-w-40 flex flex-row gap-0.5 items-center">
           {icon}
           {tag.name}
         </span>
@@ -57,12 +77,89 @@ const TagBadge = ({
               onDelete()
             }}
             className={cn(
-              'absolute -right-1.5 -top-1 rounded-full bg-black/25 dark:hover:bg-primary shadow-sm group overflow-visible hover:cursor-pointer border-2 dark:bg-muted dark:border-muted-foreground/50',
+              'absolute -top-1 rounded-full shadow-sm transition-colors border-2',
+              // NEU: Standardmäßig dezent, beim Hover ROT
+              'bg-background border-muted-foreground/20 text-muted-foreground',
+              'hover:bg-red-500 hover:text-white hover:border-red-600 dark:hover:bg-red-600',
               size === 'sm' ? 'p-0 size-3.5' : 'p-0.5 size-5',
+              isHighlighted ? '-right-2.5' : '-right-1.5',
             )}
           >
             {isDeleting ? (
-              <Loader2 className={cn(size === 'sm' ? 'size-2.5' : 'size-3')} />
+              <Loader2
+                className={cn(
+                  'animate-spin',
+                  size === 'sm' ? 'size-2.5' : 'size-3',
+                )}
+              />
+            ) : (
+              <X className={cn(size === 'sm' ? 'size-3' : 'size-3.5')} />
+            )}
+          </Button>
+        )}
+      </Badge> */}
+      <Badge
+        variant={isPrivate ? 'secondary' : 'secondary'}
+        className={cn(
+          'flex items-center uppercase gap-1 transition-all',
+
+          // 1. GRÖSSE (ohne das statische mr)
+          size === 'sm'
+            ? 'text-xxs! px-1.5 py-0 h-4'
+            : 'text-xs px-2.5 py-0.5 h-6',
+
+          // 3. HIGHLIGHT RING (Bleibt jetzt immer bei 100% Leuchtkraft)
+          isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
+
+          // 4. FARBEN & VERERBUNG (Der Trick für hellen Ring trotz dunklem Tag)
+          isPrivate
+            ? cn(
+                'border-blue-200 dark:border-blue-800',
+                isInherited
+                  ? // Nur Background und Text werden 80% (bzw. abgedunkelt), nicht das ganze Element
+                    'bg-blue-100/80 text-blue-700/80 dark:bg-blue-900/30 dark:text-blue-300/80'
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+              )
+            : cn(
+                isInherited
+                  ? 'bg-secondary/80 text-secondary-foreground/80'
+                  : 'bg-secondary text-secondary-foreground',
+              ),
+
+          isDeleting && 'opacity-50 pointer-events-none',
+          className,
+        )}
+        title={title}
+      >
+        <span className="truncate max-w-40 flex flex-row gap-0.5 items-center">
+          {icon}
+          {tag.name}
+        </span>
+
+        {onDelete && (
+          <Button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onDelete()
+            }}
+            className={cn(
+              'absolute -top-1 rounded-full shadow-sm transition-colors border-2 cursor-pointer',
+              'bg-background border-muted-foreground/20 text-muted-foreground',
+              'hover:bg-red-500 hover:text-white hover:border-red-600 dark:hover:bg-red-600',
+              size === 'sm' ? 'p-0 size-3.5' : 'p-0.5 size-5',
+              // Rausrücken, wenn der Ring aktiv ist
+              isHighlighted ? '-right-4' : '-right-1.5',
+            )}
+          >
+            {isDeleting ? (
+              <Loader2
+                className={cn(
+                  'animate-spin',
+                  size === 'sm' ? 'size-2.5' : 'size-3',
+                )}
+              />
             ) : (
               <X className={cn(size === 'sm' ? 'size-3' : 'size-3.5')} />
             )}

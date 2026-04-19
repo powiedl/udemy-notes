@@ -6,7 +6,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { cn, normalizeObject } from '@/lib/utils'
 
 interface DataTablePaginationProps {
   totalCount: number
@@ -48,7 +48,7 @@ export function DataTablePagination({
         <Link
           // Wir übergeben das Ziel-Objekt direkt.
           // Durch den Spread von currentSearch behalten wir Filter wie 'search' oder 'tagIds' bei.
-          search={{ ...currentSearch, page: 1 }}
+          search={normalizeObject({ ...currentSearch, page: 1 })}
           preload="intent"
           className={linkStyles(page <= 1)}
           to="."
@@ -58,7 +58,10 @@ export function DataTablePagination({
 
         {/* Vorherige Seite */}
         <Link
-          search={{ ...currentSearch, page: Math.max(1, page - 1) }}
+          search={normalizeObject({
+            ...currentSearch,
+            page: Math.max(1, page - 1),
+          })}
           preload="intent"
           className={linkStyles(page <= 1)}
           to="."
@@ -72,7 +75,10 @@ export function DataTablePagination({
 
         {/* Nächste Seite */}
         <Link
-          search={{ ...currentSearch, page: Math.min(totalPages, page + 1) }}
+          search={normalizeObject({
+            ...currentSearch,
+            page: Math.min(totalPages, page + 1),
+          })}
           preload="intent"
           className={linkStyles(page >= totalPages)}
           to="."
@@ -82,7 +88,7 @@ export function DataTablePagination({
 
         {/* Letzte Seite */}
         <Link
-          search={{ ...currentSearch, page: totalPages }}
+          search={normalizeObject({ ...currentSearch, page: totalPages })}
           preload="intent"
           className={linkStyles(page >= totalPages)}
           to="."

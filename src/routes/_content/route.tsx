@@ -3,18 +3,26 @@ import Footer from '#/components/Footer'
 import { SidebarInset, SidebarProvider } from '#/components/ui/sidebar'
 import { getSessionFn } from '#/data/session'
 import { getTagsForSelectorFn } from '#/data/tag'
+import { queryOptions } from '@tanstack/react-query'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
+
+export const tagsQueryOptions = queryOptions({
+  queryKey: ['availableTags'],
+  queryFn: async () => {
+    const result = await getTagsForSelectorFn({
+      data: { loggingMetadata: { component: 'GlobalTagQuery' } },
+    })
+    return result.success && result.data ? result.data : []
+  },
+  // Wichtig für Performance: Wir sagen dem Cache, dass diese Daten für
+  // 5 Minuten "frisch" (fresh) sind, bevor er sie im Hintergrund neu lädt.
+  staleTime: 1000 * 60 * 5,
+})
 
 export const Route = createFileRoute('/_content')({
   component: RouteComponent,
-  loader: async () => {
-    // 1. Das Ergebnis der Server Function abrufen
-    const [sessionResult, tagsResult] = await Promise.all([
-      getSessionFn(),
-      getTagsForSelectorFn({
-        data: { loggingMetadata: { component: 'MainLayoutLoader' } },
-      }),
-    ])
+  loader: async ({ context }) => {
+    const sessionResult = await getSessionFn()
 
     // 2. Prüfen, ob der Aufruf erfolgreich war
     if (!sessionResult.success) {
@@ -25,11 +33,17 @@ export const Route = createFileRoute('/_content')({
       throw new Error(sessionResult.error || 'Session could not be loaded')
     }
 
+    // 2. Tags über TanStack Query laden!
+    // 'ensureQueryData' ist magisch: Wenn die Tags schon im Cache sind,
+    // gibt es sie sofort zurück. Wenn nicht, ruft es die Server Function auf.
+    const availableTags =
+      await context.queryClient.ensureQueryData(tagsQueryOptions)
+
     // 3. Die Daten aus dem .data Feld extrahieren
     // result.data ist hier vom Typ 'Session'
     return {
       user: sessionResult.data.user,
-      availableTags: tagsResult?.success ? tagsResult.data : [],
+      availableTags,
     }
   },
 })

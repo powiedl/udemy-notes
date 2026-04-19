@@ -1,15 +1,13 @@
-import {
-  createAndLinkTagToCourseFn,
-  linkTagToCourseFn,
-  removeTagFromCourseFn,
-} from '#/data/course'
+import { linkTagToCourseFn, removeTagFromCourseFn } from '#/data/course'
 import { toggleNoteTagFn } from '#/data/note'
-import { getTagsForSelectorFn } from '#/data/tag'
+import { createAndLinkTagToTargetFn } from '#/data/tag'
 import { handleAction } from '#/lib/client-utils'
 import { ClientLoggingMetadata } from '#/schemas/api-utils'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { useState, useEffect, useCallback, useTransition } from 'react'
+import { useState, useTransition } from 'react'
+import { tagsQueryOptions } from '#/routes/_content/route'
 
 export function useTagManagement(
   targetId: string,
@@ -17,21 +15,22 @@ export function useTagManagement(
   componentName: string,
 ) {
   const router = useRouter()
+  const queryClient = useQueryClient()
+  const { data: availableTags = [] } = useQuery(tagsQueryOptions)
 
   // STATES
   const [isAdding, setIsAdding] = useState(false)
   const [tagQuery, setTagQuery] = useState('')
-  const [availableTags, setAvailableTags] = useState<any[]>([])
+  //const [availableTags, setAvailableTags] = useState<any[]>([])
   const [deletingTagId, setDeletingTagId] = useState<string | null>(null)
 
   // TRANSITIONS
   const [isPending, startTransition] = useTransition()
 
   // Server Fns wrappen...
-  const getTagsForSelector = useServerFn(getTagsForSelectorFn)
   const linkTagToCourse = useServerFn(linkTagToCourseFn)
   const removeTagFromCourse = useServerFn(removeTagFromCourseFn)
-  const createAndLinkTagToCourse = useServerFn(createAndLinkTagToCourseFn)
+  const createAndLinkTagToTarget = useServerFn(createAndLinkTagToTargetFn)
   const toggleNoteTag = useServerFn(toggleNoteTagFn)
 
   // Metadatan für das withLogging Schema
@@ -40,21 +39,21 @@ export function useTagManagement(
     actionSource: 'TagManagement Hook',
   }
 
-  // --- 1. INITIAL LOAD ---
-  const fetchTags = useCallback(async () => {
-    const result = await handleAction(
-      getTagsForSelector({
-        data: { loggingMetadata },
-      }),
-    )
-    if (result) {
-      setAvailableTags(result)
-    }
-  }, [componentName, getTagsForSelector])
+  // // --- 1. INITIAL LOAD ---
+  // const fetchTags = useCallback(async () => {
+  //   const result = await handleAction(
+  //     getTagsForSelector({
+  //       data: { loggingMetadata },
+  //     }),
+  //   )
+  //   if (result) {
+  //     setAvailableTags(result)
+  //   }
+  // }, [componentName, getTagsForSelector])
 
-  useEffect(() => {
-    fetchTags()
-  }, [fetchTags])
+  // useEffect(() => {
+  //   fetchTags()
+  // }, [fetchTags])
 
   const handleLink = async (tagId: string) => {
     startTransition(async () => {
@@ -87,9 +86,10 @@ export function useTagManagement(
 
     startTransition(async () => {
       const result = await handleAction(
-        createAndLinkTagToCourse({
+        createAndLinkTagToTarget({
           data: {
-            courseId: targetId,
+            targetId,
+            targetType,
             tagName,
             loggingMetadata: { component: 'CourseHeader' },
           },
@@ -98,6 +98,7 @@ export function useTagManagement(
       )
 
       if (result) {
+        await queryClient.invalidateQueries({ queryKey: ['availableTags'] })
         setIsAdding(false) // die Shadcn-Ui Komponente Popover kümmert sich um das isAdding=true
         setTagQuery('')
         router.invalidate()
@@ -129,7 +130,7 @@ export function useTagManagement(
                 loggingMetadata,
               },
             }),
-            { successToast: 'Tag von Notiz entfernt', showErrorToast: true },
+            { successToast: 'removed tag from note', showErrorToast: true },
           )
         }
         router.invalidate()

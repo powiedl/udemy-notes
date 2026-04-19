@@ -20,6 +20,7 @@ export const linkTagToCourseSchema = withLogging(
 export const createAndLinkTagToCourseSchema = withLogging(
   z.object({ courseId: z.string(), tagName: z.string() }),
 )
+
 export const getCoursesSchema = withLogging(courseSearchSchema)
 // #endregion
 

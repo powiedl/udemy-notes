@@ -5,6 +5,7 @@ import type {
   GetAvailableTagsInput,
   GetTagsForSelectorInput,
   DeleteTagInput,
+  CreateAndLinkTagToTargetInput,
 } from './tag'
 
 const defaultTags = [
@@ -82,4 +83,53 @@ export const deleteTagLogic = async (data: DeleteTagInput, userId: string) => {
 
   await prisma.tag.delete({ where: { id, userId } })
   return 'tag deleted successfully'
+}
+
+export async function createAndLinkTagLogic(
+  data: CreateAndLinkTagToTargetInput,
+  userId: string,
+) {
+  // FALL 1: KURS
+  if (data.targetType === 'course') {
+    const course = await prisma.course.findUnique({
+      where: { id: data.targetId, userId },
+    })
+    if (!course) throw new ServerActionError('Course not found or unauthorized')
+
+    await prisma.courseTag.create({
+      data: {
+        course: { connect: { id: data.targetId } },
+        tag: {
+          connectOrCreate: {
+            where: { name_userId: { name: data.tagName, userId: userId } },
+            create: { name: data.tagName, userId: userId },
+          },
+        },
+      },
+    })
+  }
+  // FALL 2: NOTIZ
+  else if (data.targetType === 'note') {
+    const note = await prisma.note.findUnique({
+      where: { id: data.targetId },
+      include: { course: true },
+    })
+    if (!note || note.course?.userId !== userId) {
+      throw new ServerActionError('Note not found or unauthorized')
+    }
+
+    await prisma.noteTag.create({
+      data: {
+        note: { connect: { id: data.targetId } },
+        tag: {
+          connectOrCreate: {
+            where: { name_userId: { name: data.tagName, userId: userId } },
+            create: { name: data.tagName, userId: userId },
+          },
+        },
+      },
+    })
+  }
+
+  return { success: true }
 }
