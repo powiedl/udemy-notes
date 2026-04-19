@@ -53,7 +53,7 @@ In der Datei `src/lib/rpc.ts` (oder ähnlich) definieren wir Basis-Fabriken, die
 | :------------- | :-------------- | :----------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `baseServerFn` | POST (Standard) | Nein               | Die absolute Basis. Beinhaltet die globale Fehler-Middleware. Wird direkt für öffentliche Endpunkte (z.B. Login) genutzt oder als Basis für andere Fabriken. |
 | `authGetFn`    | GET             | Ja                 | Für das Laden von Daten (Queries). Prüft die Session. Ergebnisse können vom Browser/Router gecacht werden.                                                   |
-| `authPostFn`   | POST            | Ja                 | Für Mutationen (Create, Update, Delete). Prüft die Session.                                                                                                  |
+| `authFn`       | POST            | Ja                 | Für Mutationen (Create, Update, Delete). Prüft die Session.                                                                                                  |
 
 ### Das `withLogging` Zod-Schema (Wichtig!)
 
@@ -88,6 +88,8 @@ export const getNotesFn = authGetFn
       return getNotesLogic(data, context.session.user.id)
     })
   })
+```
+
 ---
 
 ## 4. Das Fehlerbehandlungs-System (Zwei-Schichten-Modell)
@@ -123,7 +125,7 @@ export async function handleGlobalError(error: any): Promise<never> {
     message: realErrorMessage,
   }).catch((logError) => {
     console.error(
-      'Kritisch: Fallback-Log konnte nicht geschrieben werden:',
+      'FATAL: could not write fallback log',
       logError,
     )
   })
@@ -135,7 +137,7 @@ export async function handleGlobalError(error: any): Promise<never> {
     throw new Error(SERVER_ERROR_SANITIZED_MESSAGE) // Geheimnis wahren
   }
 }
-````
+```
 
 In der **#/lib/rpc.ts** erzeugen wir die entsprechende Middleware (wo wir die handleGlobalError dynamisch im `.server()` importieren - was "safe" ist, weil der Bundler den Inhalt von `.server()` für das Client-Image entfernt).
 
@@ -310,7 +312,7 @@ export async function handleAction<T>(
       return result.data
     } else {
       if (showErrorToast) {
-        toast.error(result.error || 'Ein Fehler ist aufgetreten.')
+        toast.error(result.error || 'An error occured')
       }
       if (onError) onError(result.error)
       return null
@@ -320,7 +322,7 @@ export async function handleAction<T>(
     const errorMsg =
       error instanceof Error
         ? error.message
-        : 'Ein unerwarteter Fehler ist aufgetreten.'
+        : 'An unexpected error occured.'
     if (showErrorToast) {
       toast.error(errorMsg)
     }
@@ -351,3 +353,4 @@ const onSubmit = async (values: FormValues) => {
   )
 }
 ```
+````

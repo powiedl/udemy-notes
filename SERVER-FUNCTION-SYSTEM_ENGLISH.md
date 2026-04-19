@@ -55,7 +55,7 @@ In the `src/lib/rpc.ts` file (or similar), we define base factories that serve a
 | :------------- | :------------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
 | `baseServerFn` | POST (Default) | No             | The absolute base. Includes the global error middleware. Used directly for public endpoints (e.g., Login) or as a base for other factories. |
 | `authGetFn`    | GET            | Yes            | For loading data (Queries). Checks the session. Results can be cached by the browser/router.                                                |
-| `authPostFn`   | POST           | Yes            | For mutations (Create, Update, Delete). Checks the session.                                                                                 |
+| `authFn`       | POST           | Yes            | For mutations (Create, Update, Delete). Checks the session.                                                                                 |
 
 ### The `withLogging` Zod Schema (Important!)
 

@@ -77,7 +77,7 @@ export async function handleAction<T>(
     }
 
     // Unerwartete Fehler (Netzwerk-Timeout etc.)
-    toast.error('Netzwerk- oder Serverfehler')
-    throw new ActionAbortedError('Netzwerk- oder Serverfehler')
+    toast.error('Network- or servererror')
+    throw new ActionAbortedError('Network- or servererror')
   }
 }

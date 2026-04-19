@@ -43,7 +43,7 @@ export const toggleNoteTagFn = authFn
       async () => {
         return toggleNoteTagLogic(data, context.session.user.id)
       },
-      data.action === 'add' ? 'Tag hinzugefügt' : 'Tag entfernt',
+      data.action === 'add' ? 'Tag added' : 'Tag removed',
     )
   })
 

@@ -108,10 +108,10 @@ const Note = ({
                       )}
                       title={
                         isInherited
-                          ? 'Vom Kurs geerbt'
+                          ? 'inherited from the course'
                           : isAlsoInherited
-                            ? 'Direkt zugewiesen (aber ohnehin vom Kurs geerbt)'
-                            : 'Direktes Tag'
+                            ? 'direct tag (but also inherited from course)'
+                            : 'direct tag'
                       }
                       onDelete={
                         isDirect

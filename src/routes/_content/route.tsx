@@ -22,9 +22,7 @@ export const Route = createFileRoute('/_content')({
       // werfen wir einen Error oder redirecten.
       // Hinweis: Da authFnMiddleware bereits redirectet,
       // sollte dieser Fall hier selten eintreten.
-      throw new Error(
-        sessionResult.error || 'Session konnte nicht geladen werden',
-      )
+      throw new Error(sessionResult.error || 'Session could not be loaded')
     }
 
     // 3. Die Daten aus dem .data Feld extrahieren
