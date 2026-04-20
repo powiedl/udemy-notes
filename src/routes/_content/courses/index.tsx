@@ -67,10 +67,14 @@ function CoursesList({
   data,
   page,
   pageSize,
+  search,
+  trainer,
 }: {
   data: Promise<ActionResponse<ServerFnData<typeof getCoursesFn>>>
   page: number
   pageSize: number
+  search?: string
+  trainer?: string
 }) {
   const result = use(data) // Das Promise wird hier aufgelöst
   if (!result.success) {
@@ -88,10 +92,16 @@ function CoursesList({
   if (totalCount === 0) {
     return (
       <div className="p-4 text-center">
-        You don't have any courses yet.{' '}
-        <Link to="/courses/import" className="text-primary hover:underline">
-          Start by importing your first course
-        </Link>
+        {!search && !trainer ? (
+          <>
+            "You don't have any courses yet.&nbsp;""
+            <Link to="/courses/import" className="text-primary hover:underline">
+              Start by importing your first course
+            </Link>
+          </>
+        ) : (
+          'No courses match your search criteria'
+        )}
       </div>
     )
   }
@@ -278,6 +288,8 @@ function RouteComponent() {
             data={deferredPromise}
             page={searchParams.page}
             pageSize={searchParams.pageSize}
+            search={searchParams.search}
+            trainer={searchParams.trainer}
           />
         </Suspense>
       </div>
