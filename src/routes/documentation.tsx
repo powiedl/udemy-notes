@@ -1,5 +1,6 @@
 import Footer from '#/components/Footer'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import TagBadge from '#/components/web/tag-badge'
 import { cn } from '#/lib/utils'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
@@ -23,7 +24,44 @@ function RouteComponent() {
 
   return (
     <div className="container mx-auto py-8 max-w-4xl space-y-8">
-      <h1 className="text-4xl font-bold mb-6">System Documentation</h1>
+      <h1 className="text-4xl font-bold mb-6">User Documentation</h1>
+      {/* Import Section */}
+      <section className="island-shell rounded-2xl p-6 sm:p-8">
+        <h2 className="mb-4 text-lg font-bold text-(--sea-ink) sm:text-2xl flex items-center">
+          <CloudUpload className={cn('size-4 mr-1', iconClass)} />
+          Importing Courses
+        </h2>
+        <p className="text-base leading-8 text-(--sea-ink-soft) mb-4">
+          To get started, follow the instructions on the{' '}
+          <Link to="/" className="text-lagoon font-semibold hover:underline">
+            Home page
+          </Link>{' '}
+          to obtain your Udemy notes HTML file.
+        </p>
+        <p className="text-base leading-8 text-(--sea-ink-soft) mb-4">
+          The HTML file is preprocessed on your computer (only the title and the
+          notes itself get passed to the server). This is done to keep your mail
+          address (which is stored in the Udemy HTML file) at your computer and
+          to reduce network traffic.
+        </p>
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/50">
+          <ul className="list-disc ml-5 space-y-2 text-sm text-blue-900 dark:text-blue-100">
+            <li>
+              <strong>Trainer Name:</strong> You can optionally specify the
+              trainer of the course during import for better filtering later.
+            </li>
+            <li>
+              <strong>Initial Tags:</strong> Add tags directly during import.
+              These will be applied to the <strong>entire course</strong> and
+              inherited by all notes within it.
+            </li>
+            <li>
+              <strong>Private vs Public:</strong> You can create new private
+              tags during import that only you can see.
+            </li>
+          </ul>
+        </div>
+      </section>
       {/* Course Management */}
       <section className="island-shell rounded-2xl p-6 sm:p-8">
         <h2 className="mb-4 text-lg font-bold text-(--sea-ink) sm:text-2xl flex items-center">
@@ -79,11 +117,18 @@ function RouteComponent() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <p>
-              To distinguish user-defined metadata creation from standard
-              selection, we use a<strong> purple color scheme</strong> for the
-              "Create Tag" workflow.
-            </p>
+            <div>
+              To distinguish user-defined metadata from standard selection, we
+              use a<strong> blue color scheme</strong> for the
+              <TagBadge
+                tag={{
+                  id: 'documentation-private-tag',
+                  name: 'private metadata',
+                  userId: 'documentation-user',
+                }}
+                className="align-middle mx-1"
+              />
+            </div>
             <div className="bg-accent/50 p-4 rounded-md border text-sm">
               <p className="font-semibold mb-2 underline underline-offset-4">
                 How to create and link new private tags:
@@ -122,13 +167,16 @@ function RouteComponent() {
             <CardContent className="space-y-2 text-sm">
               <p>
                 Tags assigned to a <strong>Course</strong> are automatically
-                inherited by all <strong>Notes</strong>
-                belonging to that course.
+                inherited by all <strong>Notes</strong> belonging to that
+                course.
               </p>
               <ul className="list-disc pl-5 space-y-2">
                 <li>
                   <strong>Visual cues:</strong> Inherited tags on Note cards
-                  display a small <strong>Link icon</strong>
+                  display a small{' '}
+                  <strong>
+                    Link icon <LinkIcon className="size-4 inline" />
+                  </strong>{' '}
                   next to their name.
                 </li>
                 <li>
@@ -189,7 +237,10 @@ function RouteComponent() {
           buttons.
         </p>
         <ul className="list-disc ml-5 mt-4 text-sm text-(--sea-ink-soft) space-y-1">
-          <li>Search across course titles and note contents.</li>
+          <li>
+            Search across course titles and trainers (in the Courses page) and
+            note contents (in the Notes page).
+          </li>
           <li>
             Sort notes by "Newest first", "Oldest first", or "Grouped by
             course".
@@ -201,6 +252,7 @@ function RouteComponent() {
           </li>
         </ul>
       </section>
+      <Footer />
     </div>
   )
 }

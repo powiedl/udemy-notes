@@ -30,7 +30,7 @@ const TagBadge = ({
   return (
     <div
       className={cn(
-        'relative w-fit group',
+        'relative w-fit group inline-flex',
         size === 'sm'
           ? isHighlighted
             ? 'mr-4'
@@ -102,7 +102,7 @@ const TagBadge = ({
         // variant={isPrivate ? 'secondary' : 'secondary'}
         variant="outline"
         className={cn(
-          'flex items-center uppercase gap-1 transition-all',
+          'inline-flex items-center uppercase gap-1 transition-all',
 
           // 1. GRÖSSE (ohne das statische mr)
           size === 'sm'
