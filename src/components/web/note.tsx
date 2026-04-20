@@ -1,15 +1,16 @@
 import { Link } from '@tanstack/react-router'
-import { AwaitedReturnTypeGetCourseById } from '#/data/course'
-import { ExtractData } from '#/types/api' // Importiere den Helper
+import { ServerFnData } from '#/types/api' // Importiere den Helper
 import { cn } from '#/lib/utils'
 import { Card, CardContent, CardDescription } from '../ui/card'
 import ReactMarkdown from 'react-markdown'
 import { BookOpenText } from 'lucide-react'
 import { useTagManagement } from '#/hooks/use-tag-management' // Pfad prüfen!
 import { TagDisplay, TagManager } from './tag-manager'
+import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
+import { getNotesForCourseFn } from '#/data/note'
 
 interface NoteProps {
-  note: ExtractData<AwaitedReturnTypeGetCourseById>['notes'][number] & {
+  note: ServerFnData<typeof getNotesForCourseFn>['items'][number] & {
     course?: { id: string; title: string } | undefined
     displayTags?:
       | {
@@ -61,6 +62,7 @@ const Note = ({
         <Link
           to="/courses/$courseId"
           params={{ courseId: note.course.id }}
+          search={PAGINATION_DEFAULTS}
           className="absolute left-3 top-3 z-10 flex items-center gap-1 text-sm font-medium text-muted-foreground hover:underline"
         >
           <BookOpenText className="size-5" />

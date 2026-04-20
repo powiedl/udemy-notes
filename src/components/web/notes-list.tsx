@@ -1,14 +1,12 @@
 import { Fragment } from 'react'
-import { ExtractData } from '#/types/api'
+import { ExtractData, ServerFnData } from '#/types/api'
 import Note from './note'
 import CourseHeader from '#/components/web/course-header'
 // WICHTIG: Passe diesen Import an deinen tatsächlichen Typen an!
-import { AwaitedReturnTypeGetNotes } from '#/data/note'
-import { AwaitedReturnTypeGetCourseById } from '#/data/course'
+import { AwaitedReturnTypeGetNotes, getNotesForCourseFn } from '#/data/note'
 
 type GlobalNote = ExtractData<AwaitedReturnTypeGetNotes>['items'][number]
-type CourseNote = ExtractData<AwaitedReturnTypeGetCourseById>['notes'][number]
-
+type CourseNote = ServerFnData<typeof getNotesForCourseFn>['items'][number]
 // type FlexibleNote = CourseNote & {
 //   course?: GlobalNote['course']
 //   tags?: GlobalNote['tags']

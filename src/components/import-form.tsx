@@ -54,6 +54,7 @@ import { getTrainerSuggestionsFn } from '#/data/course'
 import { getTagsForSelectorFn } from '#/data/tag'
 import { handleAction } from '#/lib/client-utils'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
+import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 
 // Lokales Schema für das UI - WICHTIG: Trainer muss string sein (nicht optional),
 // damit es zum Default-Wert '' passt.
@@ -148,6 +149,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
             await navigate({
               to: '/courses/$courseId',
               params: { courseId: result.courseId },
+              search: PAGINATION_DEFAULTS,
             })
           }
         } catch (error) {

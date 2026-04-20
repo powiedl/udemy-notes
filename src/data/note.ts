@@ -2,7 +2,10 @@
 
 import { authGetFn, authFn } from '#/lib/rpc'
 import { withLogging } from '#/schemas/api-utils'
-import { noteSearchSchema } from '#/schemas/search-params'
+import {
+  courseNotesSearchSchema,
+  noteSearchSchema,
+} from '#/schemas/search-params'
 import z from 'zod'
 
 // Das Schema mit Logging-Metadaten anreichern
@@ -13,6 +16,9 @@ export const toggleNoteTagSchema = withLogging(
     tagId: z.string(),
     action: z.enum(['add', 'remove']),
   }),
+)
+export const getNotesForCourseInputSchema = withLogging(
+  z.object({ courseId: z.string(), searchParams: courseNotesSearchSchema }),
 )
 
 /**
@@ -28,6 +34,27 @@ export const getNotesFn = authGetFn
     return await wrapServerAction('getNotesFn', context, data, async () => {
       return getNotesLogic(data, context.session.user.id)
     })
+  })
+
+export const getNotesForCourseFn = authGetFn
+  // Wir nutzen hier ein Zod-Objekt, das courseId UND die searchParams vereint
+  .inputValidator(getNotesForCourseInputSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { getNotesForCourseLogic } = await import('./note.logic.server')
+
+    return await wrapServerAction(
+      'getNotesForCourseFn',
+      context,
+      data,
+      async () => {
+        return getNotesForCourseLogic(
+          data.courseId,
+          data.searchParams,
+          context.session.user.id,
+        )
+      },
+    )
   })
 
 export const toggleNoteTagFn = authFn

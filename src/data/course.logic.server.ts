@@ -8,7 +8,7 @@ import type {
   LinkTagToCourseInput,
   CreateAndLinkTagToCourseInput,
 } from './course'
-import { mapNoteDisplayTags } from './note.logic.server'
+//import { mapNoteDisplayTags } from './note.logic.server'
 
 /**
  * Kern-Logik für den Abruf von Kursen (paginiert & gefiltert).
@@ -70,49 +70,24 @@ export async function getCourseByIdLogic(data: CourseIdInput, userId: string) {
   const course = await prisma.course.findUnique({
     where: { userId, id },
     include: {
-      notes: {
-        orderBy: { orderInfo: 'desc' },
-        // NEU: Wir müssen die direkten Tags der Notiz mitladen!
-        include: {
-          tags: {
-            select: {
-              tag: { select: { id: true, name: true, userId: true } },
-            },
-          },
-        },
-      },
+      // WICHTIG: Die notes-Relation ist hier komplett verschwunden!
       tags: {
         select: {
           tag: { select: { id: true, name: true, userId: true } },
         },
         orderBy: { tag: { name: 'asc' } },
       },
+      _count: {
+        select: { notes: true },
+      },
     },
   })
 
   if (!course) throw new ServerActionError('Course not found')
 
-  // Mapping der Notizen: Wir übergeben die Kurs-Tags dynamisch an jede Notiz,
-  // damit die Funktion die Vererbung berechnen kann.
-  const mappedNotes = course.notes.map((note) => {
-    return mapNoteDisplayTags({
-      ...note,
-      course: {
-        id: course.id,
-        title: course.title,
-        userId: course.userId,
-        trainer: course.trainer,
-        tags: course.tags,
-      },
-    })
-  })
-
-  return {
-    ...course,
-    notes: mappedNotes,
-  }
-}
-/**
+  // Keine Notiz-Mappings mehr hier. Wir geben den reinen Kurs zurück.
+  return course
+} /**
  * Löscht einen Kurs.
  */
 export async function deleteCourseByIdLogic(

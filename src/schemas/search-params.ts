@@ -71,6 +71,17 @@ export const COURSE_SEARCH_DEFAULTS: CourseSearchInput = {
   tagIds: [],
   trainer: '',
 }
+
+export const courseNotesSearchSchema = paginationSchema.extend({
+  // Falls du mehrere Tags gleichzeitig filtern willst:
+  tagIds: z.array(z.string()).optional(),
+
+  // Optional: Falls du später nach Datum oder Alphabet sortieren willst
+  // sortBy: z.string().optional(),
+  // sortOrder: z.enum(['asc', 'desc']).optional(),
+})
+
+export type CourseNotesSearchInput = z.infer<typeof courseNotesSearchSchema>
 // #endregion
 
 // #region Notes

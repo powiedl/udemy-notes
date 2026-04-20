@@ -15,6 +15,7 @@ import TagBadge from './tag-badge'
 import { useTagManagement } from '#/hooks/use-tag-management'
 // NEU: TagManager und Interface importieren
 import { TagManager, TagDisplay } from './tag-manager'
+import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
@@ -66,6 +67,7 @@ const CourseHeader = ({
           <Link
             to="/courses/$courseId"
             params={{ courseId: course.id }}
+            search={PAGINATION_DEFAULTS}
             className="text-lg font-semibold hover:underline"
           >
             {course.title}
@@ -122,6 +124,7 @@ const CourseHeader = ({
             <Link
               to="/courses/$courseId"
               params={{ courseId: course.id }}
+              search={PAGINATION_DEFAULTS}
               className="block line-clamp-3"
             >
               {course.title}

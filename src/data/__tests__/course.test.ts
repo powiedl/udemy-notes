@@ -104,7 +104,10 @@ describe('getCoursesLogic', () => {
         take: 10,
         where: expect.objectContaining({
           userId: userId,
-          title: { contains: 'React', mode: 'insensitive' },
+          OR: [
+            { title: { contains: 'React', mode: 'insensitive' } }, // 'React', 'Javascript' oder 'e' je nach Test
+            { trainer: { contains: 'React', mode: 'insensitive' } }, // Muss denselben Suchbegriff haben wie title!
+          ],
         }),
       }),
     )
@@ -137,7 +140,10 @@ describe('getCoursesLogic', () => {
         take: 10,
         where: expect.objectContaining({
           userId: userId,
-          title: { contains: 'Javascript', mode: 'insensitive' },
+          OR: [
+            { title: { contains: 'Javascript', mode: 'insensitive' } }, // 'React', 'Javascript' oder 'e' je nach Test
+            { trainer: { contains: 'Javascript', mode: 'insensitive' } }, // Muss denselben Suchbegriff haben wie title!
+          ],
         }),
       }),
     )
@@ -171,7 +177,10 @@ describe('getCoursesLogic', () => {
           take: 2,
           where: expect.objectContaining({
             userId: userId,
-            title: { contains: 'e', mode: 'insensitive' },
+            OR: [
+              { title: { contains: 'e', mode: 'insensitive' } }, // 'React', 'Javascript' oder 'e' je nach Test
+              { trainer: { contains: 'e', mode: 'insensitive' } }, // Muss denselben Suchbegriff haben wie title!
+            ],
           }),
         }),
       )
@@ -204,7 +213,10 @@ describe('getCoursesLogic', () => {
           take: 2,
           where: expect.objectContaining({
             userId: userId,
-            title: { contains: 'e', mode: 'insensitive' },
+            OR: [
+              { title: { contains: 'e', mode: 'insensitive' } }, // 'React', 'Javascript' oder 'e' je nach Test
+              { trainer: { contains: 'e', mode: 'insensitive' } }, // Muss denselben Suchbegriff haben wie title!
+            ],
           }),
         }),
       )

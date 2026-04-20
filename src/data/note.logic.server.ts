@@ -1,6 +1,9 @@
 import { prisma } from '#/lib/db.server'
 import type { Prisma } from '#/generated/prisma/client'
-import type { NoteSearchInput } from '#/schemas/search-params'
+import type {
+  CourseNotesSearchInput,
+  NoteSearchInput,
+} from '#/schemas/search-params'
 import { ServerActionError } from '#/types/errors'
 
 // Hilfstyp, um TypeScript glücklich zu machen, egal aus welcher Query die Notiz kommt
@@ -147,6 +150,74 @@ export async function getNotesLogic(data: NoteSearchInput, userId: string) {
 
   const mappedItems = items.map(mapNoteDisplayTags)
   return { items: mappedItems, totalCount }
+}
+
+export async function getNotesForCourseLogic(
+  courseId: string,
+  data: CourseNotesSearchInput,
+  userId: string,
+) {
+  const { prisma } = await import('#/lib/db.server')
+  const { page, pageSize, search, tagIds } = data
+  const skip = (page - 1) * pageSize
+
+  const where: Prisma.NoteWhereInput = {
+    courseId: courseId,
+    course: { userId: userId },
+  }
+
+  if (search) {
+    where.OR = [
+      { section: { contains: search, mode: 'insensitive' } },
+      { lecture: { contains: search, mode: 'insensitive' } },
+      { originalContent: { contains: search, mode: 'insensitive' } },
+      { editedContent: { contains: search, mode: 'insensitive' } },
+    ]
+  }
+
+  if (tagIds && tagIds.length > 0) {
+    where.tags = {
+      some: { tagId: { in: tagIds } },
+    }
+  }
+
+  const [notes, totalCount] = await Promise.all([
+    prisma.note.findMany({
+      where,
+      skip,
+      take: pageSize,
+      orderBy: { orderInfo: 'desc' }, // Deine originale Sortierung!
+      include: {
+        tags: {
+          select: {
+            tag: { select: { id: true, name: true, userId: true } },
+          },
+          orderBy: { tag: { name: 'asc' } },
+        },
+        // NEU: Wir laden die Kurs-Daten für DIESE Notizen mit,
+        // damit wir die Tag-Vererbung berechnen können!
+        course: {
+          select: {
+            id: true,
+            title: true,
+            userId: true,
+            trainer: true,
+            tags: {
+              select: {
+                tag: { select: { id: true, name: true, userId: true } },
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.note.count({ where }),
+  ])
+
+  // Die Mapping-Magie passiert jetzt exakt hier, bevor die Daten zum Client fließen
+  const mappedNotes = notes.map((note) => mapNoteDisplayTags(note))
+
+  return { items: mappedNotes, totalCount }
 }
 
 export async function toggleNoteTagLogic(
