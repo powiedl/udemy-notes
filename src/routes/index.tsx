@@ -14,7 +14,7 @@ function App() {
           </h1>
           <p className="m-0 max-w-3xl text-base leading-8 text-(--sea-ink-soft)">
             With
-            <span className="text-xl font-600 mx-2 text-(--lagoon)">
+            <span className="text-xl font-600 mx-2 text-lagoon">
               Udemy Notes
             </span>
             you can import your notes from Udemy, edit and tag them, search
