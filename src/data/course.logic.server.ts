@@ -22,7 +22,11 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
   // 1. Basis-Where-Bedingung erstellen
   const where: Prisma.CourseWhereInput = {
     userId: userId,
-    title: { contains: search, mode: 'insensitive' },
+    //title: { contains: search, mode: 'insensitive' },
+    OR: [
+      { title: { contains: search, mode: 'insensitive' } },
+      { trainer: { contains: search, mode: 'insensitive' } },
+    ],
   }
 
   // 2. Tag-Filterung hinzufügen (OR-Logik)
