@@ -246,7 +246,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
                 </div>
                 {showSuggestions && (
                   <div
-                    className="absolute left-0 right-0 z-[100] bg-popover border border-border rounded-md shadow-xl"
+                    className="absolute left-0 right-0 z-100 bg-popover border border-border rounded-md shadow-xl"
                     style={{
                       top: 'calc(100% + 4px)', // Erzwingt die Position unterhalb des gesamten Feldes
                       minWidth: '200px',
