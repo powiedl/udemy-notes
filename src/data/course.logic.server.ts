@@ -112,37 +112,69 @@ export async function getTrainerSuggestionsLogic(
 ) {
   const { query } = data
   const trimmedQuery = query.trim()
-  if (trimmedQuery.length < 2) return []
 
+  // Wir holen uns alle Trainer, die zum Filter passen.
+  // Da wir nach Häufigkeit sortieren wollen, nehmen wir ein höheres Limit
+  // beim Abrufen, um eine gute Datenbasis für die Zählung zu haben.
   const suggestions = await prisma.course.findMany({
     where: {
       AND: [
-        { trainer: { startsWith: trimmedQuery, mode: 'insensitive' } },
-        { NOT: { trainer: { in: ['Unknown Trainer', ''] } } },
+        { trainer: { contains: trimmedQuery, mode: 'insensitive' } },
+        {
+          NOT: {
+            trainer: { in: ['Unknown Trainer', '', 'Unbekannter Trainer'] },
+          },
+        },
         { NOT: { trainer: null } },
       ],
     },
     select: { trainer: true },
-    distinct: ['trainer'],
-    orderBy: { trainer: 'asc' },
-    take: 20,
+    // Wir nehmen hier bewusst kein distinct, weil wir die Anzahl zählen wollen!
   })
 
-  const seen = new Set<string>()
-  const uniqueResults: string[] = []
+  // 1. Zählen der Vorkommen pro normalisiertem Namen
+  // Map: lowerCaseName -> { originalName: string, count: number }
+  const trainerMap = new Map<string, { name: string; count: number }>()
 
   for (const item of suggestions) {
-    const name = item.trainer?.trim()
-    if (!name) continue
-    const lowerName = name.toLowerCase()
-    if (!seen.has(lowerName)) {
-      seen.add(lowerName)
-      uniqueResults.push(name)
+    const originalName = item.trainer?.trim()
+    if (!originalName) continue
+
+    const lowerName = originalName.toLowerCase()
+    const existing = trainerMap.get(lowerName)
+
+    if (existing) {
+      existing.count++
+      // Optional: Den Namen mit der "schönsten" Schreibweise behalten (z.B. die mit den meisten Großbuchstaben)
+      if (
+        originalName !== existing.name &&
+        originalName.match(/[A-Z]/g)?.length! >
+          existing.name.match(/[A-Z]/g)?.length!
+      ) {
+        existing.name = originalName
+      }
+    } else {
+      trainerMap.set(lowerName, { name: originalName, count: 1 })
     }
-    if (uniqueResults.length >= 5) break
   }
 
-  return uniqueResults
+  // 2. In Array umwandeln und nach Häufigkeit sortieren
+  const sortedTrainers = Array.from(trainerMap.values()).sort((a, b) => {
+    // Primär nach Häufigkeit (absteigend)
+    if (b.count !== a.count) return b.count - a.count
+    // Sekundär alphabetisch (aufsteigend) bei Gleichstand
+    return a.name.localeCompare(b.name)
+  })
+
+  // 3. Ergebnis limitieren und hasMore berechnen
+  const limit = 5
+  const result = sortedTrainers.slice(0, limit).map((t) => t.name)
+  const hasMore = sortedTrainers.length > limit
+
+  return {
+    suggestions: result,
+    hasMore,
+  }
 }
 
 /**
