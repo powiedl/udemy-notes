@@ -78,7 +78,10 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
   const [isPending, startTransition] = useTransition()
   const uploadFile = useServerFn(importHtmlFile)
 
-  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [suggestions, setSuggestions] = useState<{
+    suggestions: string[]
+    hasMore: boolean
+  }>({ suggestions: [], hasMore: false })
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [availableTags, setAvailableTags] = useState<
     { id: string; name: string; userId: string | null }[]
@@ -174,6 +177,17 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
   // Wir abonnieren den Validierungs-Zustand separat für den Button-Fix
   const canSubmit = useStore(form.store, (s) => s.canSubmit)
 
+  const fetchSuggestions = async (val: string) => {
+    const res = await getTrainerSuggestionsFn({
+      data: { query: val, loggingMetadata: { component: 'ImportHtmlForm' } },
+    })
+    if (res.success && res.data) {
+      setSuggestions(res.data)
+      // Zeige Vorschläge, wenn wir entweder Treffer haben ODER es noch mehr gibt
+      setShowSuggestions(res.data.suggestions.length > 0 || res.data.hasMore)
+    }
+  }
+
   useEffect(() => {
     const loadTags = async () => {
       const res = await getTagsForSelectorFn({
@@ -186,17 +200,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
 
   const handleTrainerChange = async (val: string, field: any) => {
     field.handleChange(val)
-    if (val.trim().length >= 2) {
-      const res = await getTrainerSuggestionsFn({
-        data: { query: val, loggingMetadata: { component: 'ImportHtmlForm' } },
-      })
-      if (res.success && res.data) {
-        setSuggestions(res.data)
-        setShowSuggestions(res.data.length > 0)
-      }
-    } else {
-      setShowSuggestions(false)
-    }
+    fetchSuggestions(val)
   }
 
   return (
@@ -222,6 +226,8 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
             name="trainer"
             children={(field) => (
               <Field className="relative">
+                {' '}
+                {/* Hier muss relative bleiben! */}
                 <FieldLabel htmlFor={field.name}>Trainer (Optional)</FieldLabel>
                 <div className="relative mt-2">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -229,29 +235,44 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
                     id={field.name}
                     className="pl-9"
                     value={field.state.value ?? ''}
+                    onFocus={(e) => fetchSuggestions(e.target.value)}
                     onBlur={() =>
                       setTimeout(() => setShowSuggestions(false), 200)
                     }
                     onChange={(e) => handleTrainerChange(e.target.value, field)}
-                    placeholder="Name des Trainers..."
+                    placeholder="Name of the trainer ..."
                     autoComplete="off"
                   />
                 </div>
                 {showSuggestions && (
-                  <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg overflow-hidden">
-                    {suggestions.map((name) => (
-                      <button
-                        key={name}
-                        type="button"
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors"
-                        onClick={() => {
-                          field.handleChange(name)
-                          setShowSuggestions(false)
-                        }}
-                      >
-                        {name}
-                      </button>
-                    ))}
+                  <div
+                    className="absolute left-0 right-0 z-[100] bg-popover border border-border rounded-md shadow-xl"
+                    style={{
+                      top: 'calc(100% + 4px)', // Erzwingt die Position unterhalb des gesamten Feldes
+                      minWidth: '200px',
+                    }}
+                  >
+                    <div className="max-h-60 overflow-y-auto">
+                      {suggestions.suggestions.map((name) => (
+                        <button
+                          key={name}
+                          type="button"
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors"
+                          onClick={() => {
+                            field.handleChange(name)
+                            setShowSuggestions(false)
+                          }}
+                        >
+                          {name}
+                        </button>
+                      ))}
+
+                      {suggestions.hasMore && (
+                        <div className="px-4 py-2 text-center text-muted-foreground bg-muted/30 border-t border-border/50 text-[10px] italic">
+                          ... more results available
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </Field>
