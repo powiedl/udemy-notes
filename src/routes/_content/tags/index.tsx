@@ -5,14 +5,19 @@ import { deleteTagFn, getAvailableTagsFn } from '#/data/tag'
 import { handleAction } from '#/lib/client-utils'
 import { cn } from '#/lib/utils'
 import { ClientLoggingMetadata } from '#/schemas/api-utils'
-import { tagPaginationSchema } from '#/schemas/search-params'
+import {
+  COURSE_SEARCH_DEFAULTS,
+  NOTE_SEARCH_DEFAULTS,
+  tagPaginationSchema,
+} from '#/schemas/search-params'
 import {
   createFileRoute,
+  Link,
   useRouter,
   useRouterState,
 } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { Loader2 } from 'lucide-react'
+import { Info, Loader2 } from 'lucide-react'
 import {
   Suspense,
   use,
@@ -104,6 +109,24 @@ function RouteComponent() {
 
   return (
     <div className="space-y-4 px-4">
+      <div>
+        <span className="flex items-center text-lg">
+          <Info className="size-5 mr-1" />
+          Tags
+        </span>
+        <p className="text-muted-foreground">
+          Here you can search for all tags and delete your private ones. To add
+          a new tag simply use the assign Button in{' '}
+          <Link to="/courses" search={COURSE_SEARCH_DEFAULTS}>
+            Courses
+          </Link>{' '}
+          or{' '}
+          <Link to="/notes" search={NOTE_SEARCH_DEFAULTS}>
+            Notes
+          </Link>
+          .
+        </p>
+      </div>
       {/* 1. Die Suchleiste hinzufügen */}
       <DataTableSearch
         value={searchParams.search}

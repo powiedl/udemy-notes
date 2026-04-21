@@ -26,6 +26,12 @@ const TagBadge = ({
   icon,
 }: TagBadgeProps) => {
   const isPrivate = !!tag.userId
+  // console.log(
+  //   'DEBUG: onDelete type is:',
+  //   typeof onDelete,
+  //   'Value is:',
+  //   onDelete,
+  // )
 
   return (
     <div
@@ -80,8 +86,9 @@ const TagBadge = ({
           {tag.name}
         </span>
 
-        {onDelete && (
+        {typeof onDelete === 'function' && (
           <Button
+            data-testid="tag-delete-button"
             type="button"
             onClick={(e) => {
               e.preventDefault()
