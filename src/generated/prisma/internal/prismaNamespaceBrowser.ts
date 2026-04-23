@@ -57,6 +57,8 @@ export const ModelName = {
   Verification: 'Verification',
   Course: 'Course',
   Note: 'Note',
+  Trainer: 'Trainer',
+  CourseTrainer: 'CourseTrainer',
   Tag: 'Tag',
   NoteTag: 'NoteTag',
   CourseTag: 'CourseTag',
@@ -141,7 +143,6 @@ export type VerificationScalarFieldEnum = (typeof VerificationScalarFieldEnum)[k
 export const CourseScalarFieldEnum = {
   id: 'id',
   title: 'title',
-  trainer: 'trainer',
   userId: 'userId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -168,6 +169,26 @@ export const NoteScalarFieldEnum = {
 } as const
 
 export type NoteScalarFieldEnum = (typeof NoteScalarFieldEnum)[keyof typeof NoteScalarFieldEnum]
+
+
+export const TrainerScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TrainerScalarFieldEnum = (typeof TrainerScalarFieldEnum)[keyof typeof TrainerScalarFieldEnum]
+
+
+export const CourseTrainerScalarFieldEnum = {
+  courseId: 'courseId',
+  trainerId: 'trainerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CourseTrainerScalarFieldEnum = (typeof CourseTrainerScalarFieldEnum)[keyof typeof CourseTrainerScalarFieldEnum]
 
 
 export const TagScalarFieldEnum = {

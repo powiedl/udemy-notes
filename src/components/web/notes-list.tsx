@@ -31,10 +31,12 @@ export type FlexibleTag = {
 
 // 2. Wir bauen die FlexibleNote zusammen
 export type FlexibleNote = Omit<CourseNote, 'tags'> & {
-  tags: FlexibleTag[] // Die rohen Tags der Notiz überschreiben
-  displayTags?: FlexibleTag[] // Unser neues, gemapptes Array!
-  course?: Omit<NonNullable<GlobalNote['course']>, 'tags'> & {
-    tags: FlexibleTag[] // Die rohen Tags des Kurses überschreiben
+  tags: FlexibleTag[]
+  displayTags?: FlexibleTag[]
+  // WICHTIG: Wir schließen 'trainers' aus dem alten Typ aus und definieren ihn neu
+  course?: Omit<NonNullable<GlobalNote['course']>, 'tags' | 'trainers'> & {
+    tags: FlexibleTag[]
+    trainers: { trainer: { id: string; name: string } }[] // <--- NEU: Die richtige Struktur!
   }
 }
 
@@ -62,16 +64,17 @@ const NotesList = ({
           (index === 0 || notes[index - 1].course?.id !== note.course.id)
         return (
           <Fragment key={note.id}>
-            {showHeader &&
-              note.course && ( // wenn note.course undefined wäre, wäre showHeader false
-                <div className="col-span-1 6xl:col-span-2 mt-6 mb-2 first:mt-0">
-                  <CourseHeader
-                    course={note.course} // (Je nach TypeScript-Strenge evtl. casten)
-                    variant="compact"
-                    activeTagIds={activeTagIds}
-                  />
-                </div>
-              )}
+            {showHeader && note.course && (
+              <div className="col-span-1 6xl:col-span-2 mt-6 mb-2 first:mt-0">
+                <CourseHeader
+                  // Hier casten wir als 'any', weil CourseHeaderData
+                  // ein isolierter Prisma-Typ ist und wir hier eine "FlexibleNote" haben
+                  course={note.course as any}
+                  variant="compact"
+                  activeTagIds={activeTagIds}
+                />
+              </div>
+            )}
             <Note
               note={note}
               key={note.id}

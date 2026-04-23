@@ -36,7 +36,7 @@ describe('importHtmlFileLogic', () => {
     htmlContent: '<html><body>Notes</body></html>',
     fileName: 'test.html',
     fileSize: 1000,
-    trainer: 'Maximilian Schwarzmüller',
+    trainers: ['Maximilian Schwarzmüller'],
     tagIds: ['tag_1'],
     newPrivateTags: [],
   }

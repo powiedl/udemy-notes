@@ -27,6 +27,11 @@ export const getCoursesSchema = withLogging(courseSearchSchema)
 // #region Prisma Types
 export type CourseHeaderData = Prisma.CourseGetPayload<{
   include: {
+    trainers: {
+      include: {
+        trainer: true
+      }
+    }
     tags: {
       select: {
         tag: {

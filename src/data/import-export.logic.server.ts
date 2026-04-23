@@ -47,7 +47,7 @@ export const importHtmlFileLogic = async (
     await import('#/lib/convertHtmlToMarkdown')
   const { orderInfo } = await import('#/lib/udemy')
 
-  const { htmlContent, fileName, fileSize, trainer, tagIds, newPrivateTags } =
+  const { htmlContent, fileName, fileSize, trainers, tagIds, newPrivateTags } =
     data
 
   // --- 1. Validierung (Sicherheit & Integrität) ---
@@ -82,6 +82,11 @@ export const importHtmlFileLogic = async (
     finalTagIds = [...finalTagIds, ...createdTags.map((t) => t.id)]
   }
 
+  const validTrainers = (trainers || [])
+    .filter((t): t is string => typeof t === 'string')
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0)
+
   // --- 4. Kurs-Synchronisation (Upsert) ---
   const existingCourse = await prisma.course.findFirst({
     where: { userId, title: course.title },
@@ -89,17 +94,29 @@ export const importHtmlFileLogic = async (
 
   let finishedCourse: Course
   let existingNotes = null
-  const trainerName = trainer || 'Unknown Trainer'
 
   if (existingCourse) {
     existingNotes = await prisma.note.findMany({
       where: { courseId: existingCourse.id },
     })
+
     finishedCourse = await prisma.course.update({
       where: { id: existingCourse.id },
       data: {
         title: course.title,
-        trainer: trainerName,
+        // Neue Trainer-Logik für UPDATE
+        trainers: {
+          deleteMany: {}, // 1. Alte Verknüpfungen kappen
+          create: validTrainers.map((trainerName) => ({
+            // 2. Neue Verknüpfungen setzen
+            trainer: {
+              connectOrCreate: {
+                where: { name: trainerName },
+                create: { name: trainerName },
+              },
+            },
+          })),
+        },
         tags: {
           deleteMany: {},
           create: finalTagIds.map((tagId) => ({ tagId })),
@@ -107,11 +124,21 @@ export const importHtmlFileLogic = async (
       },
     })
   } else {
+    // Neue Trainer-Logik für CREATE
     finishedCourse = await prisma.course.create({
       data: {
         title: course.title,
-        trainer: trainerName,
         userId,
+        trainers: {
+          create: validTrainers.map((trainerName) => ({
+            trainer: {
+              connectOrCreate: {
+                where: { name: trainerName },
+                create: { name: trainerName },
+              },
+            },
+          })),
+        },
         tags: {
           create: finalTagIds.map((tagId) => ({ tagId })),
         },
@@ -120,7 +147,6 @@ export const importHtmlFileLogic = async (
   }
 
   const courseId = finishedCourse.id
-
   // --- 5. Notizen-Verarbeitung ---
   const notePromises = []
   let numberOfConflicts = 0

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useTransition, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-// WICHTIG: useStore separat importieren
 import { useForm, useStore } from '@tanstack/react-form'
 import { useServerFn } from '@tanstack/react-start'
 import {
@@ -56,8 +55,6 @@ import { handleAction } from '#/lib/client-utils'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 
-// Lokales Schema für das UI - WICHTIG: Trainer muss string sein (nicht optional),
-// damit es zum Default-Wert '' passt.
 const importHtmlFormSchema = z.object({
   file: z
     .instanceof(File, {
@@ -68,7 +65,7 @@ const importHtmlFormSchema = z.object({
       (file) => file.type === 'text/html' || file.name.endsWith('.html'),
       'Only HTML allowed',
     ),
-  trainer: z.string(),
+  trainers: z.array(z.string()),
   tagIds: z.array(z.string()),
   newPrivateTags: z.array(z.string()),
 })
@@ -87,13 +84,14 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
     { id: string; name: string; userId: string | null }[]
   >([])
   const [tagQuery, setTagQuery] = useState('')
+  const [currentTrainerInput, setCurrentTrainerInput] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm({
     defaultValues: {
       file: null as unknown as File,
-      trainer: '',
+      trainers: [] as string[], // Geändert zu Array!
       tagIds: [] as string[],
       newPrivateTags: [] as string[],
     },
@@ -105,10 +103,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
 
       startTransition(async () => {
         try {
-          // 1. Gesamtes HTML einlesen
           const rawHtml = await value.file.text()
-
-          // 2. Client-seitiges Ausdünnen mit DOMParser
           const parser = new DOMParser()
           const doc = parser.parseFromString(rawHtml, 'text/html')
 
@@ -121,7 +116,6 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
             )
           }
 
-          // Minimales HTML zusammenbauen
           const strippedHtml = `
             <!DOCTYPE html>
             <html>
@@ -132,14 +126,13 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
             </html>
           `.trim()
 
-          // 3. Nur das "gedünnte" HTML an den Server senden
           const result = await handleAction(
             uploadFile({
               data: {
-                htmlContent: strippedHtml, // Hier senden wir den bereinigten String
+                htmlContent: strippedHtml,
                 fileName: value.file.name,
-                fileSize: new Blob([strippedHtml]).size, // Neue Größe berechnen
-                trainer: value.trainer,
+                fileSize: new Blob([strippedHtml]).size,
+                trainers: value.trainers, // Hier senden wir das Array!
                 tagIds: value.tagIds,
                 newPrivateTags: value.newPrivateTags,
                 loggingMetadata: { component: 'ImportHtmlForm' },
@@ -163,18 +156,13 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
               : 'Ein unerwarteter Fehler ist aufgetreten.'
 
           toast.error(errorMessage)
-          // Hier könnte man noch einen Toast mit dem Error werfen
         }
       })
     },
   })
 
-  // Korrekte Nutzung von useStore als eigenständiger Hook
-  // Das löst auch das "id: any" Problem, da der Store hier sauber typisiert ist
   const tagIds = useStore(form.store, (s) => s.values.tagIds)
   const newPrivateTags = useStore(form.store, (s) => s.values.newPrivateTags)
-
-  // Wir abonnieren den Validierungs-Zustand separat für den Button-Fix
   const canSubmit = useStore(form.store, (s) => s.canSubmit)
 
   const fetchSuggestions = async (val: string) => {
@@ -183,7 +171,6 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
     })
     if (res.success && res.data) {
       setSuggestions(res.data)
-      // Zeige Vorschläge, wenn wir entweder Treffer haben ODER es noch mehr gibt
       setShowSuggestions(res.data.suggestions.length > 0 || res.data.hasMore)
     }
   }
@@ -198,17 +185,12 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
     loadTags()
   }, [])
 
-  const handleTrainerChange = async (val: string, field: any) => {
-    field.handleChange(val)
-    fetchSuggestions(val)
-  }
-
   return (
     <Card className="max-w-md w-full mx-auto">
       <CardHeader>
         <CardTitle>Import your course</CardTitle>
         <CardDescription>
-          Select a trainer, tags and upload your Udemy HTML notes.
+          Select trainers, tags and upload your Udemy HTML notes.
         </CardDescription>
       </CardHeader>
 
@@ -223,60 +205,108 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
         >
           {/* Trainer Feld */}
           <form.Field
-            name="trainer"
-            children={(field) => (
-              <Field className="relative">
-                {' '}
-                {/* Hier muss relative bleiben! */}
-                <FieldLabel htmlFor={field.name}>Trainer (Optional)</FieldLabel>
-                <div className="relative mt-2">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                  <Input
-                    id={field.name}
-                    className="pl-9"
-                    value={field.state.value ?? ''}
-                    onFocus={(e) => fetchSuggestions(e.target.value)}
-                    onBlur={() =>
-                      setTimeout(() => setShowSuggestions(false), 200)
-                    }
-                    onChange={(e) => handleTrainerChange(e.target.value, field)}
-                    placeholder="Name of the trainer ..."
-                    autoComplete="off"
-                  />
-                </div>
-                {showSuggestions && (
-                  <div
-                    className="absolute left-0 right-0 z-100 bg-popover border border-border rounded-md shadow-xl"
-                    style={{
-                      top: 'calc(100% + 4px)', // Erzwingt die Position unterhalb des gesamten Feldes
-                      minWidth: '200px',
-                    }}
-                  >
-                    <div className="max-h-60 overflow-y-auto">
-                      {suggestions.suggestions.map((name) => (
-                        <button
-                          key={name}
-                          type="button"
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors"
-                          onClick={() => {
-                            field.handleChange(name)
-                            setShowSuggestions(false)
-                          }}
-                        >
-                          {name}
-                        </button>
-                      ))}
+            name="trainers"
+            children={(field) => {
+              const selectedTrainers = field.state.value
 
-                      {suggestions.hasMore && (
-                        <div className="px-4 py-2 text-center text-muted-foreground bg-muted/30 border-t border-border/50 text-[10px] italic">
-                          ... more results available
-                        </div>
-                      )}
+              const handleAddTrainer = (name: string) => {
+                const trimmed = name.trim()
+                if (trimmed && !selectedTrainers.includes(trimmed)) {
+                  field.handleChange([...selectedTrainers, trimmed])
+                }
+                setCurrentTrainerInput('')
+                setShowSuggestions(false)
+              }
+
+              const handleRemoveTrainer = (name: string) => {
+                field.handleChange(selectedTrainers.filter((t) => t !== name))
+              }
+
+              return (
+                <Field className="relative">
+                  <FieldLabel htmlFor="trainer-input">
+                    Trainer (Optional)
+                  </FieldLabel>
+
+                  {/* Ausgewählte Trainer als Badges anzeigen */}
+                  {selectedTrainers.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2 mb-2 min-h-6">
+                      {selectedTrainers.map((t) => (
+                        <Badge
+                          key={t}
+                          variant="secondary"
+                          className="pl-2 pr-1 py-0.5 gap-1 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
+                        >
+                          <User className="h-3 w-3" />
+                          {t}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTrainer(t)}
+                            className="hover:bg-blue-200 rounded-full p-0.5 ml-1 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
                     </div>
+                  )}
+
+                  <div className="relative mt-2">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="trainer-input"
+                      className="pl-9"
+                      value={currentTrainerInput}
+                      onFocus={(e) => fetchSuggestions(e.target.value)}
+                      onBlur={() =>
+                        setTimeout(() => setShowSuggestions(false), 200)
+                      }
+                      onChange={(e) => {
+                        setCurrentTrainerInput(e.target.value)
+                        fetchSuggestions(e.target.value)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleAddTrainer(currentTrainerInput)
+                        }
+                      }}
+                      placeholder="Name of the trainer ... (Press Enter)"
+                      autoComplete="off"
+                    />
                   </div>
-                )}
-              </Field>
-            )}
+
+                  {showSuggestions && (
+                    <div
+                      className="absolute left-0 right-0 z-100 bg-popover border border-border rounded-md shadow-xl"
+                      style={{
+                        top: 'calc(100% + 4px)',
+                        minWidth: '200px',
+                      }}
+                    >
+                      <div className="max-h-60 overflow-y-auto">
+                        {suggestions.suggestions.map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors"
+                            onClick={() => handleAddTrainer(name)}
+                          >
+                            {name}
+                          </button>
+                        ))}
+
+                        {suggestions.hasMore && (
+                          <div className="px-4 py-2 text-center text-muted-foreground bg-muted/30 border-t border-border/50 text-[10px] italic">
+                            ... more results available
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </Field>
+              )
+            }}
           />
 
           {/* Tags Sektion */}
@@ -284,7 +314,6 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
             <FieldLabel>Kurs-Tags</FieldLabel>
             <div className="flex flex-wrap gap-2 min-h-6">
               {tagIds.map((id: string) => {
-                // Typisierung hier löst den Error
                 const tag = availableTags.find((t) => t.id === id)
                 return (
                   <Badge
@@ -518,7 +547,6 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
               <Button
                 type="submit"
                 className="w-full hover:cursor-pointer font-semibold"
-                // Fix für den ausgegrauten Button: Wir nutzen den reaktiven useStore-Wert
                 disabled={isPending || !canSubmit}
               >
                 {isPending ? (

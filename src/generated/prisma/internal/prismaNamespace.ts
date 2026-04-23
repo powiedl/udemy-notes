@@ -390,6 +390,8 @@ export const ModelName = {
   Verification: 'Verification',
   Course: 'Course',
   Note: 'Note',
+  Trainer: 'Trainer',
+  CourseTrainer: 'CourseTrainer',
   Tag: 'Tag',
   NoteTag: 'NoteTag',
   CourseTag: 'CourseTag',
@@ -409,7 +411,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "course" | "note" | "tag" | "noteTag" | "courseTag" | "log"
+    modelProps: "user" | "session" | "account" | "verification" | "course" | "note" | "trainer" | "courseTrainer" | "tag" | "noteTag" | "courseTag" | "log"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -857,6 +859,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Trainer: {
+      payload: Prisma.$TrainerPayload<ExtArgs>
+      fields: Prisma.TrainerFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TrainerFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TrainerFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload>
+        }
+        findFirst: {
+          args: Prisma.TrainerFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TrainerFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload>
+        }
+        findMany: {
+          args: Prisma.TrainerFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload>[]
+        }
+        create: {
+          args: Prisma.TrainerCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload>
+        }
+        createMany: {
+          args: Prisma.TrainerCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TrainerCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload>[]
+        }
+        delete: {
+          args: Prisma.TrainerDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload>
+        }
+        update: {
+          args: Prisma.TrainerUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload>
+        }
+        deleteMany: {
+          args: Prisma.TrainerDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TrainerUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TrainerUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload>[]
+        }
+        upsert: {
+          args: Prisma.TrainerUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TrainerPayload>
+        }
+        aggregate: {
+          args: Prisma.TrainerAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTrainer>
+        }
+        groupBy: {
+          args: Prisma.TrainerGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TrainerGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TrainerCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TrainerCountAggregateOutputType> | number
+        }
+      }
+    }
+    CourseTrainer: {
+      payload: Prisma.$CourseTrainerPayload<ExtArgs>
+      fields: Prisma.CourseTrainerFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CourseTrainerFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CourseTrainerFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload>
+        }
+        findFirst: {
+          args: Prisma.CourseTrainerFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CourseTrainerFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload>
+        }
+        findMany: {
+          args: Prisma.CourseTrainerFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload>[]
+        }
+        create: {
+          args: Prisma.CourseTrainerCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload>
+        }
+        createMany: {
+          args: Prisma.CourseTrainerCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CourseTrainerCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload>[]
+        }
+        delete: {
+          args: Prisma.CourseTrainerDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload>
+        }
+        update: {
+          args: Prisma.CourseTrainerUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload>
+        }
+        deleteMany: {
+          args: Prisma.CourseTrainerDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CourseTrainerUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CourseTrainerUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload>[]
+        }
+        upsert: {
+          args: Prisma.CourseTrainerUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseTrainerPayload>
+        }
+        aggregate: {
+          args: Prisma.CourseTrainerAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCourseTrainer>
+        }
+        groupBy: {
+          args: Prisma.CourseTrainerGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CourseTrainerGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CourseTrainerCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CourseTrainerCountAggregateOutputType> | number
+        }
+      }
+    }
     Tag: {
       payload: Prisma.$TagPayload<ExtArgs>
       fields: Prisma.TagFieldRefs
@@ -1254,7 +1404,6 @@ export type VerificationScalarFieldEnum = (typeof VerificationScalarFieldEnum)[k
 export const CourseScalarFieldEnum = {
   id: 'id',
   title: 'title',
-  trainer: 'trainer',
   userId: 'userId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -1281,6 +1430,26 @@ export const NoteScalarFieldEnum = {
 } as const
 
 export type NoteScalarFieldEnum = (typeof NoteScalarFieldEnum)[keyof typeof NoteScalarFieldEnum]
+
+
+export const TrainerScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TrainerScalarFieldEnum = (typeof TrainerScalarFieldEnum)[keyof typeof TrainerScalarFieldEnum]
+
+
+export const CourseTrainerScalarFieldEnum = {
+  courseId: 'courseId',
+  trainerId: 'trainerId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CourseTrainerScalarFieldEnum = (typeof CourseTrainerScalarFieldEnum)[keyof typeof CourseTrainerScalarFieldEnum]
 
 
 export const TagScalarFieldEnum = {
@@ -1507,6 +1676,8 @@ export type GlobalOmitConfig = {
   verification?: Prisma.VerificationOmit
   course?: Prisma.CourseOmit
   note?: Prisma.NoteOmit
+  trainer?: Prisma.TrainerOmit
+  courseTrainer?: Prisma.CourseTrainerOmit
   tag?: Prisma.TagOmit
   noteTag?: Prisma.NoteTagOmit
   courseTag?: Prisma.CourseTagOmit

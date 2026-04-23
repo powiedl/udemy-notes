@@ -81,15 +81,15 @@ model Verification {
 // #region Udemy Notes
 
 model Course {
-  id        String      @id @default(uuid())
+  id        String          @id @default(uuid())
   title     String
-  trainer   String?
-  userId    String      @map("user_id")
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainers  CourseTrainer[]
+  userId    String          @map("user_id")
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes     Note[]
   tags      CourseTag[]
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
 
   @@map("course")
 }
@@ -123,6 +123,31 @@ model Note {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("note")
+}
+
+model Trainer {
+  id      String          @id @default(cuid())
+  name    String          @unique // Damit "Maximilian Müller" nur einmal existiert
+  courses CourseTrainer[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("trainer")
+}
+
+// Explizite Join-Table (erlaubt später mehr Flexibilität)
+model CourseTrainer {
+  courseId  String
+  trainerId String
+  course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  trainer   Trainer @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([courseId, trainerId])
+  @@map("course_to_trainer")
 }
 
 model Tag {

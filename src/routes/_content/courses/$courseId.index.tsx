@@ -127,6 +127,7 @@ function Course({
     )
 
   const course = result.data
+
   return (
     <CourseContent
       course={course}

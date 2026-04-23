@@ -25,7 +25,13 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
     //title: { contains: search, mode: 'insensitive' },
     OR: [
       { title: { contains: search, mode: 'insensitive' } },
-      { trainer: { contains: search, mode: 'insensitive' } },
+      {
+        trainers: {
+          some: {
+            trainer: { name: { contains: search, mode: 'insensitive' } },
+          },
+        },
+      },
     ],
   }
 
@@ -54,6 +60,11 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
           },
           orderBy: { tag: { name: 'asc' } },
         },
+        trainers: {
+          include: {
+            trainer: true,
+          },
+        },
       },
     }),
     prisma.course.count({ where }),
@@ -76,6 +87,11 @@ export async function getCourseByIdLogic(data: CourseIdInput, userId: string) {
           tag: { select: { id: true, name: true, userId: true } },
         },
         orderBy: { tag: { name: 'asc' } },
+      },
+      trainers: {
+        include: {
+          trainer: true,
+        },
       },
       _count: {
         select: { notes: true },
@@ -113,70 +129,40 @@ export async function getTrainerSuggestionsLogic(
   const { query } = data
   const trimmedQuery = query.trim()
 
-  // Wir holen uns alle Trainer, die zum Filter passen.
-  // Da wir nach Häufigkeit sortieren wollen, nehmen wir ein höheres Limit
-  // beim Abrufen, um eine gute Datenbasis für die Zählung zu haben.
-  const suggestions = await prisma.course.findMany({
-    where: {
-      AND: [
-        { trainer: { contains: trimmedQuery, mode: 'insensitive' } },
-        {
-          NOT: {
-            trainer: { in: ['Unknown Trainer', '', 'Unbekannter Trainer'] },
-          },
-        },
-        { NOT: { trainer: null } },
-      ],
-    },
-    select: { trainer: true },
-    // Wir nehmen hier bewusst kein distinct, weil wir die Anzahl zählen wollen!
-  })
-
-  // 1. Zählen der Vorkommen pro normalisiertem Namen
-  // Map: lowerCaseName -> { originalName: string, count: number }
-  const trainerMap = new Map<string, { name: string; count: number }>()
-
-  for (const item of suggestions) {
-    const originalName = item.trainer?.trim()
-    if (!originalName) continue
-
-    const lowerName = originalName.toLowerCase()
-    const existing = trainerMap.get(lowerName)
-
-    if (existing) {
-      existing.count++
-      // Optional: Den Namen mit der "schönsten" Schreibweise behalten (z.B. die mit den meisten Großbuchstaben)
-      if (
-        originalName !== existing.name &&
-        originalName.match(/[A-Z]/g)?.length! >
-          existing.name.match(/[A-Z]/g)?.length!
-      ) {
-        existing.name = originalName
-      }
-    } else {
-      trainerMap.set(lowerName, { name: originalName, count: 1 })
-    }
-  }
-
-  // 2. In Array umwandeln und nach Häufigkeit sortieren
-  const sortedTrainers = Array.from(trainerMap.values()).sort((a, b) => {
-    // Primär nach Häufigkeit (absteigend)
-    if (b.count !== a.count) return b.count - a.count
-    // Sekundär alphabetisch (aufsteigend) bei Gleichstand
-    return a.name.localeCompare(b.name)
-  })
-
-  // 3. Ergebnis limitieren und hasMore berechnen
   const limit = 5
-  const result = sortedTrainers.slice(0, limit).map((t) => t.name)
-  const hasMore = sortedTrainers.length > limit
+
+  // 1. Trainer direkt aus der Trainer-Tabelle holen
+  // Wir filtern nach Namen und sortieren nach der Anzahl der verknüpften Kurse
+  const trainers = await prisma.trainer.findMany({
+    where: {
+      name: { contains: trimmedQuery, mode: 'insensitive' },
+      NOT: {
+        name: { in: ['Unknown Trainer', '', 'Unbekannter Trainer'] },
+      },
+    },
+    select: {
+      name: true,
+    },
+    // Wir sortieren nach der Anzahl der Kurse, die diesem Trainer zugewiesen sind (absteigend)
+    // Wenn das bei dir in Prisma _count heißt, nutzen wir das:
+    orderBy: {
+      courses: {
+        _count: 'desc',
+      },
+    },
+    // Wir holen einen Eintrag mehr als wir brauchen, um "hasMore" effizient zu ermitteln
+    take: limit + 1,
+  })
+
+  // 2. hasMore berechnen und Array auf das eigentliche Limit zuschneiden
+  const hasMore = trainers.length > limit
+  const result = trainers.slice(0, limit).map((t) => t.name)
 
   return {
     suggestions: result,
     hasMore,
   }
 }
-
 /**
  * Security-Check & Löschen einer Tag-Verknüpfung.
  */

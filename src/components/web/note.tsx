@@ -1,5 +1,4 @@
 import { Link } from '@tanstack/react-router'
-import { ServerFnData } from '#/types/api' // Importiere den Helper
 import { cn } from '#/lib/utils'
 import { Card, CardContent, CardDescription } from '../ui/card'
 import ReactMarkdown from 'react-markdown'
@@ -7,11 +6,20 @@ import { BookOpenText } from 'lucide-react'
 import { useTagManagement } from '#/hooks/use-tag-management' // Pfad prüfen!
 import { TagDisplay, TagManager } from './tag-manager'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
-import { getNotesForCourseFn } from '#/data/note'
+import { Prisma } from '#/lib/db.server'
 
+type BaseNoteData = Prisma.NoteGetPayload<{
+  include: {
+    course: {
+      select: {
+        id: true
+        title: true
+      }
+    }
+  }
+}>
 interface NoteProps {
-  note: ServerFnData<typeof getNotesForCourseFn>['items'][number] & {
-    course?: { id: string; title: string } | undefined
+  note: BaseNoteData & {
     displayTags?:
       | {
           isDirect: boolean

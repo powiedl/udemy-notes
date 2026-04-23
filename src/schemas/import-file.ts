@@ -7,7 +7,7 @@ export const importHtmlFileSchema = withLogging(
     htmlContent: z.string().min(1, 'HTML content is required'),
     fileName: z.string(), // Für das Logging/Response benötigt
     fileSize: z.number(), // Für die Validierung im Handler
-    trainer: z.string().optional(),
+    trainers: z.array(z.string().optional()),
     tagIds: z.array(z.string()).default([]),
     newPrivateTags: z.array(z.string()).default([]),
   }),

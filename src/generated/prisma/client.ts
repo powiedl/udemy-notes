@@ -72,6 +72,16 @@ export type Course = Prisma.CourseModel
  */
 export type Note = Prisma.NoteModel
 /**
+ * Model Trainer
+ * 
+ */
+export type Trainer = Prisma.TrainerModel
+/**
+ * Model CourseTrainer
+ * 
+ */
+export type CourseTrainer = Prisma.CourseTrainerModel
+/**
  * Model Tag
  * 
  */

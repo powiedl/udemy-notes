@@ -131,7 +131,7 @@ export async function getNotesLogic(data: NoteSearchInput, userId: string) {
             id: true,
             title: true,
             userId: true, // Wichtig fürs Frontend, um zu erkennen, ob es ein fremder Kurs ist
-            trainer: true,
+            trainers: { include: { trainer: true } },
             tags: {
               include: { tag: true },
               orderBy: { tag: { name: 'asc' } },
@@ -201,7 +201,7 @@ export async function getNotesForCourseLogic(
             id: true,
             title: true,
             userId: true,
-            trainer: true,
+            trainers: { include: { trainer: true } },
             tags: {
               select: {
                 tag: { select: { id: true, name: true, userId: true } },

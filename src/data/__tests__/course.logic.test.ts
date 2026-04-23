@@ -27,6 +27,9 @@ type CourseWithRelations = Prisma.CourseGetPayload<{
     tags: {
       select: { tag: { select: { id: true; name: true; userId: true } } }
     }
+    trainers: {
+      select: { trainer: { select: { id: true; name: true } } }
+    }
   }
 }>
 
@@ -38,7 +41,7 @@ function createMockCourse(
     id: 'default-id',
     title: 'Default Title',
     userId: 'user_123',
-    trainer: 'Test',
+    trainers: [],
     createdAt: new Date(),
     updatedAt: new Date(),
     _count: { notes: 0 },
@@ -106,7 +109,13 @@ describe('getCoursesLogic', () => {
           userId: userId,
           OR: [
             { title: { contains: 'React', mode: 'insensitive' } }, // 'React', 'Javascript' oder 'e' je nach Test
-            { trainer: { contains: 'React', mode: 'insensitive' } }, // Muss denselben Suchbegriff haben wie title!
+            {
+              trainers: {
+                some: {
+                  trainer: { name: { contains: 'React', mode: 'insensitive' } },
+                },
+              },
+            }, // Muss denselben Suchbegriff haben wie title!
           ],
         }),
       }),
@@ -142,8 +151,16 @@ describe('getCoursesLogic', () => {
           userId: userId,
           OR: [
             { title: { contains: 'Javascript', mode: 'insensitive' } }, // 'React', 'Javascript' oder 'e' je nach Test
-            { trainer: { contains: 'Javascript', mode: 'insensitive' } }, // Muss denselben Suchbegriff haben wie title!
-          ],
+            {
+              trainers: {
+                some: {
+                  trainer: {
+                    name: { contains: 'Javascript', mode: 'insensitive' },
+                  },
+                },
+              },
+            },
+          ], // Muss denselben Suchbegriff haben wie title!
         }),
       }),
     )
@@ -179,8 +196,14 @@ describe('getCoursesLogic', () => {
             userId: userId,
             OR: [
               { title: { contains: 'e', mode: 'insensitive' } }, // 'React', 'Javascript' oder 'e' je nach Test
-              { trainer: { contains: 'e', mode: 'insensitive' } }, // Muss denselben Suchbegriff haben wie title!
-            ],
+              {
+                trainers: {
+                  some: {
+                    trainer: { name: { contains: 'e', mode: 'insensitive' } },
+                  },
+                },
+              },
+            ], // Muss denselben Suchbegriff haben wie title!
           }),
         }),
       )
@@ -215,8 +238,14 @@ describe('getCoursesLogic', () => {
             userId: userId,
             OR: [
               { title: { contains: 'e', mode: 'insensitive' } }, // 'React', 'Javascript' oder 'e' je nach Test
-              { trainer: { contains: 'e', mode: 'insensitive' } }, // Muss denselben Suchbegriff haben wie title!
-            ],
+              {
+                trainers: {
+                  some: {
+                    trainer: { name: { contains: 'e', mode: 'insensitive' } },
+                  },
+                },
+              },
+            ], // Muss denselben Suchbegriff haben wie title!
           }),
         }),
       )
@@ -300,77 +329,57 @@ describe('deleteCourseByIdLogic', () => {
 describe('getTrainerSuggestionsLogic', () => {
   beforeEach(() => mockReset(prismaMock))
 
-  it('sollte Trainer nach Häufigkeit sortieren und Schreibweisen zusammenführen', async () => {
-    // Simulation der Datenbank-Antwort:
-    // Maximilian Müller: 3x (verschiedene Schreibweisen)
-    // Sarah Schmidt: 2x
-    // Zebra Trainer: 1x (Alphabetisch ganz hinten, aber hier wichtig für den Test)
-    const mockCourses = [
-      { trainer: 'Maximilian Müller' },
-      { trainer: 'maximilian müller' },
-      { trainer: 'Maximilian Müller' },
-      { trainer: 'Sarah Schmidt' },
-      { trainer: 'sarah schmidt' },
-      { trainer: 'Zebra Trainer' },
+  it('sollte die Namen aus der Trainer-Tabelle korrekt extrahieren', async () => {
+    // Da die Sortierung jetzt die Datenbank (Prisma) übernimmt,
+    // simulieren wir einfach das, was Prisma uns fertig zurückgibt.
+    const mockTrainers = [
+      { name: 'Maximilian Müller' },
+      { name: 'Sarah Schmidt' },
+      { name: 'Zebra Trainer' },
     ]
 
-    vi.mocked(prisma.course.findMany).mockResolvedValue(mockCourses as any)
+    // WICHTIG: Wir mocken jetzt prisma.trainer, nicht mehr prisma.course!
+    prismaMock.trainer.findMany.mockResolvedValue(mockTrainers as any)
 
     const result = await getTrainerSuggestionsLogic({ query: '' })
 
-    // 1. Check: Häufigkeit schlägt Alphabet
-    // "Maximilian" (3) vor "Sarah" (2) vor "Zebra" (1)
+    // Check, ob die Map-Logik funktioniert und die Strings korrekt ankommen
     expect(result.suggestions[0]).toBe('Maximilian Müller')
     expect(result.suggestions[1]).toBe('Sarah Schmidt')
     expect(result.suggestions[2]).toBe('Zebra Trainer')
-
-    // 2. Check: Keine Duplikate durch Schreibweisen
     expect(result.suggestions).toHaveLength(3)
   })
 
-  it('sollte bei Gleichstand der Häufigkeit alphabetisch sortieren', async () => {
-    const mockCourses = [{ trainer: 'Berta' }, { trainer: 'Anton' }]
-
-    vi.mocked(prisma.course.findMany).mockResolvedValue(mockCourses as any)
-
-    const result = await getTrainerSuggestionsLogic({ query: '' })
-
-    // Beide kommen 1x vor, also sollte Anton (A) vor Berta (B) stehen
-    expect(result.suggestions[0]).toBe('Anton')
-    expect(result.suggestions[1]).toBe('Berta')
-  })
-
-  it('sollte hasMore korrekt setzen', async () => {
-    // Wir simulieren 6 verschiedene Trainer
-    const mockCourses = [
-      { trainer: 'T1' },
-      { trainer: 'T2' },
-      { trainer: 'T3' },
-      { trainer: 'T4' },
-      { trainer: 'T5' },
-      { trainer: 'T6' },
+  it('sollte hasMore korrekt auf true setzen, wenn das Limit überschritten wird', async () => {
+    // Wir simulieren 6 verschiedene Trainer (das Backend-Limit ist intern auf 5 gesetzt, wir holen limit + 1)
+    const mockTrainers = [
+      { name: 'T1' },
+      { name: 'T2' },
+      { name: 'T3' },
+      { name: 'T4' },
+      { name: 'T5' },
+      { name: 'T6' },
     ]
 
-    vi.mocked(prisma.course.findMany).mockResolvedValue(mockCourses as any)
+    prismaMock.trainer.findMany.mockResolvedValue(mockTrainers as any)
 
     const result = await getTrainerSuggestionsLogic({ query: '' })
 
+    // Es sollten nur 5 zurückkommen, aber hasMore muss true sein
     expect(result.suggestions).toHaveLength(5)
     expect(result.hasMore).toBe(true)
   })
 
-  it('sollte den Filter (contains) korrekt an Prisma weitergeben', async () => {
-    vi.mocked(prisma.course.findMany).mockResolvedValue([])
+  it('sollte den Filter (contains) korrekt an die Trainer-Tabelle weitergeben', async () => {
+    prismaMock.trainer.findMany.mockResolvedValue([])
 
     await getTrainerSuggestionsLogic({ query: 'Schmidt' })
 
-    // Prüfen, ob Prisma mit dem richtigen Filter aufgerufen wurde
-    expect(prisma.course.findMany).toHaveBeenCalledWith(
+    // Prüfen, ob Prisma in der TRAINER-Tabelle mit dem richtigen Namens-Filter aufgerufen wurde
+    expect(prismaMock.trainer.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          AND: expect.arrayContaining([
-            { trainer: { contains: 'Schmidt', mode: 'insensitive' } },
-          ]),
+          name: { contains: 'Schmidt', mode: 'insensitive' },
         }),
       }),
     )

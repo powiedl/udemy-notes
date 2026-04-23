@@ -7,13 +7,12 @@ import {
 } from '#/components/ui/card'
 import { Link } from '@tanstack/react-router'
 import { Button } from '../ui/button'
-import { Trash2, Download, Loader2, User } from 'lucide-react'
+import { Trash2, Download, Loader2, User, Users } from 'lucide-react'
 import { cn } from '#/lib/utils'
-import { useTransition } from 'react'
+import React, { useTransition } from 'react'
 import { CourseHeaderData } from '#/data/course'
 import TagBadge from './tag-badge'
 import { useTagManagement } from '#/hooks/use-tag-management'
-// NEU: TagManager und Interface importieren
 import { TagManager, TagDisplay } from './tag-manager'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 
@@ -54,6 +53,18 @@ const CourseHeader = ({
       ? course.notes && course.notes.length
       : (course._count && course._count.notes) || 0
 
+  // --- NEU: Trainer aus dem Array zu einem String zusammenfassen ---
+  let trainerNames: string | null = ''
+  let trainerIcon = User
+  if (course.trainers && course.trainers.length > 0) {
+    trainerNames = course.trainers.map((ct) => ct.trainer.name).join(', ')
+    if (course.trainers.length > 1) {
+      trainerIcon = Users
+    }
+  } else {
+    trainerNames = null
+  }
+
   if (variant === 'compact') {
     return (
       <div
@@ -62,7 +73,6 @@ const CourseHeader = ({
           className,
         )}
       >
-        {/* ... (Compact Variant bleibt komplett unverändert, da read-only) ... */}
         <div>
           <Link
             to="/courses/$courseId"
@@ -72,10 +82,11 @@ const CourseHeader = ({
           >
             {course.title}
           </Link>
-          {course.trainer && (
+          {/* NEU: Nutzen des zusammengefassten Strings */}
+          {trainerNames && (
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-              <User className="h-3.5 w-3.5" />
-              <span>{course.trainer}</span>
+              {React.createElement(trainerIcon, { className: 'h-3.5 w-3.5' })}
+              <span>{trainerNames}</span>
             </div>
           )}
         </div>
@@ -100,13 +111,12 @@ const CourseHeader = ({
     )
   }
 
-  // --- NEU: Tags für den TagManager aufbereiten ---
   const displayTags: TagDisplay[] = (course.tags || []).map((t) => ({
     id: t.tag.id,
     name: t.tag.name,
     userId: (t.tag as any).userId,
-    isDeletable: true, // Im Header sind alle Tags direkt zugewiesen und löschbar
-    isInherited: false, // Kurse erben nicht
+    isDeletable: true,
+    isInherited: false,
     isHighlighted: activeTagIds.includes(t.tag.id),
   }))
 
@@ -136,7 +146,6 @@ const CourseHeader = ({
       </CardHeader>
 
       <CardContent className="flex flex-col min-w-0">
-        {/* --- HIER IST DER NEUE TAG-MANAGER --- */}
         <TagManager
           tags={displayTags}
           availableTags={availableTags}
@@ -144,15 +153,18 @@ const CourseHeader = ({
           onRemoveTag={handleDeleteTagAssociation}
           onCreateTag={handleCreateAndLink}
           isPending={isTagPending}
-          deletingTagId={deletingTagId?.split('-').pop()} // Falls deine Hook IDs wie "courseId-tagId" zurückgibt
-          addIconVariant="purple" // Sorgt für den lila Hover-Button!
+          deletingTagId={deletingTagId?.split('-').pop()}
+          addIconVariant="purple"
         />
 
         <div className="mt-4 flex w-full items-center gap-x-4">
-          {course.trainer && (
+          {/* NEU: Nutzen des zusammengefassten Strings */}
+          {trainerNames && (
             <div className="flex min-w-0 items-center gap-1.5 text-lg text-muted-foreground">
-              <User className="h-4 w-4 shrink-0" />
-              <span className="truncate">{course.trainer}</span>
+              {React.createElement(trainerIcon, {
+                className: 'h-4 w-4 shrink-0',
+              })}
+              <span className="truncate">{trainerNames}</span>
             </div>
           )}
           <div className="ml-auto whitespace-nowrap text-sm text-muted-foreground">
