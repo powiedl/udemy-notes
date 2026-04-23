@@ -263,8 +263,9 @@ function RouteComponent() {
           Tags
         </span>
         <p className="text-muted-foreground">
-          Here you can search for all tags and rename or delete your private
-          ones. To add a new tag simply use the assign Button in{' '}
+          Here you can search for all tags and rename (simply click on the tag)
+          or delete (click on the X to the right of the tag) your private ones.
+          To add a new tag simply use the assign Button in{' '}
           <Link to="/courses" search={COURSE_SEARCH_DEFAULTS}>
             Courses
           </Link>{' '}
