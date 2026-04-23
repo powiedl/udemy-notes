@@ -189,5 +189,29 @@ describe.only oder test.only schreibt (dann wird nur der .only Teil ausgeführt
     expect(content).toContain('  if (start) {')
     expect(content).toContain('    console.log("Indented");')
   })
+
+  it('sollte Blockquotes richtig rendern', () => {
+    const html = createMockHtml(`
+      <p>normaler Text</p>
+      <blockquote>
+        <p>Quote1</p>
+        <p>Quote2</p>
+      </blockquote>
+      <p>normaler Text2</p>
+    `)
+    const result = prepareAndConvertHtmlToMarkdown(html)
+
+    if (result.status === 'ERROR') throw new Error(result.message)
+
+    expect(result.course.notes[0].content).toContain(
+      `normaler Text
+
+> Quote1
+>
+> Quote2
+
+normaler Text2`,
+    )
+  })
   // ... weitere Tests wie oben
 })

@@ -139,6 +139,20 @@ function processNode(node: CheerioSelection, $: CheerioAPI): string {
       result += `${'#'.repeat(level)} ${child.text().trim()}\n\n`
     } else if (tagName === 'P') {
       result += `${processInlineFormatting(child, $)}\n\n`
+    } else if (tagName === 'BLOCKQUOTE') {
+      // 1. Inhalt des Blockquotes rekursiv verarbeiten
+      const innerText = processNode(child, $)
+
+      // 2. Überschüssige Newlines am Ende entfernen
+      const trimmedInner = innerText.replace(/\n+$/, '')
+
+      // 3. Jede Zeile mit '> ' präfixen
+      const blockquoteText = trimmedInner
+        .split('\n')
+        .map((line) => (line.trim() === '' ? '>' : `> ${line}`))
+        .join('\n')
+
+      result += `${blockquoteText}\n\n`
     } else if (tagName === 'UL' || tagName === 'OL') {
       const isOrdered = tagName === 'OL'
       child.children('li').each((index: number, li: CheerioNode) => {
