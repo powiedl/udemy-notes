@@ -1,3 +1,7 @@
+/* @vitest-environment jsdom */
+// @ts-nocheck
+process.env.TANSTACK_START_IMPORT_PROTECTION = 'off'
+
 import { describe, it, expect } from 'vitest'
 import { mapNoteDisplayTags } from '#/data/note.logic.server' // Pfad anpassen
 

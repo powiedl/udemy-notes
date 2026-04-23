@@ -1,4 +1,5 @@
 import { prisma } from '#/lib/db.server'
+import { isEmpty } from '#/lib/utils'
 import { ServerActionError } from '#/types/errors'
 // Wir importieren die Typen aus der anderen Datei (import type wird vom Client ignoriert, ist also sicher!)
 import type {
@@ -6,6 +7,7 @@ import type {
   GetTagsForSelectorInput,
   DeleteTagInput,
   CreateAndLinkTagToTargetInput,
+  RenameTagInput,
 } from './tag'
 
 const defaultTags = [
@@ -132,4 +134,53 @@ export async function createAndLinkTagLogic(
   }
 
   return { success: true }
+}
+
+export const renameTagLogic = async (data: RenameTagInput, userId: string) => {
+  const { id, newName } = data
+  const trimmedNewName = newName.trim().toLowerCase()
+  //console.log('--- RENAME REQUEST ---', { id, trimmedNewName, userId })
+  const existingTag = await prisma.tag.findUnique({
+    where: {
+      userId: userId,
+      id,
+    },
+  })
+
+  if (!existingTag) throw new ServerActionError('Tag not found or unauthorized')
+  const conflictingTag = await prisma.tag.findMany({
+    where: {
+      userId,
+      name: trimmedNewName,
+    },
+  })
+  if (!isEmpty(conflictingTag)) {
+    //console.log('conflictingTag:', conflictingTag)
+    throw new ServerActionError(`Tag '${data.newName}' already exists`)
+  }
+  const updatedTag = await prisma.tag.update({
+    where: { id },
+    data: { name: trimmedNewName },
+  })
+  return { success: true, tag: updatedTag }
+}
+
+export const getTagUsageCountLogic = async (id: string, userId: string) => {
+  const { prisma } = await import('#/lib/db.server')
+
+  const tag = await prisma.tag.findUnique({
+    where: {
+      id,
+      userId, // Sicherheitscheck: Gehört der Tag dem User?
+    },
+    include: {
+      _count: {
+        select: { courses: true, notes: true },
+      },
+    },
+  })
+
+  if (!tag) throw new ServerActionError('Tag not found or unauthorized')
+
+  return tag._count // Gibt z.B. { courses: 5, notes: 12 } zurück
 }

@@ -1,7 +1,13 @@
 import { DataTablePagination } from '#/components/web/data-table-pagination'
 import { DataTableSearch } from '#/components/web/data-table-search'
 import TagBadge from '#/components/web/tag-badge'
-import { deleteTagFn, getAvailableTagsFn } from '#/data/tag'
+import { Button } from '#/components/ui/button' // NEU: Button Import für das Modal
+import {
+  deleteTagFn,
+  getAvailableTagsFn,
+  renameTagFn,
+  getTagUsageCountFn, // NEU: Statistik-Funktion
+} from '#/data/tag'
 import { handleAction } from '#/lib/client-utils'
 import { cn } from '#/lib/utils'
 import { ClientLoggingMetadata } from '#/schemas/api-utils'
@@ -17,7 +23,7 @@ import {
   useRouterState,
 } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { Info, Loader2 } from 'lucide-react'
+import { Info, Loader2, AlertTriangle } from 'lucide-react' // NEU: AlertTriangle
 import {
   Suspense,
   use,
@@ -39,29 +45,106 @@ export const Route = createFileRoute('/_content/tags/')({
 function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
   const router = useRouter()
   const result = use(data)
+
+  // Server Functions
   const deleteTag = useServerFn(deleteTagFn)
+  const renameTag = useServerFn(renameTagFn)
+  const getTagUsage = useServerFn(getTagUsageCountFn) // NEU
+
+  // UI State
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+
+  // Modal State
+  const [deleteCandidate, setDeleteCandidate] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+  const [usageStats, setUsageStats] = useState<{
+    courses: number
+    notes: number
+  } | null>(null)
+  const [isFetchingStats, setIsFetchingStats] = useState(false)
+
   const [_, startDeleteTransition] = useTransition()
-  // Logging information für diese Komponente
+
   const loggingMetadata: ClientLoggingMetadata = {
-    component: 'Tags', // Der Name der Komponente
-    actionSource: 'Tag-Badge, X-Button',
-    feature: 'DeleteTag', // Optional: Spezifische Aktion
+    component: 'Tags',
+    actionSource: 'Tag-Badge',
+    feature: 'TagManagement',
   }
-  const handleDeleteTag = async (id: string) => {
-    setDeletingId(id)
+
+  // 1. Modal öffnen und Daten laden
+  const initiateDelete = async (tag: { id: string; name: string }) => {
+    setDeleteCandidate(tag)
+    setIsFetchingStats(true)
+    try {
+      const res = await getTagUsage({ data: { id: tag.id } })
+      // Wir prüfen das typische ActionResponse-Format
+      if (res.success && res.data) {
+        setUsageStats(res.data)
+      } else {
+        setUsageStats({ courses: 0, notes: 0 })
+      }
+    } catch (error) {
+      setUsageStats({ courses: 0, notes: 0 }) // Fallback bei Netzwerkfehler
+    } finally {
+      setIsFetchingStats(false)
+    }
+  }
+
+  // 2. Bestätigtes Löschen via Modal
+  const confirmDelete = async () => {
+    if (!deleteCandidate) return
+    const id = deleteCandidate.id
+
+    setDeletingId(id) // Wir nutzen deinen bestehenden State!
     startDeleteTransition(async () => {
       try {
-        await handleAction(deleteTag({ data: { id, loggingMetadata } }), {
-          successToast: 'Tag deleted successfully',
-        })
-        router.invalidate()
+        const success = await handleAction(
+          deleteTag({ data: { id, loggingMetadata } }),
+          {
+            successToast: 'Tag deleted successfully',
+          },
+        )
+
+        if (success) {
+          setDeleteCandidate(null)
+          setUsageStats(null)
+          router.invalidate()
+        }
       } catch (error) {
-        // Fehler wurde bereits durch handleAction via Toast gemeldet
+        // Fehler wird durch handleAction gemeldet
       } finally {
-        setDeletingId(null)
+        setDeletingId(null) // Reset auch bei Fehler
       }
     })
+  }
+
+  // 3. Löschen abbrechen
+  const cancelDelete = () => {
+    setDeleteCandidate(null)
+    setUsageStats(null)
+  }
+
+  const handleRenameTag = async (id: string, newName: string) => {
+    if (!result.success) return
+    const originalTag = result.data.items.find((t) => t.id === id)
+
+    if (!newName.trim() || newName === originalTag?.name) {
+      setEditingId(null)
+      return
+    }
+
+    const success = await handleAction(
+      renameTag({ data: { id, newName: newName.trim() } }),
+      { successToast: 'Tag renamed successfully' },
+    )
+
+    if (success) {
+      setEditingId(null)
+      router.invalidate()
+    }
   }
 
   if (!result.success)
@@ -71,40 +154,105 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
         <pre>{result.error}</pre>
       </div>
     )
+
   const tags = result.data
 
-  //console.log('Tags,result', result)
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-      {tags.items.map((t) => (
-        <TagBadge
-          key={t.id}
-          tag={t}
-          onDelete={t.userId ? () => handleDeleteTag(t.id) : undefined}
-          isDeleting={deletingId === t.id}
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {tags.items.map((t) => (
+          <TagBadge
+            key={t.id}
+            tag={t}
+            // Trigger das Modal statt direktem Löschen
+            onDelete={t.userId ? () => initiateDelete(t) : undefined}
+            isDeleting={deletingId === t.id}
+            isEditing={editingId === t.id}
+            onStartEdit={() => setEditingId(t.id)}
+            onCancelEdit={() => setEditingId(null)}
+            onRename={(newName) => handleRenameTag(t.id, newName)}
+          />
+        ))}
+      </div>
+
+      {/* Das Lösch-Bestätigungs-Modal */}
+      {deleteCandidate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/25 backdrop-blur-xs p-4">
+          <div className="bg-card border text-card-foreground shadow-lg rounded-xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4 text-destructive">
+              <AlertTriangle className="size-6" />
+              <h2 className="text-lg font-semibold">Delete Tag?</h2>
+            </div>
+
+            <p className="text-muted-foreground mb-4">
+              Are you sure you want to delete the tag{' '}
+              <strong className="text-foreground uppercase">
+                {deleteCandidate.name}
+              </strong>
+              ?
+            </p>
+
+            <div className="bg-muted/50 rounded-lg p-4 mb-6 min-h-[72px] flex items-center justify-center">
+              {isFetchingStats ? (
+                <Loader2 className="animate-spin size-5 text-muted-foreground" />
+              ) : usageStats ? (
+                <div className="text-sm text-center">
+                  This tag will be removed from:
+                  <br />
+                  <strong className="text-foreground">
+                    {usageStats.courses}
+                  </strong>{' '}
+                  Courses and{' '}
+                  <strong className="text-foreground">
+                    {usageStats.notes}
+                  </strong>{' '}
+                  Notes.
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={cancelDelete}
+                disabled={deletingId === deleteCandidate.id}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+                disabled={isFetchingStats || deletingId === deleteCandidate.id}
+              >
+                {deletingId === deleteCandidate.id && (
+                  <Loader2 className="animate-spin size-4 mr-2" />
+                )}
+                Delete Tag
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
+
 function RouteComponent() {
-  const { tagsPromise } = Route.useLoaderData() // Das Promise vom Loader
+  const { tagsPromise } = Route.useLoaderData()
   const searchParams = Route.useSearch()
   const navigate = Route.useNavigate()
   const deferredPromise = useDeferredValue(tagsPromise)
 
-  // 1. Den Navigations-Status vom Router abgreifen
   const pending = useRouterState({ select: (s) => s.status === 'pending' })
 
-  // 2. Hydration-Schutz (damit Server und Client nicht streiten)
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // 3. Die Variable definieren, die du im JSX verwendest
   const isNavigating = mounted && pending
   const result = use(deferredPromise)
+
   if (!result.success) return <div>Fehler: {result.error}</div>
 
   return (
@@ -127,7 +275,7 @@ function RouteComponent() {
           .
         </p>
       </div>
-      {/* 1. Die Suchleiste hinzufügen */}
+
       <DataTableSearch
         value={searchParams.search}
         onSearchChange={(text) => {
@@ -140,10 +288,7 @@ function RouteComponent() {
 
       <div className={cn(isNavigating ? 'opacity-50' : 'opacity-100')}>
         <Suspense fallback={<Loader2 className="animate-spin mx-auto" />}>
-          {/* 2. Die Liste rendern (die jetzt .items nutzt) */}
           <Tags data={deferredPromise} />
-
-          {/* 3. Den Pagination-Footer hinzufügen */}
           <DataTablePagination
             totalCount={result.data.totalCount ?? 0}
             pageSize={searchParams.pageSize}

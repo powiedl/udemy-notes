@@ -5,6 +5,7 @@ import {
   tagPaginationSchema,
 } from '#/schemas/search-params'
 import z from 'zod'
+import { renameTagLogic } from './tag.logic.server'
 
 // #region validation schemas
 export const getAvailableTagsSchema = withLogging(tagPaginationSchema).default(
@@ -12,6 +13,7 @@ export const getAvailableTagsSchema = withLogging(tagPaginationSchema).default(
 )
 export const getTagsForSelectorSchema = withLogging(z.object({}))
 export const deleteTagSchema = withLogging(z.object({ id: z.string() }))
+export const getTagsUsageCountSchema = withLogging(z.object({ id: z.string() }))
 
 export const createAndLinkTagToTargetSchema = withLogging(
   z.object({
@@ -23,12 +25,21 @@ export const createAndLinkTagToTargetSchema = withLogging(
 export type CreateAndLinkTagToTargetInput = z.infer<
   typeof createAndLinkTagToTargetSchema
 >
+
+export const renameTagSchema = withLogging(
+  z.object({
+    id: z.string(),
+    newName: z.string().min(1),
+  }),
+)
 // #endregion
 
 // Typen exportieren, damit die .server.ts Datei sie nutzen kann
 export type GetAvailableTagsInput = z.infer<typeof getAvailableTagsSchema>
 export type GetTagsForSelectorInput = z.infer<typeof getTagsForSelectorSchema>
 export type DeleteTagInput = z.infer<typeof deleteTagSchema>
+export type RenameTagInput = z.infer<typeof renameTagSchema>
+export type GetTagUsageCountInput = z.infer<typeof getTagUsageCountFn>
 
 export const createDefaultTagsFn = authFn.handler(async ({ context }) => {
   const { wrapServerAction } = await import('#/lib/server-utils.server')
@@ -89,5 +100,28 @@ export const createAndLinkTagToTargetFn = authFn
 
     return await wrapServerAction('createAndLinkTagFn', context, data, () =>
       createAndLinkTagLogic(data, context.session.user.id),
+    )
+  })
+
+export const renameTagFn = authFn
+  .inputValidator(renameTagSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    return await wrapServerAction('renameTag', context, data, () =>
+      renameTagLogic(data, context.session.user.id),
+    )
+  })
+
+export const getTagUsageCountFn = authGetFn
+  .inputValidator(getTagsUsageCountSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { getTagUsageCountLogic } = await import('./tag.logic.server')
+
+    return await wrapServerAction(
+      'getTagUsageCountFn',
+      context,
+      data,
+      async () => getTagUsageCountLogic(data.id, context.session.user.id),
     )
   })

@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 // ^^^ WICHTIG: Diese erste Zeile sagt Vitest, dass hier ein Browser simuliert werden muss!
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+//import React from 'react'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest' // Schaltet Befehle wie .toBeInTheDocument() frei
 
 //import TagBadge from '../tag-badge'
-import TagBadge from '#/components/web/tag-badge' // <-- Pfad zu deiner Komponente anpassen!
+import TagBadge from '../tag-badge' // <-- Pfad zu deiner Komponente anpassen!
 import { Link2 } from 'lucide-react'
-import { afterEach } from 'node:test'
 
 afterEach(() => {
   cleanup()
@@ -89,5 +89,108 @@ describe('TagBadge', () => {
 
     // Prüfen auf Slate (deine Glassmorphismus-Wahl) oder Gray/Zinc als Fallback
     expect(className).toMatch(/bg-slate|text-slate|bg-gray|bg-white\/10/)
+  })
+
+  describe('Inline-Editing (Rename) Feature', () => {
+    const privateTag = { id: 'tag-1', name: 'React', userId: 'user-1' }
+    it('feuert onStartEdit, wenn ein privates Tag geklickt wird', () => {
+      const mockStartEdit = vi.fn()
+      // onRename muss übergeben werden, da wir im Code prüfen: isPrivate && onRename && !isEditing
+      render(
+        <TagBadge
+          tag={privateTag}
+          onStartEdit={mockStartEdit}
+          onRename={vi.fn()}
+        />,
+      )
+
+      const badgeText = screen.getByText('React')
+      fireEvent.click(badgeText)
+
+      expect(mockStartEdit).toHaveBeenCalledTimes(1)
+    })
+
+    it('feuert onStartEdit NICHT, wenn es ein globales Tag ist, selbst wenn die Funktion übergeben wird', () => {
+      const publicTag = { id: 'tag-2', name: 'Global', userId: null } // userId ist null!
+      const mockStartEdit = vi.fn()
+
+      render(
+        <TagBadge
+          tag={publicTag}
+          onStartEdit={mockStartEdit}
+          onRename={vi.fn()}
+        />,
+      )
+
+      const badgeText = screen.getByText('Global')
+      fireEvent.click(badgeText)
+
+      // Erwartung: Wurde exakt 0 mal aufgerufen
+      expect(mockStartEdit).not.toHaveBeenCalled()
+    })
+
+    it('zeigt ein Input-Feld, wenn isEditing true ist', () => {
+      render(<TagBadge tag={privateTag} isEditing={true} />)
+
+      // Sucht nach einem Element, in dem "React" als Wert (value) steht
+      const input = screen.getByDisplayValue('React')
+
+      expect(input).toBeInTheDocument()
+      expect(input.tagName.toLowerCase()).toBe('input') // Stellt sicher, dass es wirklich das Textfeld ist
+    })
+
+    it('speichert die Änderung bei Druck auf die Enter-Taste', () => {
+      const mockRename = vi.fn()
+      render(
+        <TagBadge tag={privateTag} isEditing={true} onRename={mockRename} />,
+      )
+
+      const input = screen.getByDisplayValue('React')
+
+      // 1. Simuliere das Tippen (ändert den internen tempName)
+      fireEvent.change(input, { target: { value: 'React 19' } })
+
+      // 2. Simuliere den Tastendruck 'Enter'
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' })
+
+      // Prüfe, ob die Funktion mit dem NEUEN Namen aufgerufen wurde
+      expect(mockRename).toHaveBeenCalledWith('React 19')
+      expect(mockRename).toHaveBeenCalledTimes(1)
+    })
+
+    it('bricht die Änderung ab, wenn Escape gedrückt wird', () => {
+      const mockCancel = vi.fn()
+      render(
+        <TagBadge
+          tag={privateTag}
+          isEditing={true}
+          onCancelEdit={mockCancel}
+        />,
+      )
+
+      const input = screen.getByDisplayValue('React')
+
+      fireEvent.change(input, { target: { value: 'React 19' } })
+      fireEvent.keyDown(input, { key: 'Escape', code: 'Escape' })
+
+      // onCancelEdit muss gefeuert werden
+      expect(mockCancel).toHaveBeenCalledTimes(1)
+    })
+
+    it('speichert die Änderung automatisch, wenn das Input-Feld den Fokus verliert (onBlur)', () => {
+      const mockRename = vi.fn()
+      render(
+        <TagBadge tag={privateTag} isEditing={true} onRename={mockRename} />,
+      )
+
+      const input = screen.getByDisplayValue('React')
+
+      fireEvent.change(input, { target: { value: 'React 19' } })
+
+      // Simuliere einen Klick irgendwo anders hin
+      fireEvent.blur(input)
+
+      expect(mockRename).toHaveBeenCalledWith('React 19')
+    })
   })
 })
