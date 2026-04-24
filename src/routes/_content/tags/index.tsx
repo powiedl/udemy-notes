@@ -192,7 +192,7 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
               ?
             </p>
 
-            <div className="bg-muted/50 rounded-lg p-4 mb-6 min-h-[72px] flex items-center justify-center">
+            <div className="bg-muted/50 rounded-lg p-4 mb-6 min-h-18 flex items-center justify-center">
               {isFetchingStats ? (
                 <Loader2 className="animate-spin size-5 text-muted-foreground" />
               ) : usageStats ? (
