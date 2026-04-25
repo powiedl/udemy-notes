@@ -15,12 +15,12 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 - You can Delete a course - in the course details and overview page
 - You can add tags to a course - in the course details and overview page
 - You can add tags to a single note - everywhere you see the note
-- You can create your own tags - in the Tags page (and also on demand where ever you can add existing tags)
+- You can create your own tags, rename and delete them
 - You can get a list of all notes from all your courses (and have multiple filtering and sorting options for this list)
 
 ## Next steps
 
-- [] search for courses and notes with tags assigned
+- Trainer management: add, remove trainers to a course (after import)
 - [] FINALLY: Edit your notes in the App
 
 ## Learnings
@@ -101,4 +101,4 @@ But sometimes all this possibilities aren't good enough, e. g. our courses route
   >
 ```
 
-Here we add the is-active class, if isCoursesActive is true. And the is-active class has all the styling for our "active nav link".
+Here we add the `is-active` class, if `isCoursesActive` is `true`. And the `is-active` class has all the styling for our "active nav link".
