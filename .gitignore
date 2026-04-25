@@ -5,6 +5,7 @@ dist-ssr
 *.local
 .env
 !.env.example
+!.env.test
 .nitro
 .tanstack
 .wrangler
