@@ -1,0 +1,38 @@
+name: PR Tests
+
+on:
+  pull_request:
+    branches: ['master']
+
+jobs:
+  test:
+    name: Run Unit/Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      # 1. pnpm v10 installieren (passend zu deinem lokalen Setup)
+      - name: pnpm installieren
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # 2. Node 24 aufsetzen und pnpm Cache aktivieren
+      - name: Node.js aufsetzen
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      # 3. Dependencies strikt anhand der pnpm-lock.yaml installieren
+      - name: Dependencies installieren
+        run: pnpm install --frozen-lockfile
+
+      # 4. Tests ausführen
+      - name: Tests ausführen
+        run: pnpm run test
+        # Falls deine Tests eine Datenbank brauchen, einkommentieren:
+        # env:
+        #   DATABASE_URL: ${{ secrets.DATABASE_URL }}
