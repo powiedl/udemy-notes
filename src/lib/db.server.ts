@@ -6,7 +6,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 
 const connectionString = process.env.DATABASE_URL
 
-if (!connectionString) {
+if (!connectionString && process.env.NODE_ENV !== 'test') {
   throw new Error(
     '🚨 KRITISCHER FEHLER: DATABASE_URL ist undefined! Vercel liefert die Variable nicht an den Code.',
   )
