@@ -30,7 +30,8 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 - [LEITFADEN PERFORMANTE SUCHE UND PAGINATION MIT TANSTACK START](GUIDE-PERFORMANT-SEARCH-AND-PAGINATION-WITH-TANSTACK-START_ENGLISH) - how to setup a general search and pagination container for "all" of your pages, where this makes sense. Right now it is only implemented in the Courses page, but will be added to additional routes in the future (to see if it is really "general")
   - [German original](LEITFADEN-PERFORMANTE-SUCHE-UND-PAGINATION-MIT-TANSTACK-START.md)
 - [PRISMA-EXPLANATION-AND-WORKFLOW_ENGLISH](PRISMA-EXPLANATION-AND-WORKFLOW_ENGLISH.md) - how to work with PRISMA and in which situation you should use which commands.
-  - [German original](PRISMA-ERKLAERUNG-UND-WORKFLOW.md)
+- [CI-CD-SETUP-NEON-VERCEL-AND-GITHUB-ACTIONS](CI-CD-SETUP-NEON-VERCEL-AND-GITHUB-ACTIONS.md) - how to setup a CI/CD pipeline with protection of master branch, automatic tests during pull requests and cleanup of neon database branches after the pull request has been merged.
+  - [German orginal](CI-CD-SETUP-NEON-VERCEL-UND-GITHUB-ACTIONS.md)
 
 ### Misc knowledge gems
 
