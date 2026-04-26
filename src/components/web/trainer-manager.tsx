@@ -224,17 +224,24 @@ export function TrainerManager({
             <Command
               onKeyDown={(e) => {
                 // Enter-Logik für neues Tag
-                if (
-                  e.key === 'Enter' &&
-                  query.length > 0 &&
-                  handleAddTrainer &&
-                  suggestions.suggestions
-                    .filter((s) => !trainers.map((t) => t.id).includes(s.id))
-                    .some((t) => t.name === query)
-                ) {
-                  handleAddTrainer(query)
-                  setQuery('')
-                  setOpen(false)
+                if (e.key === 'Enter' && query.length > 0) {
+                  // 1. Suchen, ob der exakte Name in den Suggestions vom Server ist
+                  const matchedTrainer = suggestions.suggestions.find(
+                    (t) => t.name.toLowerCase() === query.toLowerCase(),
+                  )
+
+                  if (matchedTrainer) {
+                    // 2. Prüfen, ob er nicht ohnehin schon dem Kurs zugewiesen ist
+                    const isAlreadyAssigned = trainers.some(
+                      (t) => t.id === matchedTrainer.id,
+                    )
+
+                    if (!isAlreadyAssigned) {
+                      handleAddTrainer(matchedTrainer.id) // ✅ Richtig: Wir übergeben die ID
+                      setQuery('')
+                      setOpen(false)
+                    }
+                  }
                 }
               }}
             >
