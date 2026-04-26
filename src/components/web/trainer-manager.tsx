@@ -30,7 +30,6 @@ import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useTrainerQuery } from '#/hooks/use-trainer-query'
 import { useQueryClient } from '@tanstack/react-query'
-import { trainerKeys } from '#/data/trainer.queries'
 
 export interface TrainerDisplay {
   id: string
@@ -75,7 +74,7 @@ export function TrainerManager({
   const [query, setQuery] = useState('')
   const { data: suggestionsData, isFetching } = useTrainerQuery({ query, open })
   const availableSuggestions = suggestionsData?.suggestions || []
-  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [_, setDebouncedQuery] = useState('')
 
   const addTrainerToCourse = useServerFn(addTrainerToCourseFn)
   const removeTrainerFromCourse = useServerFn(removeTrainerFromCourseFn)
