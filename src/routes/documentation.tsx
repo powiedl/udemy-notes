@@ -13,6 +13,7 @@ import {
   CloudUpload,
   Link2,
   Plus,
+  User,
 } from 'lucide-react'
 
 export const Route = createFileRoute('/documentation')({
@@ -99,6 +100,32 @@ function RouteComponent() {
         </div>
       </section>
 
+      {/* Trainer Management */}
+      <section className="island-shell rounded-2xl p-6 sm:p-8">
+        <h2 className="mb-4 text-lg font-bold text-(--sea-ink) sm:text-2xl flex items-center">
+          <User className={iconClass} /> Trainer Management
+        </h2>
+        <p className="text-base leading-8 text-(--sea-ink-soft) mb-4">
+          Trainers are handled as global resources to ensure a consistent
+          database across all users.
+        </p>
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 border border-emerald-100 dark:border-emerald-800/50">
+          <ul className="list-disc ml-5 space-y-2 text-sm text-emerald-900 dark:text-emerald-100">
+            <li>
+              <strong>Public Access:</strong> Every user can create new trainers
+              and assign them to their courses.
+            </li>
+            <li>
+              <strong>Data Integrity:</strong> Since trainers are "public" and
+              shared system-wide, they{' '}
+              <strong>cannot be renamed or deleted</strong> by users. This
+              ensures that metadata remains stable for everyone who has linked
+              to that trainer.
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold flex items-center gap-2">
           <Tag className="text-primary" /> Tag Management & Inheritance
@@ -113,7 +140,7 @@ function RouteComponent() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Plus className="text-purple-500 h-5 w-5" /> Private Tags & The
-              Purple Theme
+              Purple Theme, Renaming & Deletion
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -150,6 +177,13 @@ function RouteComponent() {
                   Press <strong>Enter</strong> or click that button to create
                   the tag globally. It will be immediately assigned to the
                   current entity (Course or Note).
+                </li>
+                <li>
+                  <strong>Renaming & Deleting:</strong> Private tags can be
+                  managed via the <strong>"Tags"</strong> page. Unlike trainers,
+                  you can rename or delete your private tags. When deleting, a
+                  warning will inform you about the exact number of courses and
+                  notes currently associated with that tag.
                 </li>
               </ol>
             </div>
