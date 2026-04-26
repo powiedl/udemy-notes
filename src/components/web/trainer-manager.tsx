@@ -81,7 +81,6 @@ export function TrainerManager({
     suggestions: { id: string; name: string }[]
     hasMore: boolean
   }>({ suggestions: [], hasMore: false })
-  const [showSuggestions, setShowSuggestions] = useState(false)
 
   const handleRemoveTrainer = async (trainerId: string) => {
     try {
@@ -155,15 +154,6 @@ export function TrainerManager({
     }
   }
 
-  const fetchTrainerSuggestions = async () => {
-    const res = await getTrainerSuggestions({
-      data: { query, loggingMetadata: { component: 'TrainerManager' } },
-    })
-    if (res.success && res.data) {
-      setSuggestions(res.data)
-      setShowSuggestions(res.data.suggestions.length > 0 || res.data.hasMore)
-    }
-  }
   useEffect(() => {
     const timer = setTimeout(async () => {
       const res = await getTrainerSuggestions({
@@ -171,7 +161,6 @@ export function TrainerManager({
       })
       if (res.success && res.data) {
         setSuggestions(res.data)
-        // setShowSuggestions(...) // (siehe Punkt 3)
       }
     }, 300) // 300ms warten, bevor der Server gefragt wird
 
