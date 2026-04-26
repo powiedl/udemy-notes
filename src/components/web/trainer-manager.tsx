@@ -203,6 +203,7 @@ export function TrainerManager({
               className={cn(
                 // Basis-Klassen (Form, Abstand, Transition)
                 'h-4 w-6 rounded-md transition-all duration-200 cursor-pointer ml-1',
+                open && 'opacity-0 pointer-events-none',
               )}
             >
               {isPending ? (
@@ -220,7 +221,11 @@ export function TrainerManager({
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-0" align="start">
+          <PopoverContent
+            className="w-64 p-0"
+            align="start"
+            sideOffset={size === 'default' ? -28 : -20}
+          >
             <Command
               onKeyDown={(e) => {
                 // Enter-Logik für neues Tag
@@ -246,7 +251,7 @@ export function TrainerManager({
               }}
             >
               <CommandInput
-                placeholder="search tag ..."
+                placeholder="search trainer ..."
                 value={query}
                 onValueChange={setQuery}
               />
