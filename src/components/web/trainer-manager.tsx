@@ -293,7 +293,12 @@ export function TrainerManager({
                 </CommandEmpty>
                 <CommandGroup>
                   {suggestions?.suggestions
-                    .filter((s) => !trainers.map((t) => t.id).includes(s.id)) // filter out trainers, which are already assigned to the course
+                    .filter(
+                      (s) =>
+                        !trainers.some(
+                          (existingTrainer) => existingTrainer.id === s.id,
+                        ),
+                    ) // filter out trainers, which are already assigned to the course
                     .map((trainer) => (
                       <CommandItem
                         key={trainer.id}
