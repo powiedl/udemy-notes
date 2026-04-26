@@ -22,6 +22,12 @@ export const createAndLinkTagToCourseSchema = withLogging(
 )
 
 export const getCoursesSchema = withLogging(courseSearchSchema)
+export const trainerToCourseSchema = withLogging(
+  z.object({ courseId: z.string(), trainerId: z.string() }),
+)
+export const createAndLinkTrainerToCourseSchema = withLogging(
+  z.object({ courseId: z.string(), trainerName: z.string() }),
+)
 // #endregion
 
 // #region Prisma Types
@@ -62,6 +68,10 @@ export type RemoveTagFromCourseInput = z.infer<typeof removeTagFromCourseSchema>
 export type LinkTagToCourseInput = z.infer<typeof linkTagToCourseSchema>
 export type CreateAndLinkTagToCourseInput = z.infer<
   typeof createAndLinkTagToCourseSchema
+>
+export type TrainerToCourseInput = z.infer<typeof trainerToCourseSchema>
+export type CreateAndLinkTrainerToCourseInput = z.infer<
+  typeof createAndLinkTrainerToCourseSchema
 >
 
 export const getCoursesFn = authGetFn
@@ -141,5 +151,45 @@ export const createAndLinkTagToCourseFn = authFn
       context,
       data,
       () => createAndLinkTagToCourseLogic(data, context.session.user.id),
+    )
+  })
+
+export const addTrainerToCourseFn = authFn
+  .inputValidator(trainerToCourseSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { addTrainerToCourseLogic } = await import('./course.logic.server')
+    console.log(
+      'addTrainerToCourse,courseId,trainerId',
+      data.courseId,
+      data.trainerId,
+    )
+    return await wrapServerAction('addTrainerToCourseFn', context, data, () =>
+      addTrainerToCourseLogic(data, context.session.user.id),
+    )
+  })
+
+export const removeTrainerFromCourseFn = authFn
+  .inputValidator(trainerToCourseSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { removeTrainerFromCourseLogic } =
+      await import('./course.logic.server')
+    return await wrapServerAction('addTrainerToCourseFn', context, data, () =>
+      removeTrainerFromCourseLogic(data, context.session.user.id),
+    )
+  })
+
+export const createAndLinkTrainerToCourseFn = authFn
+  .inputValidator(createAndLinkTrainerToCourseSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { createAndLinkTrainerToCourseLogic } =
+      await import('./course.logic.server')
+    return await wrapServerAction(
+      'createAndLinkTrainerToCourseFn',
+      context,
+      data,
+      () => createAndLinkTrainerToCourseLogic(data, context.session.user.id),
     )
   })

@@ -7,6 +7,8 @@ import type {
   RemoveTagFromCourseInput,
   LinkTagToCourseInput,
   CreateAndLinkTagToCourseInput,
+  CreateAndLinkTrainerToCourseInput,
+  TrainerToCourseInput,
 } from './course'
 //import { mapNoteDisplayTags } from './note.logic.server'
 
@@ -141,6 +143,7 @@ export async function getTrainerSuggestionsLogic(
       },
     },
     select: {
+      id: true,
       name: true,
     },
     // Wir sortieren nach der Anzahl der Kurse, die diesem Trainer zugewiesen sind (absteigend)
@@ -156,7 +159,9 @@ export async function getTrainerSuggestionsLogic(
 
   // 2. hasMore berechnen und Array auf das eigentliche Limit zuschneiden
   const hasMore = trainers.length > limit
-  const result = trainers.slice(0, limit).map((t) => t.name)
+  const result = trainers
+    .slice(0, limit)
+    .map((t) => ({ id: t.id, name: t.name }))
 
   return {
     suggestions: result,
@@ -220,6 +225,97 @@ export async function createAndLinkTagToCourseLogic(
         connectOrCreate: {
           where: { name_userId: { name: data.tagName, userId: userId } },
           create: { name: data.tagName, userId: userId },
+        },
+      },
+    },
+  })
+  return { success: true }
+}
+
+export async function addTrainerToCourseLogic(
+  data: TrainerToCourseInput,
+  userId: string,
+) {
+  const course = await prisma.course.findUnique({
+    where: { id: data.courseId, userId },
+    include: {
+      trainers: {
+        include: {
+          trainer: true,
+        },
+      },
+    },
+  })
+  if (!course) throw new ServerActionError('Course not found')
+  const trainer = await prisma.trainer.findUnique({
+    where: {
+      id: data.trainerId,
+    },
+  })
+  if (!trainer) {
+    throw new ServerActionError('Trainer not found')
+  }
+  console.log(course.trainers)
+  if (course.trainers.map((t) => t.trainerId).includes(data.trainerId)) {
+    throw new ServerActionError('Trainer is already assigned to the course')
+  }
+
+  await prisma.courseTrainer.create({
+    data: {
+      courseId: data.courseId,
+      trainerId: data.trainerId,
+    },
+  })
+
+  return { success: true }
+}
+
+export async function removeTrainerFromCourseLogic(
+  data: TrainerToCourseInput,
+  userId: string,
+) {
+  const course = await prisma.course.findUnique({
+    where: { id: data.courseId, userId },
+    include: {
+      trainers: {
+        include: {
+          trainer: true,
+        },
+      },
+    },
+  })
+  if (!course) throw new ServerActionError('Course not found')
+  if (!course.trainers.map((t) => t.trainerId).includes(data.trainerId))
+    throw new ServerActionError('Trainer is not assigned to the course')
+
+  await prisma.courseTrainer.delete({
+    where: {
+      courseId_trainerId: {
+        courseId: data.courseId,
+        trainerId: data.trainerId,
+      },
+    },
+  })
+
+  return { success: true }
+}
+
+export async function createAndLinkTrainerToCourseLogic(
+  data: CreateAndLinkTrainerToCourseInput,
+  userId: string,
+) {
+  const course = await prisma.course.findUnique({
+    where: { id: data.courseId, userId },
+  })
+  if (!course) throw new ServerActionError('Course not found')
+
+  await prisma.courseTrainer.create({
+    data: {
+      course: { connect: { id: data.courseId } },
+      trainer: {
+        connectOrCreate: {
+          where: { name: data.trainerName },
+          create: { name: data.trainerName },
         },
       },
     },
