@@ -42,6 +42,7 @@ export type FlexibleNote = Omit<CourseNote, 'tags'> & {
 
 interface NotesListProps {
   notes: FlexibleNote[]
+  from: 'courses' | 'notes'
   sortBy?: string
   emptyListMessage?: string
   activeTagIds?: string[]
@@ -49,6 +50,7 @@ interface NotesListProps {
 
 const NotesList = ({
   notes,
+  from = 'courses',
   sortBy,
   activeTagIds,
   emptyListMessage = "You don't have any notes for this course",
@@ -72,13 +74,14 @@ const NotesList = ({
                   course={note.course as any}
                   variant="compact"
                   activeTagIds={activeTagIds}
+                  singleCourse={false}
                 />
               </div>
             )}
             <Note
               note={note}
               key={note.id}
-              showCourseLink={sortBy !== 'course'}
+              showCourseLink={from === 'notes'}
               activeTagIds={activeTagIds}
             />
           </Fragment>
