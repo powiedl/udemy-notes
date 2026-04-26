@@ -165,8 +165,19 @@ export function TrainerManager({
     }
   }
   useEffect(() => {
-    fetchTrainerSuggestions()
-  }, [query])
+    const timer = setTimeout(async () => {
+      const res = await getTrainerSuggestions({
+        data: { query, loggingMetadata: { component: 'TrainerManager' } },
+      })
+      if (res.success && res.data) {
+        setSuggestions(res.data)
+        // setShowSuggestions(...) // (siehe Punkt 3)
+      }
+    }, 300) // 300ms warten, bevor der Server gefragt wird
+
+    // Cleanup: Wenn sich query ändert, bevor die 300ms um sind, lösche den alten Timer
+    return () => clearTimeout(timer)
+  }, [query, getTrainerSuggestions])
 
   return (
     <div className={cn('flex flex-wrap gap-1.5 mt-1 items-center', className)}>
