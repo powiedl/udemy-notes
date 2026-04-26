@@ -172,7 +172,10 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
       data: { query: val, loggingMetadata: { component: 'ImportHtmlForm' } },
     })
     if (res.success && res.data) {
-      setSuggestions(res.data)
+      setSuggestions({
+        suggestions: res.data.suggestions.map((d) => d.name),
+        hasMore: res.data.hasMore,
+      })
       setShowSuggestions(res.data.suggestions.length > 0 || res.data.hasMore)
     }
   }
