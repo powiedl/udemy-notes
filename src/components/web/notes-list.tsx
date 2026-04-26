@@ -4,6 +4,7 @@ import Note from './note'
 import CourseHeader from '#/components/web/course-header'
 // WICHTIG: Passe diesen Import an deinen tatsächlichen Typen an!
 import { AwaitedReturnTypeGetNotes, getNotesForCourseFn } from '#/data/note'
+import { CourseHeaderData } from '#/data/course'
 
 type GlobalNote = ExtractData<AwaitedReturnTypeGetNotes>['items'][number]
 type CourseNote = ServerFnData<typeof getNotesForCourseFn>['items'][number]
@@ -71,7 +72,7 @@ const NotesList = ({
                 <CourseHeader
                   // Hier casten wir als 'any', weil CourseHeaderData
                   // ein isolierter Prisma-Typ ist und wir hier eine "FlexibleNote" haben
-                  course={note.course as any}
+                  course={note.course as unknown as CourseHeaderData}
                   variant="compact"
                   activeTagIds={activeTagIds}
                   singleCourse={false}

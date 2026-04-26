@@ -56,7 +56,7 @@ const CourseHeader = ({
   const displayTags: TagDisplay[] = (course.tags || []).map((t) => ({
     id: t.tag.id,
     name: t.tag.name,
-    userId: (t.tag as any).userId,
+    userId: t.tag.userId,
     isDeletable: variant === 'default' ? true : false,
     isInherited: false,
     isHighlighted: activeTagIds.includes(t.tag.id),
@@ -100,23 +100,6 @@ const CourseHeader = ({
           deletingTagId={deletingTagId?.split('-').pop()}
           addIconVariant="purple"
         />
-        {/* {course.tags && course.tags.length > 0 && (
-          <div className="flex gap-1.5 flex-wrap mt-2">
-            {course.tags.map((t) => {
-              const isHighlighted = activeTagIds.includes(t.tag.id)
-              return (
-                <TagBadge
-                  key={`${course.id}-${t.tag.id}`}
-                  tag={t.tag}
-                  className={cn(
-                    isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
-                  )}
-                  size="sm"
-                />
-              )
-            })}
-          </div>
-        )} */}
       </div>
     )
   }
