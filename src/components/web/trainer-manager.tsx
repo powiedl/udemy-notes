@@ -1,4 +1,11 @@
-import { Plus, Loader2, Check, CornerDownLeft, User } from 'lucide-react'
+import {
+  Plus,
+  Loader2,
+  Check,
+  CornerDownLeft,
+  User,
+  MessageSquareWarning,
+} from 'lucide-react'
 import { cn } from '#/lib/utils'
 import { Button } from '../ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
@@ -17,9 +24,11 @@ import {
   addTrainerToCourseFn,
   getTrainerSuggestionsFn,
   removeTrainerFromCourseFn,
+  createAndLinkTrainerToCourseFn,
 } from '#/data/course'
 import { handleAction } from '#/lib/client-utils'
 import { useRouter } from '@tanstack/react-router'
+import { toast } from 'sonner'
 
 export interface TrainerDisplay {
   id: string
@@ -41,6 +50,14 @@ interface TrainerManagerProps {
   className?: string
 }
 
+const isQueryInTrainers = (
+  query: string,
+  trainers: TrainerDisplay[],
+): boolean =>
+  trainers
+    .map((t) => t.name.toLocaleLowerCase())
+    .includes(query.toLocaleLowerCase())
+
 export function TrainerManager({
   trainers,
   courseId,
@@ -56,9 +73,12 @@ export function TrainerManager({
   const getTrainerSuggestions = useServerFn(getTrainerSuggestionsFn)
   const addTrainerToCourse = useServerFn(addTrainerToCourseFn)
   const removeTrainerFromCourse = useServerFn(removeTrainerFromCourseFn)
+  const createAndLinkTrainerToCourse = useServerFn(
+    createAndLinkTrainerToCourseFn,
+  )
 
   const [suggestions, setSuggestions] = useState<{
-    suggestions: string[]
+    suggestions: { id: string; name: string }[]
     hasMore: boolean
   }>({ suggestions: [], hasMore: false })
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -108,9 +128,31 @@ export function TrainerManager({
     }
   }
   const handleCreateTrainer = async (trainerName: string) => {
-    console.log(
-      `Create Trainer '${trainerName}' and add it to course '${courseId}'`,
-    )
+    if (isQueryInTrainers(trainerName, trainers)) {
+      //console.log('Trainer already assigned to this course')
+      toast.info(`Trainer '${trainerName}' already assigned to this course`)
+      return
+    }
+    try {
+      await handleAction(
+        createAndLinkTrainerToCourse({
+          data: {
+            courseId,
+            trainerName,
+            loggingMetadata: {
+              component: 'CourseCard',
+              actionSource: 'CreateAndLinkTrainerButton',
+            },
+          },
+        }),
+        { successToast: 'Trainer created and added to the course' },
+      )
+      await router.invalidate()
+    } catch (error) {
+      // Der Fehler wurde bereits von handleAction via Toast gemeldet.
+      // Hier fangen wir ihn nur ab, damit der Hook nicht abstürzt.
+      //console.error('Löschvorgang abgebrochen:', error)
+    }
   }
 
   const fetchTrainerSuggestions = async () => {
@@ -186,7 +228,9 @@ export function TrainerManager({
                   e.key === 'Enter' &&
                   query.length > 0 &&
                   handleAddTrainer &&
-                  suggestions.suggestions.some((t) => t === query)
+                  suggestions.suggestions
+                    .filter((s) => !trainers.map((t) => t.id).includes(s.id))
+                    .some((t) => t.name === query)
                 ) {
                   handleAddTrainer(query)
                   setQuery('')
@@ -202,8 +246,8 @@ export function TrainerManager({
               <CommandList>
                 <CommandEmpty className="p-1">
                   {/* Dein schöner Create-Button, wenn nichts gefunden wurde */}
-                  {query.length > 0 ? (
-                    <button
+                  {query.length > 0 && !isQueryInTrainers(query, trainers) ? (
+                    <Button
                       type="button"
                       className={cn(
                         'flex w-full items-center justify-between px-3 py-2 rounded-md transition-all',
@@ -219,53 +263,49 @@ export function TrainerManager({
                       <Plus className="mr-2 h-3.5 w-3.5 opacity-80" />
                       <span className="text-xs truncate mr-2">
                         <span className="opacity-70 font-light">
-                          Create tag{' '}
+                          Create trainer{' '}
                         </span>
                         <span className="font-semibold italic">"{query}"</span>
                       </span>
                       <div className="flex items-center gap-1 opacity-80 shrink-0">
                         <CornerDownLeft className="h-3 w-3" />
                       </div>
-                    </button>
+                    </Button>
                   ) : (
                     <div className="p-2 text-xs text-muted-foreground text-center">
-                      No tag found.
+                      {query.length > 0 ? (
+                        <div className="flex items-center gap-x-1">
+                          <MessageSquareWarning className="size-3.5 text-orange-400" />
+                          <span>Trainer already assigned</span>
+                        </div>
+                      ) : (
+                        'No trainer found'
+                      )}
                     </div>
                   )}
                 </CommandEmpty>
                 <CommandGroup>
-                  {/* {availableTrainers
-                  .filter(
-                    (t) => !trainers.some((existing) => existing.id === t.id),
-                  )
-                  .map((trainer) => (
-                    <CommandItem
-                      key={trainer.id}
-                      onSelect={() => {
-                        onAddTag(trainer.id)
-                        setQuery('')
-                        setOpen(false)
-                      }}
-                      className="text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                    >
-                      <Check className="mr-2 h-3 w-3 opacity-0" />
-                      {trainer.name}
-                    </CommandItem>
-                  ))} */}
-                  {['trainer1', 'trainer2'].map((trainer) => (
-                    <CommandItem
-                      key={trainer}
-                      onSelect={() => {
-                        handleAddTrainer(trainer)
-                        setQuery('')
-                        setOpen(false)
-                      }}
-                      className="text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                    >
-                      <Check className="mr-2 h-3 w-3 opacity-0" />
-                      {trainer}
-                    </CommandItem>
-                  ))}
+                  {suggestions?.suggestions
+                    .filter((s) => !trainers.map((t) => t.id).includes(s.id)) // filter out trainers, which are already assigned to the course
+                    .map((trainer) => (
+                      <CommandItem
+                        key={trainer.id}
+                        onSelect={() => {
+                          handleAddTrainer(trainer.id)
+                          setQuery('')
+                          setOpen(false)
+                        }}
+                        className="text-xs cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <Check className="mr-2 h-3 w-3 opacity-0" />
+                        {trainer.name}
+                      </CommandItem>
+                    ))}
+                  {suggestions.hasMore && (
+                    <div className="px-4 py-2 text-center text-muted-foreground bg-muted/30 border-t border-border/50 text-[10px] italic">
+                      ... more results available
+                    </div>
+                  )}
                 </CommandGroup>
               </CommandList>
             </Command>
