@@ -249,6 +249,7 @@ function NotesRouteComponent() {
                 notes={deferredData.data.items}
                 sortBy={searchParams.sortBy}
                 activeTagIds={tagIds}
+                from="notes"
               />
               <DataTablePagination
                 totalCount={deferredData.data.totalCount}

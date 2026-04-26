@@ -7,14 +7,14 @@ import {
 } from '#/components/ui/card'
 import { Link } from '@tanstack/react-router'
 import { Button } from '../ui/button'
-import { Trash2, Download, Loader2, User, Users } from 'lucide-react'
+import { Trash2, Download, Loader2 } from 'lucide-react'
 import { cn } from '#/lib/utils'
-import React, { useTransition } from 'react'
+import { useTransition } from 'react'
 import { CourseHeaderData } from '#/data/course'
-import TagBadge from './tag-badge'
 import { useTagManagement } from '#/hooks/use-tag-management'
 import { TagManager, TagDisplay } from './tag-manager'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
+import { TrainerDisplay, TrainerManager } from './trainer-manager'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
@@ -53,17 +53,23 @@ const CourseHeader = ({
       ? course.notes && course.notes.length
       : (course._count && course._count.notes) || 0
 
-  // --- NEU: Trainer aus dem Array zu einem String zusammenfassen ---
-  let trainerNames: string | null = ''
-  let trainerIcon = User
-  if (course.trainers && course.trainers.length > 0) {
-    trainerNames = course.trainers.map((ct) => ct.trainer.name).join(', ')
-    if (course.trainers.length > 1) {
-      trainerIcon = Users
-    }
-  } else {
-    trainerNames = null
-  }
+  const displayTags: TagDisplay[] = (course.tags || []).map((t) => ({
+    id: t.tag.id,
+    name: t.tag.name,
+    userId: t.tag.userId,
+    isDeletable: variant === 'default' ? true : false,
+    isInherited: false,
+    isHighlighted: activeTagIds.includes(t.tag.id),
+  }))
+
+  const trainersDisplay = course.trainers.map(
+    (t): TrainerDisplay => ({
+      name: t.trainer.name,
+      id: t.trainer.id,
+      isDeletable: variant === 'default',
+    }),
+  )
+  const trainerSize = singleCourse ? 'default' : 'sm'
 
   if (variant === 'compact') {
     return (
@@ -73,58 +79,36 @@ const CourseHeader = ({
           className,
         )}
       >
-        <div>
-          <Link
-            to="/courses/$courseId"
-            params={{ courseId: course.id }}
-            search={PAGINATION_DEFAULTS}
-            className="text-lg font-semibold hover:underline"
-          >
-            {course.title}
-          </Link>
-          {/* NEU: Nutzen des zusammengefassten Strings */}
-          {trainerNames && (
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-              {React.createElement(trainerIcon, { className: 'h-3.5 w-3.5' })}
-              <span>{trainerNames}</span>
-            </div>
-          )}
-        </div>
-        {course.tags && course.tags.length > 0 && (
-          <div className="flex gap-1.5 flex-wrap mt-2">
-            {course.tags.map((t) => {
-              const isHighlighted = activeTagIds.includes(t.tag.id)
-              return (
-                <TagBadge
-                  key={`${course.id}-${t.tag.id}`}
-                  tag={t.tag}
-                  className={cn(
-                    isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
-                  )}
-                  size="sm"
-                />
-              )
-            })}
-          </div>
-        )}
+        <Link
+          to="/courses/$courseId"
+          params={{ courseId: course.id }}
+          search={PAGINATION_DEFAULTS}
+          className="text-lg font-semibold hover:underline"
+        >
+          {course.title}
+        </Link>
+        <TrainerManager
+          trainers={trainersDisplay}
+          courseId={course.id}
+          size={trainerSize}
+          isEditable={false} // in compact mode you are not allowed to edit the trainers of the course
+        />
+        <TagManager
+          tags={displayTags}
+          availableTags={availableTags}
+          isPending={isTagPending}
+          deletingTagId={deletingTagId?.split('-').pop()}
+          addIconVariant="purple"
+        />
       </div>
     )
   }
-
-  const displayTags: TagDisplay[] = (course.tags || []).map((t) => ({
-    id: t.tag.id,
-    name: t.tag.name,
-    userId: (t.tag as any).userId,
-    isDeletable: true,
-    isInherited: false,
-    isHighlighted: activeTagIds.includes(t.tag.id),
-  }))
 
   return (
     <Card
       key={course.id}
       className={cn(
-        'group overflow-hidden transition-all hover:shadow-lg px-4 py-2 w-full min-w-0',
+        'group overflow-hidden transition-all hover:shadow-lg px-4 py-2 w-full min-w-0 gap-2 my-2',
         className,
       )}
     >
@@ -145,7 +129,17 @@ const CourseHeader = ({
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="flex flex-col min-w-0">
+      <CardContent className="flex flex-col min-w-0 gap-y-2 mb-2">
+        <div className="flex w-full flex-row space-between items-center gap-x-4">
+          <TrainerManager
+            courseId={course.id}
+            trainers={trainersDisplay}
+            size={trainerSize}
+          />
+          <div className="ml-auto whitespace-nowrap text-sm text-muted-foreground">
+            {countNotes} note{countNotes === 1 ? '' : 's'}
+          </div>
+        </div>
         <TagManager
           tags={displayTags}
           availableTags={availableTags}
@@ -156,21 +150,6 @@ const CourseHeader = ({
           deletingTagId={deletingTagId?.split('-').pop()}
           addIconVariant="purple"
         />
-
-        <div className="mt-4 flex w-full items-center gap-x-4">
-          {/* NEU: Nutzen des zusammengefassten Strings */}
-          {trainerNames && (
-            <div className="flex min-w-0 items-center gap-1.5 text-lg text-muted-foreground">
-              {React.createElement(trainerIcon, {
-                className: 'h-4 w-4 shrink-0',
-              })}
-              <span className="truncate">{trainerNames}</span>
-            </div>
-          )}
-          <div className="ml-auto whitespace-nowrap text-sm text-muted-foreground">
-            {countNotes} note{countNotes === 1 ? '' : 's'}
-          </div>
-        </div>
       </CardContent>
 
       <CardFooter className="flex flex-row gap-4">

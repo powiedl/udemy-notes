@@ -359,7 +359,7 @@ function AsyncNotesList({
         Falls deine NotesList erwartet, dass die Notizen genau wie vorher strukturiert sind, 
         sollte das nahtlos passen! 
       */}
-      <NotesList notes={items} />
+      <NotesList notes={items} from="courses" />
 
       <DataTablePagination
         totalCount={totalCount}

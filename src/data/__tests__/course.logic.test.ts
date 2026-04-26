@@ -333,9 +333,9 @@ describe('getTrainerSuggestionsLogic', () => {
     // Da die Sortierung jetzt die Datenbank (Prisma) übernimmt,
     // simulieren wir einfach das, was Prisma uns fertig zurückgibt.
     const mockTrainers = [
-      { name: 'Maximilian Müller' },
-      { name: 'Sarah Schmidt' },
-      { name: 'Zebra Trainer' },
+      { id: 1, name: 'Maximilian Müller' },
+      { id: 2, name: 'Sarah Schmidt' },
+      { id: 3, name: 'Zebra Trainer' },
     ]
 
     // WICHTIG: Wir mocken jetzt prisma.trainer, nicht mehr prisma.course!
@@ -344,9 +344,18 @@ describe('getTrainerSuggestionsLogic', () => {
     const result = await getTrainerSuggestionsLogic({ query: '' })
 
     // Check, ob die Map-Logik funktioniert und die Strings korrekt ankommen
-    expect(result.suggestions[0]).toBe('Maximilian Müller')
-    expect(result.suggestions[1]).toBe('Sarah Schmidt')
-    expect(result.suggestions[2]).toBe('Zebra Trainer')
+    expect(result.suggestions[0]).toStrictEqual({
+      id: 1,
+      name: 'Maximilian Müller',
+    })
+    expect(result.suggestions[1]).toStrictEqual({
+      id: 2,
+      name: 'Sarah Schmidt',
+    })
+    expect(result.suggestions[2]).toStrictEqual({
+      id: 3,
+      name: 'Zebra Trainer',
+    })
     expect(result.suggestions).toHaveLength(3)
   })
 

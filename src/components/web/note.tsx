@@ -24,7 +24,7 @@ interface NoteProps {
       | {
           isDirect: boolean
           isFromCourse: boolean
-          tag: { id: string; name: string }
+          tag: { id: string; name: string; userId?: string | null }
         }[]
       | undefined
   }
@@ -51,7 +51,7 @@ const Note = ({
   const displayTags: TagDisplay[] = (note.displayTags || []).map((dt) => ({
     id: dt.tag.id,
     name: dt.tag.name,
-    userId: (dt.tag as any).userId, // Falls vorhanden
+    userId: dt.tag.userId, // Falls vorhanden
     isInherited: !dt.isDirect && dt.isFromCourse,
     isDeletable: dt.isDirect, // Nur direkte Tags löschbar
     isHighlighted: activeTagIds.includes(dt.tag.id),

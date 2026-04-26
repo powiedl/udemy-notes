@@ -60,45 +60,50 @@ const TagBadge = ({
   //   'Value is:',
   //   onDelete,
   // )
+  const badgeClassName = cn(
+    'inline-flex items-center uppercase gap-1 transition-all',
+    size === 'sm' ? 'text-xxs! px-1.5 py-0 h-4' : 'text-xs px-2.5 py-0.5 h-6',
+    isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
+    isPrivate
+      ? cn(
+          'border-blue-200 dark:border-blue-800',
+          isInherited
+            ? 'bg-blue-100/80 text-blue-700/80 dark:bg-blue-900/30 dark:text-blue-300/80'
+            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+        )
+      : 'bg-slate-200/80 text-slate-800 dark:bg-white/10 dark:text-white/80 border-transparent',
+    isDeleting && 'opacity-50 pointer-events-none',
+    isEditing && 'ring-2 ring-primary/50 border-primary', // Visual Feedback für Editing
+    className,
+  )
+  const divMr =
+    size === 'sm'
+      ? isHighlighted
+        ? 'mr-4'
+        : 'mr-1'
+      : isHighlighted
+        ? 'mr-5'
+        : 'mr-3'
+  const xRight =
+    size === 'sm'
+      ? isHighlighted
+        ? '-right-4'
+        : '-right-1.5'
+      : isHighlighted
+        ? '-right-5'
+        : '-right-2.5'
 
   return (
     <div
       className={cn(
         'relative w-fit group inline-flex',
-        size === 'sm'
-          ? isHighlighted
-            ? 'mr-4'
-            : 'mr-1'
-          : isHighlighted
-            ? 'mr-5'
-            : 'mr-2',
+        divMr,
         // Cursor-Hand nur wenn privat und Rename-Funktion vorhanden
         isPrivate && onRename && !isEditing && 'cursor-pointer',
       )}
       onClick={() => !isEditing && isPrivate && onStartEdit?.()}
     >
-      <Badge
-        variant="outline"
-        className={cn(
-          'inline-flex items-center uppercase gap-1 transition-all',
-          size === 'sm'
-            ? 'text-xxs! px-1.5 py-0 h-4'
-            : 'text-xs px-2.5 py-0.5 h-6',
-          isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
-          isPrivate
-            ? cn(
-                'border-blue-200 dark:border-blue-800',
-                isInherited
-                  ? 'bg-blue-100/80 text-blue-700/80 dark:bg-blue-900/30 dark:text-blue-300/80'
-                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-              )
-            : 'bg-slate-200/80 text-slate-800 dark:bg-white/10 dark:text-white/80 border-transparent',
-          isDeleting && 'opacity-50 pointer-events-none',
-          isEditing && 'ring-2 ring-primary/50 border-primary', // Visual Feedback für Editing
-          className,
-        )}
-        title={title}
-      >
+      <Badge variant="outline" className={badgeClassName} title={title}>
         <span className="truncate max-w-40 flex flex-row gap-0.5 items-center">
           {icon}
           {isEditing ? (
@@ -130,7 +135,7 @@ const TagBadge = ({
               'bg-background border-muted-foreground/20 text-muted-foreground',
               'hover:bg-red-500 hover:text-white hover:border-red-600 dark:hover:bg-red-600',
               size === 'sm' ? 'p-0 size-3.5' : 'p-0.5 size-5',
-              isHighlighted ? '-right-4' : '-right-1.5',
+              xRight,
             )}
           >
             {isDeleting ? (

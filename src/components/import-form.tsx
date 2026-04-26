@@ -74,6 +74,8 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
   const navigate = useNavigate()
   const [isPending, startTransition] = useTransition()
   const uploadFile = useServerFn(importHtmlFile)
+  const getTrainerSuggestions = useServerFn(getTrainerSuggestionsFn)
+  const getTagsForSelector = useServerFn(getTagsForSelectorFn)
 
   const [suggestions, setSuggestions] = useState<{
     suggestions: string[]
@@ -166,18 +168,21 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
   const canSubmit = useStore(form.store, (s) => s.canSubmit)
 
   const fetchSuggestions = async (val: string) => {
-    const res = await getTrainerSuggestionsFn({
+    const res = await getTrainerSuggestions({
       data: { query: val, loggingMetadata: { component: 'ImportHtmlForm' } },
     })
     if (res.success && res.data) {
-      setSuggestions(res.data)
+      setSuggestions({
+        suggestions: res.data.suggestions.map((d) => d.name),
+        hasMore: res.data.hasMore,
+      })
       setShowSuggestions(res.data.suggestions.length > 0 || res.data.hasMore)
     }
   }
 
   useEffect(() => {
     const loadTags = async () => {
-      const res = await getTagsForSelectorFn({
+      const res = await getTagsForSelector({
         data: { loggingMetadata: { component: 'ImportHtmlForm' } },
       })
       if (res.success) setAvailableTags(res.data)
