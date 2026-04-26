@@ -88,6 +88,7 @@ export function TagManager({
               variant={addIconVariant === 'purple' ? 'default' : 'outline'}
               size="icon"
               disabled={isPending}
+              title="add a tag"
               className={cn(
                 // Basis-Klassen (Form, Abstand, Transition)
                 'h-4 w-6 rounded-md transition-all duration-200 cursor-pointer ml-1',
