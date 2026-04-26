@@ -22,13 +22,15 @@ import { useEffect, useState } from 'react'
 import { useServerFn } from '@tanstack/react-start'
 import {
   addTrainerToCourseFn,
-  getTrainerSuggestionsFn,
   removeTrainerFromCourseFn,
   createAndLinkTrainerToCourseFn,
 } from '#/data/course'
 import { handleAction } from '#/lib/client-utils'
 import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
+import { useTrainerQuery } from '#/hooks/use-trainer-query'
+import { useQueryClient } from '@tanstack/react-query'
+import { trainerKeys } from '#/data/trainer.queries'
 
 export interface TrainerDisplay {
   id: string
@@ -68,19 +70,18 @@ export function TrainerManager({
   className,
 }: TrainerManagerProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const getTrainerSuggestions = useServerFn(getTrainerSuggestionsFn)
+  const { data: suggestionsData, isFetching } = useTrainerQuery({ query, open })
+  const availableSuggestions = suggestionsData?.suggestions || []
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+
   const addTrainerToCourse = useServerFn(addTrainerToCourseFn)
   const removeTrainerFromCourse = useServerFn(removeTrainerFromCourseFn)
   const createAndLinkTrainerToCourse = useServerFn(
     createAndLinkTrainerToCourseFn,
   )
-
-  const [suggestions, setSuggestions] = useState<{
-    suggestions: { id: string; name: string }[]
-    hasMore: boolean
-  }>({ suggestions: [], hasMore: false })
 
   const handleRemoveTrainer = async (trainerId: string) => {
     try {
@@ -146,6 +147,7 @@ export function TrainerManager({
         }),
         { successToast: 'Trainer created and added to the course' },
       )
+      await queryClient.invalidateQueries({ queryKey: ['trainers'] })
       await router.invalidate()
     } catch (error) {
       // Der Fehler wurde bereits von handleAction via Toast gemeldet.
@@ -155,18 +157,9 @@ export function TrainerManager({
   }
 
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      const res = await getTrainerSuggestions({
-        data: { query, loggingMetadata: { component: 'TrainerManager' } },
-      })
-      if (res.success && res.data) {
-        setSuggestions(res.data)
-      }
-    }, 300) // 300ms warten, bevor der Server gefragt wird
-
-    // Cleanup: Wenn sich query ändert, bevor die 300ms um sind, lösche den alten Timer
+    const timer = setTimeout(() => setDebouncedQuery(query), 300)
     return () => clearTimeout(timer)
-  }, [query, getTrainerSuggestions])
+  }, [query])
 
   return (
     <div className={cn('flex flex-wrap gap-1.5 mt-1 items-center', className)}>
@@ -227,11 +220,12 @@ export function TrainerManager({
             sideOffset={size === 'default' ? -28 : -20}
           >
             <Command
+              shouldFilter={false}
               onKeyDown={(e) => {
                 // Enter-Logik für neues Tag
                 if (e.key === 'Enter' && query.length > 0) {
                   // 1. Suchen, ob der exakte Name in den Suggestions vom Server ist
-                  const matchedTrainer = suggestions.suggestions.find(
+                  const matchedTrainer = availableSuggestions.find(
                     (t) => t.name.toLowerCase() === query.toLowerCase(),
                   )
 
@@ -256,54 +250,64 @@ export function TrainerManager({
                 onValueChange={setQuery}
               />
               <CommandList>
-                <CommandEmpty className="p-1">
-                  {/* Dein schöner Create-Button, wenn nichts gefunden wurde */}
-                  {query.length > 0 && !isQueryInTrainers(query, trainers) ? (
-                    <Button
-                      type="button"
-                      className={cn(
-                        'flex w-full items-center justify-between px-3 py-2 rounded-md transition-all',
-                        'bg-primary text-primary-foreground shadow-sm',
-                        'hover:bg-primary/90 cursor-pointer active:scale-[0.98]',
-                      )}
-                      onClick={() => {
-                        handleCreateTrainer(query)
-                        setQuery('')
-                        setOpen(false)
-                      }}
-                    >
-                      <Plus className="mr-2 h-3.5 w-3.5 opacity-80" />
-                      <span className="text-xs truncate mr-2">
-                        <span className="opacity-70 font-light">
-                          Create trainer{' '}
+                {isFetching && (
+                  <div className="p-4 flex items-center justify-center text-xs text-muted-foreground">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin opacity-50" />
+                    <span>searching...</span>
+                  </div>
+                )}
+                {!isFetching && (
+                  <CommandEmpty className="p-1">
+                    {/* Dein schöner Create-Button, wenn nichts gefunden wurde */}
+                    {query.length > 0 && !isQueryInTrainers(query, trainers) ? (
+                      <Button
+                        type="button"
+                        className={cn(
+                          'flex w-full items-center justify-between px-3 py-2 rounded-md transition-all',
+                          'bg-primary text-primary-foreground shadow-sm',
+                          'hover:bg-primary/90 cursor-pointer active:scale-[0.98]',
+                        )}
+                        onClick={() => {
+                          handleCreateTrainer(query)
+                          setQuery('')
+                          setOpen(false)
+                        }}
+                      >
+                        <Plus className="mr-2 h-3.5 w-3.5 opacity-80" />
+                        <span className="text-xs truncate mr-2">
+                          <span className="opacity-70 font-light">
+                            Create trainer{' '}
+                          </span>
+                          <span className="font-semibold italic">
+                            "{query}"
+                          </span>
                         </span>
-                        <span className="font-semibold italic">"{query}"</span>
-                      </span>
-                      <div className="flex items-center gap-1 opacity-80 shrink-0">
-                        <CornerDownLeft className="h-3 w-3" />
-                      </div>
-                    </Button>
-                  ) : (
-                    <div className="p-2 text-xs text-muted-foreground text-center">
-                      {query.length > 0 ? (
-                        <div className="flex items-center gap-x-1">
-                          <MessageSquareWarning className="size-3.5 text-orange-400" />
-                          <span>Trainer already assigned</span>
+                        <div className="flex items-center gap-1 opacity-80 shrink-0">
+                          <CornerDownLeft className="h-3 w-3" />
                         </div>
-                      ) : (
-                        'No trainer found'
-                      )}
-                    </div>
-                  )}
-                </CommandEmpty>
+                      </Button>
+                    ) : (
+                      <div className="p-2 text-xs text-muted-foreground text-center">
+                        {query.length > 0 ? (
+                          <div className="flex items-center gap-x-1">
+                            <MessageSquareWarning className="size-3.5 text-orange-400" />
+                            <span>Trainer already assigned</span>
+                          </div>
+                        ) : (
+                          'No trainer found'
+                        )}
+                      </div>
+                    )}
+                  </CommandEmpty>
+                )}
                 <CommandGroup>
-                  {suggestions?.suggestions
+                  {availableSuggestions
                     .filter(
                       (s) =>
                         !trainers.some(
                           (existingTrainer) => existingTrainer.id === s.id,
                         ),
-                    ) // filter out trainers, which are already assigned to the course
+                    )
                     .map((trainer) => (
                       <CommandItem
                         key={trainer.id}
@@ -318,7 +322,7 @@ export function TrainerManager({
                         {trainer.name}
                       </CommandItem>
                     ))}
-                  {suggestions.hasMore && (
+                  {suggestionsData?.hasMore && (
                     <div className="px-4 py-2 text-center text-muted-foreground bg-muted/30 border-t border-border/50 text-[10px] italic">
                       ... more results available
                     </div>

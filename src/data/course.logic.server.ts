@@ -130,6 +130,12 @@ export async function getTrainerSuggestionsLogic(
 ) {
   const { query } = data
   const trimmedQuery = query.trim()
+  // console.log(
+  //   '💥 SERVER WIRD GEFRAGT NACH: query',
+  //   query,
+  //   'trimmedQuery:',
+  //   trimmedQuery,
+  // )
 
   const limit = 5
 
@@ -162,6 +168,8 @@ export async function getTrainerSuggestionsLogic(
   const result = trainers
     .slice(0, limit)
     .map((t) => ({ id: t.id, name: t.name }))
+
+  // console.log('💥 PRISMA ERGEBNIS:', result)
 
   return {
     suggestions: result,

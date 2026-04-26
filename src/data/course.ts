@@ -107,7 +107,7 @@ export const deleteCourseByIdFn = authFn
     )
   })
 
-export const getTrainerSuggestionsFn = authGetFn
+export const getTrainerSuggestionsFn = authFn // eigentlich würde authGetFn reichen - aber da cached der Browser das Ergebnis und unterbindet nachfolgende gleiche Requests
   .inputValidator(getTrainerSuggestionsSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.server')
