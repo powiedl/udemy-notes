@@ -21,6 +21,11 @@ export const getNotesForCourseInputSchema = withLogging(
   z.object({ courseId: z.string(), searchParams: courseNotesSearchSchema }),
 )
 
+export const updateNoteContentSchema = withLogging(
+  z.object({ noteId: z.string(), content: z.string() }),
+)
+
+export type UpdateNoteContentInput = z.infer<typeof updateNoteContentSchema>
 /**
  * RPC-Endpunkt zum Abrufen der globalen Notiz-Liste (paginiert, gefiltert, sortiert).
  */
@@ -71,6 +76,23 @@ export const toggleNoteTagFn = authFn
         return toggleNoteTagLogic(data, context.session.user.id)
       },
       data.action === 'add' ? 'Tag added' : 'Tag removed',
+    )
+  })
+
+export const updateNoteContentFn = authFn
+  .inputValidator(updateNoteContentSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { updateNoteContentLogic } = await import('./note.logic.server')
+
+    return await wrapServerAction(
+      'updateNoteContentFn',
+      context,
+      { loggingMetadata: { component: 'NoteEditor' } },
+      async () => {
+        return updateNoteContentLogic(data, context.session.user.id)
+      },
+      'Note updated successfully',
     )
   })
 
