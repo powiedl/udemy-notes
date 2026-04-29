@@ -14,6 +14,14 @@ import {
   Link2,
   Plus,
   User,
+  NotebookPen,
+  Edit2,
+  Eye,
+  Save,
+  X,
+  Bold,
+  List,
+  Code,
 } from 'lucide-react'
 
 export const Route = createFileRoute('/documentation')({
@@ -123,6 +131,102 @@ function RouteComponent() {
               to that trainer.
             </li>
           </ul>
+        </div>
+      </section>
+
+      {/* Note Management */}
+      <section className="island-shell rounded-2xl p-6 sm:p-8">
+        <h2 className="mb-4 text-lg font-bold text-(--sea-ink) sm:text-2xl flex items-center">
+          <NotebookPen className={iconClass} /> Note Management
+        </h2>
+        <p className="text-base leading-8 text-(--sea-ink-soft) mb-4">
+          Each note can be customized and edited to fit your learning needs. The
+          interface provides clear indicators for changes and a professional
+          Markdown editor.
+        </p>
+        <div className="grid gap-6">
+          <div className="flex gap-4 items-start">
+            <div className="flex gap-1 shrink-0 mt-1">
+              <div className="bg-primary text-primary-foreground p-1 rounded-lg">
+                <Edit2 className="size-4" />
+              </div>
+            </div>
+            <div>
+              <p className="font-bold text-(--sea-ink)">Entering Edit Mode</p>
+              <p className="text-sm text-(--sea-ink-soft) leading-relaxed">
+                Click the <strong>Pencil icon</strong> in the top-right corner
+                of a note card to start editing. Once in edit mode, you can use
+                the{' '}
+                <strong>
+                  Save (<Save className="size-3 inline" />)
+                </strong>{' '}
+                icon to apply changes or the{' '}
+                <strong>
+                  Cancel (<X className="size-3 inline" />)
+                </strong>{' '}
+                icon to discard them.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-4 items-start">
+            <div className="flex gap-1 shrink-0 mt-1">
+              <div className="bg-primary text-primary-foreground p-1 rounded-lg">
+                <Eye className="size-4" />
+              </div>
+            </div>
+            <div>
+              <p className="font-bold text-(--sea-ink)">
+                Original vs. Edited Content
+              </p>
+              <p className="text-sm text-(--sea-ink-soft) leading-relaxed">
+                The <strong>Eye icon</strong> appears only if you have modified
+                a note. It indicates that the current text differs from the
+                original Udemy import. Clicking it toggles between your custom
+                version and the read-only original version, allowing you to
+                quickly reference the initial source.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-accent/30 rounded-xl p-4 border border-border">
+            <p className="font-bold text-sm mb-2 flex items-center gap-2">
+              <Code className="size-4 text-primary" /> The Editor Toolbar
+            </p>
+            <p className="text-xs text-muted-foreground mb-3">
+              The built-in MDX editor provides a toolbar for common Markdown
+              formatting:
+            </p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-xs text-(--sea-ink-soft)">
+              <li className="flex items-center gap-2">
+                <div className="p-1 border rounded bg-background">
+                  <Bold className="size-3" />
+                </div>
+                <strong>Text Styling:</strong> Quickly apply Bold or Italic
+                formatting to your selection.
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="p-1 border rounded bg-background">
+                  <List className="size-3" />
+                </div>
+                <strong>Structure:</strong> Create Bulleted or Numbered lists
+                and set Heading levels (H4-H6).
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="p-1 border rounded bg-background">
+                  <Code className="size-3" />
+                </div>
+                <strong>Code:</strong> Insert inline code or dedicated code
+                blocks for various programming languages.
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="p-1 border rounded bg-background">
+                  <LinkIcon className="size-3" />
+                </div>
+                <strong>Links:</strong> Add external hyperlinks to your notes.
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
