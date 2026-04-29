@@ -5,6 +5,7 @@ import type {
   NoteSearchInput,
 } from '#/schemas/search-params'
 import { ServerActionError } from '#/types/errors'
+import { UpdateNoteContentInput } from './note'
 
 // Hilfstyp, um TypeScript glücklich zu machen, egal aus welcher Query die Notiz kommt
 // Minimale Anforderung an ein Tag-Item, das aus der DB kommt
@@ -262,4 +263,37 @@ export async function toggleNoteTagLogic(
   }
 
   return { success: true }
+}
+
+export async function updateNoteContentLogic(
+  data: UpdateNoteContentInput,
+  userId: string,
+) {
+  const { noteId, content } = data
+  // 1. Berechtigung prüfen & Existenz checken (alles in einem DB-Aufruf)
+  const noteExists = await prisma.note.findFirst({
+    where: {
+      id: noteId,
+      userId: userId,
+    },
+    // select: { id: true } reicht hier als reiner Existenzcheck
+    select: { id: true },
+  })
+
+  // Wenn keine Notiz gefunden wurde (entweder existiert sie nicht
+  // oder sie gehört einem anderen User), brechen wir ab.
+  if (!noteExists) {
+    throw new ServerActionError(
+      'Not authorized to edit this note or note not found.',
+    )
+  }
+
+  // 2. Update ausführen
+  return await prisma.note.update({
+    where: { id: noteId },
+    data: {
+      editedContent: content,
+      hasConflict: false,
+    },
+  })
 }

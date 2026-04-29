@@ -419,7 +419,24 @@ a {
   font-family: 'Courier New', Courier, monospace;
 }
 
-/* Erzwinge Sichtbarkeit für Sonner-Buttons */
+/* #region Code Blöcke */
+.prose pre {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); /* Minimaler Schatten für bessere Abhebung */
+  border-radius: var(--radius);
+}
+
+/* Dark Mode: Neutrales, tiefes Grau OHNE Blaustich (ZINC) */
+.dark .prose pre {
+  background-color: #18181b !important; /* Neutrales Dunkelgrau */
+  color: #e4e4e7 !important; /* Helles Grau für Text */
+  border: 1px solid #27272a !important; /* Etwas hellerer Rand */
+}
+/* #endregion */
+
+/* #region Sonner */
 [data-sonner-toast] [data-button] {
   background-color: var(--primary) !important;
   color: var(--primary-foreground) !important;
@@ -433,3 +450,75 @@ a {
   background-color: white !important;
   color: var(--destructive) !important;
 }
+/* #endregion  */
+
+/* #region MDXEditor */
+/* MDXEditor Shadcn Integration & Dark Mode  */
+
+/* Versteckt Underline UND den Diff-Button (den mittleren im Toggle) */
+.mdxeditor button[aria-label='Underline'],
+.mdxeditor button[title='Underline'],
+.mdxeditor button[aria-label='Diff'],
+.mdxeditor button[title='Diff'] {
+  display: none !important;
+}
+
+.mdxeditor {
+  --mdxeditor-toolbar-bg: hsl(var(--background));
+  --mdxeditor-toolbar-border-color: hsl(var(--border));
+  --mdxeditor-toolbar-icon-color: hsl(var(--muted-foreground));
+  --mdxeditor-toolbar-icon-hover-bg: hsl(var(--accent));
+  --mdxeditor-toolbar-icon-hover-color: hsl(var(--accent-foreground));
+  --mdxeditor-toolbar-icon-active-bg: hsl(var(--accent));
+  --mdxeditor-toolbar-icon-active-color: hsl(var(--accent-foreground));
+  font-family: inherit;
+}
+
+/* --- CODE-BLÖCKE IM EDITOR (CodeMirror) - LIGHT MODE --- */
+.cm-editor,
+.cm-gutters {
+  background-color: hsl(
+    var(--background)
+  ) !important; /* Zwingt weißen Hintergrund */
+  color: hsl(var(--foreground)) !important; /* Zwingt dunkle Schrift */
+  border: 1px solid hsl(var(--border)) !important;
+}
+.cm-gutters {
+  background-color: hsl(var(--muted)) !important;
+  border-right: 1px solid hsl(var(--border)) !important;
+}
+
+/* --- CODE-BLÖCKE IM EDITOR (CodeMirror) - DARK MODE --- */
+.dark .mdxeditor {
+  --mdxeditor-theme: dark;
+}
+
+.dark .cm-editor,
+.dark .cm-gutters {
+  background-color: #18181b !important; /* Neutrales Dunkelgrau ohne Blaustich */
+  color: #e4e4e7 !important;
+  border-color: #27272a !important;
+}
+.dark .cm-gutters {
+  background-color: #27272a !important; /* Die Spalte mit den Zeilennummern etwas absetzen */
+  color: #a1a1aa !important;
+  border-right: 1px solid #3f3f46 !important;
+}
+
+/* Textfarbe im normalen Editor-Bereich sicherstellen */
+.dark .mdxeditor .mdxeditor-root-contenteditable,
+.dark .mdxeditor .mdxeditor-root-contenteditable * {
+  color: hsl(var(--foreground)) !important;
+}
+
+.mdxeditor-root-contenteditable {
+  caret-color: hsl(var(--primary));
+}
+
+.mdxeditor-popup-container {
+  background-color: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+  border-radius: var(--radius) !important;
+}
+/* #endregion */

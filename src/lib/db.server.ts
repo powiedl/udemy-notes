@@ -1,19 +1,24 @@
-// src/lib/db.server.ts
-
-// 1. Füge "Prisma" hier zum Import hinzu
 import { PrismaClient, Prisma } from '#/generated/prisma/client.js'
 import { PrismaPg } from '@prisma/adapter-pg'
 
-const connectionString = process.env.DATABASE_URL
+let connectionString = process.env.DATABASE_URL
 
+// Prüfen, ob die URL fehlt (außer im Test-Modus)
 if (!connectionString && process.env.NODE_ENV !== 'test') {
   throw new Error(
     '🚨 KRITISCHER FEHLER: DATABASE_URL ist undefined! Vercel liefert die Variable nicht an den Code.',
   )
 }
 
+if (connectionString && process.env.NODE_ENV !== 'test') {
+  // (er)setzen der sslmode Option auf den gewünschten Wert
+  const dbUrl = new URL(connectionString)
+  dbUrl.searchParams.set('sslmode', 'verify-full')
+  connectionString = dbUrl.toString()
+}
+
 const adapter = new PrismaPg({
-  connectionString,
+  connectionString: connectionString || '',
 })
 
 declare global {
@@ -26,5 +31,4 @@ if (process.env.NODE_ENV !== 'production') {
   globalThis.__prisma = prisma
 }
 
-// 2. Exportiere den Namespace, damit du überall an die Typen kommst
 export { Prisma }
