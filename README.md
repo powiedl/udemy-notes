@@ -8,20 +8,20 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 
 ## Current project status
 
-- You can upload a html file with your Udemy course notes
-- These course notes are stored in the database
-- You can view your notes of the course - in the course details page
+- You can import a html file with your Udemy course notes (during import you can assign tags and trainers to the course)
+- These courses ant the corresponding notes are stored in the database
+- You can view and edit your notes of the course - in the course details page
 - You can export your notes of the course - in the course details page
-- You can Delete a course - in the course details and overview page
+- You can delete a course - in the course details and overview page
 - You can add tags to a course - in the course details and overview page
 - You can add tags to a single note - everywhere you see the note
 - You can create your own tags, rename and delete them
+- You can create trainers and assign them to your courses (but you cannot delete or rename them as they are shared between all users)
 - You can get a list of all notes from all your courses (and have multiple filtering and sorting options for this list)
 
 ## Next steps
 
-- Trainer management: add, remove trainers to a course (after import)
-- [] FINALLY: Edit your notes in the App
+For now I don't have any "must have" improvements for the app in the queue, just some little tweaks here and there ...
 
 ## Learnings
 
