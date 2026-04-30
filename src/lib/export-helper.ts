@@ -1,4 +1,4 @@
-import { SingleNote } from './prisma-types'
+import type { SingleNote } from './prisma-types'
 
 export function processNoteForMarkdown(
   note: SingleNote,

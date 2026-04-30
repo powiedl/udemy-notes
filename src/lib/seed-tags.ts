@@ -11,7 +11,7 @@ interface SeedRelation {
  * Nutzt upsert auf den Join-Tabellen, um Duplikate zu verhindern.
  */
 export async function seedTagsToParents(relations: SeedRelation[]) {
-  //console.log(`Starte Seeding von ${relations.length} Relationen...`)
+  // console.log(`Starte Seeding von ${relations.length} Relationen...`)
 
   for (const relation of relations) {
     const { type, parentId, tagId } = relation
@@ -31,7 +31,7 @@ export async function seedTagsToParents(relations: SeedRelation[]) {
             tagId: tagId,
           },
         })
-      } else if (type === 'note') {
+      } else {
         await prisma.noteTag.upsert({
           where: {
             noteId_tagId: {
@@ -54,5 +54,5 @@ export async function seedTagsToParents(relations: SeedRelation[]) {
     }
   }
 
-  //console.log('Seeding der Relationen abgeschlossen.')
+  // console.log('Seeding der Relationen abgeschlossen.')
 }

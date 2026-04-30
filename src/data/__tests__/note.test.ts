@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended'
+import { mockDeep, mockReset } from 'vitest-mock-extended'
+import type { DeepMockProxy } from 'vitest-mock-extended'
 import type { PrismaClient } from '#/generated/prisma/client'
+
+import { prisma } from '#/lib/db.server'
+import { getNotesLogic } from '../note.logic.server'
 
 // 1. Prisma Client mocken
 vi.mock('#/lib/db.server', () => ({
   prisma: mockDeep<PrismaClient>(),
 }))
-
-import { prisma } from '#/lib/db.server'
-import { getNotesLogic } from '../note.logic.server'
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>
 
@@ -29,7 +30,7 @@ describe('getNotesLogic', () => {
   beforeEach(() => {
     mockReset(prismaMock)
     // Standard-Mock-Antworten für die Promise.all Aufrufe
-    prismaMock.note.findMany.mockResolvedValue([] as any)
+    prismaMock.note.findMany.mockResolvedValue([])
     prismaMock.note.count.mockResolvedValue(0)
   })
 

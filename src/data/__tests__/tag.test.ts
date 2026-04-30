@@ -1,12 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended'
+import { mockDeep, mockReset } from 'vitest-mock-extended'
+import type { DeepMockProxy } from 'vitest-mock-extended'
 import type { PrismaClient, Prisma } from '#/generated/prisma/client'
-
-// 1. Prisma Client mocken
-vi.mock('#/lib/db.server', () => ({
-  prisma: mockDeep<PrismaClient>(),
-}))
-
 import { prisma } from '#/lib/db.server'
 import {
   createDefaultTagsLogic,
@@ -14,6 +9,11 @@ import {
   getTagsForSelectorLogic,
   deleteTagLogic,
 } from '../tag.logic.server'
+
+// 1. Prisma Client mocken
+vi.mock('#/lib/db.server', () => ({
+  prisma: mockDeep<PrismaClient>(),
+}))
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>
 

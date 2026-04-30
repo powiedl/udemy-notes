@@ -1,4 +1,5 @@
-import { prisma, Prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.server'
+import type { Prisma } from '#/lib/db.server'
 import { ServerActionError } from '#/types/errors'
 import type {
   GetCoursesInput,
@@ -10,7 +11,7 @@ import type {
   CreateAndLinkTrainerToCourseInput,
   TrainerToCourseInput,
 } from './course'
-//import { mapNoteDisplayTags } from './note.logic.server'
+// import { mapNoteDisplayTags } from './note.logic.server'
 
 /**
  * Kern-Logik für den Abruf von Kursen (paginiert & gefiltert).
@@ -24,7 +25,7 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
   // 1. Basis-Where-Bedingung erstellen
   const where: Prisma.CourseWhereInput = {
     userId: userId,
-    //title: { contains: search, mode: 'insensitive' },
+    // title: { contains: search, mode: 'insensitive' },
     OR: [
       { title: { contains: search, mode: 'insensitive' } },
       {
@@ -38,7 +39,7 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
   }
 
   // 2. Tag-Filterung hinzufügen (OR-Logik)
-  if (tagIds && tagIds.length > 0) {
+  if (tagIds.length > 0) {
     where.tags = {
       some: {
         tagId: {

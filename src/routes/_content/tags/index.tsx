@@ -10,7 +10,7 @@ import {
 } from '#/data/tag'
 import { handleAction } from '#/lib/client-utils'
 import { cn } from '#/lib/utils'
-import { ClientLoggingMetadata } from '#/schemas/api-utils'
+import type { ClientLoggingMetadata } from '#/schemas/api-utils'
 import {
   COURSE_SEARCH_DEFAULTS,
   NOTE_SEARCH_DEFAULTS,
@@ -81,7 +81,7 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
     try {
       const res = await getTagUsage({ data: { id: tag.id } })
       // Wir prüfen das typische ActionResponse-Format
-      if (res.success && res.data) {
+      if (res.success) {
         setUsageStats(res.data)
       } else {
         setUsageStats({ courses: 0, notes: 0 })
@@ -136,12 +136,12 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
       return
     }
 
-    const success = await handleAction(
+    const res = await handleAction(
       renameTag({ data: { id, newName: newName.trim() } }),
       { successToast: 'Tag renamed successfully' },
     )
 
-    if (success) {
+    if (res.success) {
       setEditingId(null)
       router.invalidate()
     }
@@ -291,7 +291,7 @@ function RouteComponent() {
         <Suspense fallback={<Loader2 className="animate-spin mx-auto" />}>
           <Tags data={deferredPromise} />
           <DataTablePagination
-            totalCount={result.data.totalCount ?? 0}
+            totalCount={result.data.totalCount || 0}
             pageSize={searchParams.pageSize}
             page={searchParams.page}
             currentSearch={searchParams}

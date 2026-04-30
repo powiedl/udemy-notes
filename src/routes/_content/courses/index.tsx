@@ -19,7 +19,7 @@ import { getCoursesFn } from '#/data/course'
 import { useCourseActions } from '#/hooks/use-course-actions'
 import { cn } from '#/lib/utils'
 import { courseSearchSchema } from '#/schemas/search-params'
-import { ActionResponse, ServerFnData } from '#/types/api'
+import type { ActionResponse, ServerFnData } from '#/types/api'
 import {
   createFileRoute,
   getRouteApi,
@@ -117,7 +117,7 @@ function CoursesList({
             onExport={() => handleExport(course.id)}
             onDelete={() => handleDelete(course.id)}
             className="min-w-0"
-            activeTagIds={searchParams.tagIds || []}
+            activeTagIds={searchParams.tagIds}
           />
         ))}
       </div>
@@ -150,7 +150,7 @@ function RouteComponent() {
   }, [])
 
   const isNavigating = mounted && pending
-  const tagIds = searchParams.tagIds || []
+  const tagIds = searchParams.tagIds
 
   // Helper zum Setzen der URL-Parameter
   const toggleTag = (id: string) => {

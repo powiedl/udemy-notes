@@ -1,7 +1,7 @@
-import { Course, Note } from '#/generated/prisma/client'
-import { ImportNote } from '#/types/course'
-import z from 'zod'
-import {
+import type { Course, Note } from '#/generated/prisma/client'
+import type { ImportNote } from '#/types/course'
+import type z from 'zod'
+import type {
   exportMdFileValidationSchema,
   importHtmlFileValidationSchema,
 } from './import-export'
@@ -82,7 +82,7 @@ export const importHtmlFileLogic = async (
     finalTagIds = [...finalTagIds, ...createdTags.map((t) => t.id)]
   }
 
-  const validTrainers = (trainers || [])
+  const validTrainers = trainers
     .filter((t): t is string => typeof t === 'string')
     .map((t) => t.trim())
     .filter((t) => t.length > 0)

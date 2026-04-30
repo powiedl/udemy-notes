@@ -1,12 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mockDeep, DeepMockProxy, mockReset } from 'vitest-mock-extended'
+import { mockDeep, mockReset } from 'vitest-mock-extended'
+import type { DeepMockProxy } from 'vitest-mock-extended'
 import type { PrismaClient, Prisma } from '#/generated/prisma/client'
-
-// 1. Prisma Client mocken - Simpel & direkt
-vi.mock('#/lib/db.server', () => ({
-  prisma: mockDeep<PrismaClient>(),
-}))
-
 import { prisma } from '#/lib/db.server'
 import {
   getCoursesLogic,
@@ -17,6 +12,11 @@ import {
   linkTagToCourseLogic,
   createAndLinkTagToCourseLogic,
 } from '../course.logic.server'
+
+// 1. Prisma Client mocken - Simpel & direkt
+vi.mock('#/lib/db.server', () => ({
+  prisma: mockDeep<PrismaClient>(),
+}))
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>
 
@@ -89,7 +89,7 @@ describe('getCoursesLogic', () => {
       trainer: '',
     }
 
-    prismaMock.course.findMany.mockResolvedValue(expectedDbResult as any)
+    prismaMock.course.findMany.mockResolvedValue(expectedDbResult)
     prismaMock.course.count.mockResolvedValue(1)
 
     // --- WHEN ---
@@ -132,7 +132,7 @@ describe('getCoursesLogic', () => {
       tagIds: [],
       trainer: '',
     }
-    prismaMock.course.findMany.mockResolvedValue(expectedDbResult as any)
+    prismaMock.course.findMany.mockResolvedValue(expectedDbResult)
     prismaMock.course.count.mockResolvedValue(0)
 
     // --- WHEN ---

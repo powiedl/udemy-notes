@@ -2,7 +2,7 @@ import { linkTagToCourseFn, removeTagFromCourseFn } from '#/data/course'
 import { toggleNoteTagFn } from '#/data/note'
 import { createAndLinkTagToTargetFn } from '#/data/tag'
 import { handleAction } from '#/lib/client-utils'
-import { ClientLoggingMetadata } from '#/schemas/api-utils'
+import type { ClientLoggingMetadata } from '#/schemas/api-utils'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
@@ -21,7 +21,7 @@ export function useTagManagement(
   // STATES
   const [isAdding, setIsAdding] = useState(false)
   const [tagQuery, setTagQuery] = useState('')
-  //const [availableTags, setAvailableTags] = useState<any[]>([])
+  // const [availableTags, setAvailableTags] = useState<any[]>([])
   const [deletingTagId, setDeletingTagId] = useState<string | null>(null)
 
   // TRANSITIONS
@@ -97,7 +97,7 @@ export function useTagManagement(
         { successToast: 'New tag created and linked', showErrorToast: true },
       )
 
-      if (result) {
+      if (result.success) {
         await queryClient.invalidateQueries({ queryKey: ['availableTags'] })
         setIsAdding(false) // die Shadcn-Ui Komponente Popover kümmert sich um das isAdding=true
         setTagQuery('')

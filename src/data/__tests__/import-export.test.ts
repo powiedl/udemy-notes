@@ -1,7 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended'
+import { mockDeep, mockReset } from 'vitest-mock-extended'
+import type { DeepMockProxy } from 'vitest-mock-extended'
 import type { PrismaClient } from '#/generated/prisma/client'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
+import { prisma } from '#/lib/db.server'
+import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown'
+import {
+  importHtmlFileLogic,
+  exportMdFileLogic,
+} from '../import-export.logic.server'
 
 // 1. Mocks definieren
 vi.mock('#/lib/db.server', () => ({
@@ -19,13 +26,6 @@ vi.mock('#/lib/udemy', () => ({
 vi.mock('#/lib/export-helper', () => ({
   processNoteForMarkdown: vi.fn(() => 'Mocked Note Markdown'),
 }))
-
-import { prisma } from '#/lib/db.server'
-import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown'
-import {
-  importHtmlFileLogic,
-  exportMdFileLogic,
-} from '../import-export.logic.server'
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>
 const convertMock = prepareAndConvertHtmlToMarkdown as any

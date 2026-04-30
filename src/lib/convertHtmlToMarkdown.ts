@@ -100,7 +100,7 @@ export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
 function processNode(node: CheerioSelection, $: CheerioAPI): string {
   let result = ''
 
-  node.contents().each((_, el: CheerioNode) => {
+  node.contents().each((_contentIndex, el: CheerioNode) => {
     if (el.type === 'text') {
       const text = $(el).text()
       if (text.trim() === '' && text.includes('\n')) {
@@ -125,7 +125,7 @@ function processNode(node: CheerioSelection, $: CheerioAPI): string {
 
       if (lines.length > 0) {
         codeText = lines
-          .map((_, li: CheerioNode) => $(li).text())
+          .map((_lineIndex, li: CheerioNode) => $(li).text())
           .get()
           .join('\n')
       } else {
@@ -264,9 +264,9 @@ function cleanUpMarkdown(markdown: string): string {
       // 4. Einzelne Leerzeichen am Zeilenende entfernen (außer gewollte 2 Leerzeichen)
       .replace(/(?<! ) {1}\n/g, '\n')
       // 5. Überschriften und Listenpunkte säubern
-      .replace(/^(#+ .*?)  \n/gm, '$1\n')
-      .replace(/^(\* .*?)  \n/gm, '$1\n')
-      .replace(/^(\d+\. .*?)  \n/gm, '$1\n')
+      .replace(/^(#+ .*?) {2}\n/gm, '$1\n')
+      .replace(/^(\* .*?) {2}\n/gm, '$1\n')
+      .replace(/^(\d+\. .*?) {2}\n/gm, '$1\n')
       .trim()
   )
 }

@@ -6,7 +6,7 @@ import { getNotesForCourseFn } from '#/data/note' // NEU
 import { useCourseActions } from '#/hooks/use-course-actions'
 import { cn } from '#/lib/utils'
 import { createFileRoute, useRouterState } from '@tanstack/react-router' // NEU: useRouterState
-import { Loader2 } from 'lucide-react'
+import { Loader2, Check, Tag as TagIcon, X } from 'lucide-react'
 import { Suspense, use, useDeferredValue, useState, useEffect } from 'react' // NEU: useState, useEffect
 
 // NEUE IMPORTE FÜR DIE SUCHE
@@ -32,9 +32,6 @@ import {
 } from '#/components/ui/command'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-
-// Icons
-import { Check, Tag as TagIcon, X } from 'lucide-react'
 
 export const Route = createFileRoute('/_content/courses/$courseId/')({
   component: RouteComponent,
