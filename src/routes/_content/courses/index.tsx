@@ -114,7 +114,7 @@ function CoursesList({
             course={course}
             singleCourse={false}
             key={course.id}
-            onExport={() => handleExport(course.id)}
+            onExport={(exportData) => handleExport(exportData)}
             onDelete={() => handleDelete(course.id)}
             className="min-w-0"
             activeTagIds={searchParams.tagIds}

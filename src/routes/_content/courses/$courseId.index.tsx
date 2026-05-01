@@ -309,7 +309,7 @@ function CourseContent({ course, notesPromise, searchParams, navigate }: any) {
         <CardHeader>
           <CourseHeader
             course={course}
-            onExport={() => handleExport(course.id)}
+            onExport={(data) => handleExport(data)}
             onDelete={() => handleDelete(course.id)}
           />
         </CardHeader>
