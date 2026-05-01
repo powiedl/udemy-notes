@@ -9,6 +9,7 @@ import {
   importHtmlFileLogic,
   exportMdFileLogic,
 } from '../import-export.logic.server'
+import type { ExportMdFileSchema } from '#/schemas/export-file'
 
 // 1. Mocks definieren
 vi.mock('#/lib/db.server', () => ({
@@ -192,11 +193,13 @@ describe('importHtmlFileLogic', () => {
 describe('exportMdFileLogic', () => {
   const userId = 'user_123'
   const courseId = 'course_456'
-  const defaultInput = {
+  const defaultInput: ExportMdFileSchema = {
     courseId,
+    includeCourseTags: true,
     includeNotesMetadata: true,
-    includeTags: true,
-    includeOriginalNote: false,
+    includeNoteTags: true,
+    includeTrainers: true,
+    noteVersion: 'edited_with_fallback',
   }
 
   beforeEach(() => {
@@ -217,6 +220,7 @@ describe('exportMdFileLogic', () => {
       id: courseId,
       title: 'My Course',
       tags: [{ tag: { name: 'React' } }],
+      trainers: [{ trainer: { name: 'Max Muster' } }],
       notes: [
         { id: 'note_1', orderInfo: '1', tags: [] },
         { id: 'note_2', orderInfo: '2', tags: [] },
@@ -258,6 +262,7 @@ describe('exportMdFileLogic', () => {
       id: courseId,
       title: 'Empty Course',
       tags: [],
+      trainers: [],
       notes: [],
     }
     prismaMock.course.findUnique.mockResolvedValue(mockCourse as any)
@@ -269,23 +274,66 @@ describe('exportMdFileLogic', () => {
     expect(result.markdown).toContain('No notes found')
   })
 
-  it('Respektiert includeTags: false', async () => {
+  it('Respektiert includeCourseTags: false', async () => {
     // --- GIVEN ---
     const mockCourse = {
       id: courseId,
       title: 'No Tags Export',
-      tags: [{ tag: { name: 'ShouldNotBeSeen' } }],
-      notes: [],
+      trainers: [{ trainer: { name: 'TrainerShouldNotBeSeen' } }],
+      tags: [{ tag: { name: 'CourseTagShouldNotBeSeen' } }],
+      notes: [{ tags: [{ tag: { name: 'NoteTagShouldNotBeSeen' } }] }],
     }
     prismaMock.course.findUnique.mockResolvedValue(mockCourse as any)
 
     // --- WHEN ---
     const result = await exportMdFileLogic(
-      { ...defaultInput, includeTags: false },
+      { ...defaultInput, includeCourseTags: false },
       userId,
     )
 
     // --- THEN ---
-    expect(result.markdown).not.toContain('ShouldNotBeSeen')
+    expect(result.markdown).not.toContain('CourseTagShouldNotBeSeen')
+  })
+
+  it('Respektiert includeNoteTags: false', async () => {
+    // --- GIVEN ---
+    const mockCourse = {
+      id: courseId,
+      title: 'No Tags Export',
+      trainers: [{ trainer: { name: 'TrainerShouldNotBeSeen' } }],
+      tags: [{ tag: { name: 'CourseTagShouldNotBeSeen' } }],
+      notes: [{ tags: [{ tag: { name: 'NoteTagShouldNotBeSeen' } }] }],
+    }
+    prismaMock.course.findUnique.mockResolvedValue(mockCourse as any)
+
+    // --- WHEN ---
+    const result = await exportMdFileLogic(
+      { ...defaultInput, includeNoteTags: false },
+      userId,
+    )
+
+    // --- THEN ---
+    expect(result.markdown).not.toContain('NoteTagShouldNotBeSeen')
+  })
+
+  it('Respektiert includeTrainers: false', async () => {
+    // --- GIVEN ---
+    const mockCourse = {
+      id: courseId,
+      title: 'No Tags Export',
+      trainers: [{ trainer: { name: 'TrainerShouldNotBeSeen' } }],
+      tags: [{ tag: { name: 'CourseTagShouldNotBeSeen' } }],
+      notes: [{ tags: [{ tag: { name: 'NoteTagShouldNotBeSeen' } }] }],
+    }
+    prismaMock.course.findUnique.mockResolvedValue(mockCourse as any)
+
+    // --- WHEN ---
+    const result = await exportMdFileLogic(
+      { ...defaultInput, includeTrainers: false },
+      userId,
+    )
+
+    // --- THEN ---
+    expect(result.markdown).not.toContain('TrainerShouldNotBeSeen')
   })
 })

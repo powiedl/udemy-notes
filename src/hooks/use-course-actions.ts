@@ -41,8 +41,10 @@ export function useCourseActions() {
           data: {
             courseId,
             includeNotesMetadata: true,
-            includeTags: true,
-            includeOriginalNote: true,
+            includeCourseTags: true,
+            includeTrainers: true,
+            includeNoteTags: true,
+            noteVersion: 'edited_with_fallback',
             loggingMetadata: {
               component: 'CourseHeader',
               actionSource: 'ExportButton',
