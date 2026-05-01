@@ -199,7 +199,8 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
       <CardHeader>
         <CardTitle>Import your course</CardTitle>
         <CardDescription>
-          Select trainers, tags and upload your Udemy HTML notes.
+          Select trainers, tags and upload your Udemy HTML notes or an exported
+          markdown file from this app.
         </CardDescription>
       </CardHeader>
 
