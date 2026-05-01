@@ -85,7 +85,7 @@ const Note = ({
 
   const handleSave = async () => {
     startTransition(async () => {
-      const result = await handleAction(
+      await handleAction(
         updateNoteContent({
           data: {
             noteId: note.id,

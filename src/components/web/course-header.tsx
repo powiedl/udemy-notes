@@ -10,11 +10,13 @@ import { Button } from '../ui/button'
 import { Trash2, Download, Loader2 } from 'lucide-react'
 import { cn } from '#/lib/utils'
 import { useTransition } from 'react'
-import { CourseHeaderData } from '#/data/course'
+import type { CourseHeaderData } from '#/data/course'
 import { useTagManagement } from '#/hooks/use-tag-management'
-import { TagManager, TagDisplay } from './tag-manager'
+import { TagManager } from './tag-manager'
+import type { TagDisplay } from './tag-manager'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
-import { TrainerDisplay, TrainerManager } from './trainer-manager'
+import type { TrainerDisplay } from './trainer-manager'
+import { TrainerManager } from './trainer-manager'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
@@ -53,7 +55,7 @@ const CourseHeader = ({
       ? course.notes && course.notes.length
       : (course._count && course._count.notes) || 0
 
-  const displayTags: TagDisplay[] = (course.tags || []).map((t) => ({
+  const displayTags: TagDisplay[] = course.tags.map((t) => ({
     id: t.tag.id,
     name: t.tag.name,
     userId: t.tag.userId,
@@ -186,12 +188,7 @@ const CourseHeader = ({
           className="hover:cursor-pointer"
         >
           {isDeleting ? (
-            <Loader2
-              className={cn(
-                'size-4 hidden animate-spin mr-1',
-                isDeleting ? 'inline' : '',
-              )}
-            />
+            <Loader2 className={cn('size-4 animate-spin mr-1 inline')} />
           ) : (
             <Trash2 className="size-4 mr-1" />
           )}

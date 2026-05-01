@@ -104,3 +104,34 @@ But sometimes all this possibilities aren't good enough, e. g. our courses route
 ```
 
 Here we add the `is-active` class, if `isCoursesActive` is `true`. And the `is-active` class has all the styling for our "active nav link".
+
+#### Typescript Warning possibly null inside of async closures
+
+Sometimes Typescript forgets that you've checked for "not null" outside of a closure inside of that closure (because it knows that there is some delay between the check and the actual execution of the closure - where something could have changed that value to null, if null is an allowed type for that value). To solve this you have to assign the value to a const (so Typescript knows it is not possible, that this value may change over time) and then use that const in your closure. For example
+
+```typescript
+onSubmit: async({value}) => {
+  const file=value.file
+  if (!file) return
+
+  startTransition(async() => {
+    try {
+      const rawHtml=await file.text() // no Problem
+      // const rawHtml=await value.file.text() // PROBLEM: possibly null !
+    }
+  })
+}
+```
+
+#### Disable Linter for TanStack Start generated code
+
+If you try to solve linting errors in the generated code of TanStack Start you're fighting against windmills, so it is "safe" to disable the linting for the generated TanStack Start code. You do this by exending the ignores array of `/eslint.config.js`
+
+```javascript
+    ignores: [
+      'eslint.config.js',
+      'prettier.config.js',
+      '**/routeTree.gen.ts', // add this line
+      '*.output/**',         // add this line
+    ],
+```
