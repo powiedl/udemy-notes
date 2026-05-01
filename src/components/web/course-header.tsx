@@ -17,6 +17,7 @@ import type { TagDisplay } from './tag-manager'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 import type { TrainerDisplay } from './trainer-manager'
 import { TrainerManager } from './trainer-manager'
+import ExportCourseDialog from '../export-course-dialog'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
@@ -155,7 +156,7 @@ const CourseHeader = ({
       </CardContent>
 
       <CardFooter className="flex flex-row gap-4">
-        <Button
+        <ExportCourseDialog
           type="button"
           onClick={() => {
             startExportTransition(async () => {
@@ -165,17 +166,19 @@ const CourseHeader = ({
           disabled={isPending}
           className="hover:cursor-pointer"
         >
-          {isExporting ? (
-            <Loader2 className="size-4 mr-1 animate-spin" />
-          ) : (
-            <Download className="size-4 mr-1" />
-          )}{' '}
-          <span
-            className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
-          >
-            Export
-          </span>
-        </Button>
+          <>
+            {isExporting ? (
+              <Loader2 className="size-4 mr-1 animate-spin" />
+            ) : (
+              <Download className="size-4 mr-1" />
+            )}{' '}
+            <span
+              className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
+            >
+              Export
+            </span>
+          </>
+        </ExportCourseDialog>
         <Button
           type="button"
           variant="destructive"
