@@ -12,7 +12,7 @@ export const tagsQueryOptions = queryOptions({
     const result = await getTagsForSelectorFn({
       data: { loggingMetadata: { component: 'GlobalTagQuery' } },
     })
-    return result.success && result.data ? result.data : []
+    return result.success ? result.data : []
   },
   // Wichtig für Performance: Wir sagen dem Cache, dass diese Daten für
   // 5 Minuten "frisch" (fresh) sind, bevor er sie im Hintergrund neu lädt.

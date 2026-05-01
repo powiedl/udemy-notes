@@ -57,13 +57,18 @@ import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 
 const importHtmlFormSchema = z.object({
   file: z
-    .instanceof(File, {
-      message: 'Please choose a Udemy course notes HTML file',
-    })
+    .instanceof(File, { message: 'Invalid file format' })
     .refine((file) => file.size <= MAX_FILE_SIZE_UPLOAD, 'File too large')
     .refine(
       (file) => file.type === 'text/html' || file.name.endsWith('.html'),
       'Only HTML allowed',
+    )
+    // 1. Erlaubt "null" als validen Typen für den Initialzustand (Linter ist glücklich!)
+    .nullable()
+    // 2. Fängt das "null" beim Abschicken ab, macht es also wieder zum Pflichtfeld
+    .refine(
+      (file) => file !== null,
+      'Please choose a Udemy course notes HTML file',
     ),
   trainers: z.array(z.string()),
   tagIds: z.array(z.string()),
@@ -92,7 +97,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
 
   const form = useForm({
     defaultValues: {
-      file: null as unknown as File,
+      file: null as File | null,
       trainers: [] as string[], // Geändert zu Array!
       tagIds: [] as string[],
       newPrivateTags: [] as string[],
@@ -101,11 +106,12 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
       onChange: importHtmlFormSchema,
     },
     onSubmit: async ({ value }) => {
-      if (!value.file) return
+      const file = value.file // so Typescript also knows in the startTransition closure that file is not null
+      if (!file) return
 
       startTransition(async () => {
         try {
-          const rawHtml = await value.file.text()
+          const rawHtml = await file.text()
           const parser = new DOMParser()
           const doc = parser.parseFromString(rawHtml, 'text/html')
 
@@ -132,7 +138,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
             uploadFile({
               data: {
                 htmlContent: strippedHtml,
-                fileName: value.file.name,
+                fileName: file.name,
                 fileSize: new Blob([strippedHtml]).size,
                 trainers: value.trainers, // Hier senden wir das Array!
                 tagIds: value.tagIds,
@@ -143,13 +149,11 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
             { successToast: 'Course notes processed successfully' },
           )
 
-          if (result?.courseId) {
-            await navigate({
-              to: '/courses/$courseId',
-              params: { courseId: result.courseId },
-              search: PAGINATION_DEFAULTS,
-            })
-          }
+          await navigate({
+            to: '/courses/$courseId',
+            params: { courseId: result.courseId },
+            search: PAGINATION_DEFAULTS,
+          })
         } catch (error) {
           console.error('Submit Error:', error)
           const errorMessage =
@@ -171,7 +175,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
     const res = await getTrainerSuggestions({
       data: { query: val, loggingMetadata: { component: 'ImportHtmlForm' } },
     })
-    if (res.success && res.data) {
+    if (res.success) {
       setSuggestions({
         suggestions: res.data.suggestions.map((d) => d.name),
         hasMore: res.data.hasMore,
@@ -470,8 +474,8 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
                         onDrop={(e) => {
                           e.preventDefault()
                           setIsDragging(false)
-                          const f = e.dataTransfer.files?.[0]
-                          if (f) field.handleChange(f)
+                          const files = e.dataTransfer.files
+                          if (files.length > 0) field.handleChange(files[0])
                         }}
                         onClick={() => fileInputRef.current?.click()}
                         className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-all
@@ -529,7 +533,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
                           className="absolute top-2 right-2 h-8 w-8 rounded-full z-10"
                           onClick={(e) => {
                             e.stopPropagation()
-                            field.handleChange(null as any)
+                            field.handleChange(null)
                             if (fileInputRef.current)
                               fileInputRef.current.value = ''
                           }}

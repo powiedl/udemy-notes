@@ -27,6 +27,6 @@ export function useTrainerQuery({ query, open }: UseTrainerQueryProps) {
       return res.data
     },
     enabled: open,
-    //staleTime: 1000 * 60 * 5, // ohne staleTime wird das Ergebnis trotzdem gecached und der Cache auch für die Anzeige verwendet, aber sofort werden die Daten neu abgerufen
+    // staleTime: 1000 * 60 * 5, // ohne staleTime wird das Ergebnis trotzdem gecached und der Cache auch für die Anzeige verwendet, aber sofort werden die Daten neu abgerufen
   })
 }

@@ -1,10 +1,12 @@
 import { Fragment } from 'react'
-import { ExtractData, ServerFnData } from '#/types/api'
+import type { ExtractData, ServerFnData } from '#/types/api'
 import Note from './note'
 import CourseHeader from '#/components/web/course-header'
-// WICHTIG: Passe diesen Import an deinen tatsächlichen Typen an!
-import { AwaitedReturnTypeGetNotes, getNotesForCourseFn } from '#/data/note'
-import { CourseHeaderData } from '#/data/course'
+import type {
+  AwaitedReturnTypeGetNotes,
+  getNotesForCourseFn,
+} from '#/data/note'
+// import { CourseHeaderData } from '#/data/course'
 
 type GlobalNote = ExtractData<AwaitedReturnTypeGetNotes>['items'][number]
 type CourseNote = ServerFnData<typeof getNotesForCourseFn>['items'][number]
@@ -56,23 +58,22 @@ const NotesList = ({
   activeTagIds,
   emptyListMessage = "You don't have any notes for this course",
 }: NotesListProps) => {
-  if (notes?.length === 0) return <div>{emptyListMessage}</div>
+  if (notes.length === 0) return <div>{emptyListMessage}</div>
   return (
     <div className="grid grid-cols-1 6xl:grid-cols-2 gap-4">
       {notes.map((note, index) => {
-        //console.log(note.course?.title)
+        // console.log(note.course?.title)
         const showHeader =
           sortBy === 'course' &&
-          note.course &&
-          (index === 0 || notes[index - 1].course?.id !== note.course.id)
+          (index === 0 || notes[index - 1].course.id !== note.course.id)
         return (
           <Fragment key={note.id}>
-            {showHeader && note.course && (
+            {showHeader && (
               <div className="col-span-1 6xl:col-span-2 mt-6 mb-2 first:mt-0">
                 <CourseHeader
                   // Hier casten wir als 'any', weil CourseHeaderData
                   // ein isolierter Prisma-Typ ist und wir hier eine "FlexibleNote" haben
-                  course={note.course as unknown as CourseHeaderData}
+                  course={note.course /* as unknown as CourseHeaderData */}
                   variant="compact"
                   activeTagIds={activeTagIds}
                   singleCourse={false}

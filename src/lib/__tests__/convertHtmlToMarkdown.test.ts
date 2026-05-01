@@ -91,7 +91,7 @@ describe('prepareAndConvertHtmlToMarkdown', () => {
 in einem File hat,  
 kann man einen einzelnen davon  
 ausführen, indem man dort  
-describe.only oder test.only schreibt (dann wird nur der .only Teil ausgeführt). Das kann manchmal hilfreich sein, weil es zu "Interferenzen" zwischen einzelnen Tests kommen kann. Auf diese Weise kann man recht schnell feststellen, ob der Test, der nicht wie erwartet funktioniert, falsch ist oder ob es vielleicht zu so einer Interferenz kommt.`,
+describe.only oder test.only schreibt\u00A0(dann wird nur der .only Teil ausgeführt). Das kann manchmal hilfreich sein, weil es zu "Interferenzen"\u00A0zwischen einzelnen Tests kommen kann. Auf diese Weise kann man recht schnell feststellen, ob der Test, der nicht wie erwartet funktioniert, falsch ist oder ob es vielleicht zu so einer Interferenz kommt.`,
     )
   })
 
@@ -157,11 +157,11 @@ describe.only oder test.only schreibt (dann wird nur der .only Teil ausgeführt
     if (result.status === 'ERROR') throw new Error(result.message)
 
     expect(result.course.notes[0].content).toContain(
-      `#### Prozess von MSW Tests (Moken der Fetch Requests)
+      `#### Prozess von MSW\u00A0Tests (Moken der Fetch Requests)
 
 1. Erzeugen eines Testfiles
-2. Verstehen der genauen URL, des HTTP Verbs, und der Rückgabe (inkl. welche Teile der Rückgabe man verwendet)
-3. Erzeugen eines MSW Handlers, der die Requests abfängt und die "vorgefertigten" Daten zurückliefert
+2. Verstehen der genauen URL, des HTTP\u00A0Verbs, und der Rückgabe (inkl. welche Teile der Rückgabe man verwendet)
+3. Erzeugen eines MSW\u00A0Handlers, der die Requests abfängt und die "vorgefertigten"\u00A0Daten zurückliefert
 4. Anlegen der beforeAll, afterEach und afterAll hooks im Testfile
 5. Im Test wird die Komponente gerendert und dann warten man darauf, dass das richtige Element sichtbar wird`,
     )

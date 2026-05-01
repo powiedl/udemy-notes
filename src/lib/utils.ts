@@ -1,4 +1,5 @@
-import { clsx, type ClassValue } from 'clsx'
+import { clsx } from 'clsx'
+import type { ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
 export function cn(...inputs: ClassValue[]) {
@@ -36,7 +37,7 @@ export function isEmpty(val: unknown): boolean {
  */
 export function normalizeObject<T extends Record<string, any>>(obj: T): T {
   // 1. Sicherheitscheck: Wenn kein Objekt da ist, gib es einfach zurück.
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj
+  if (typeof obj !== 'object' || Array.isArray(obj)) return obj
 
   // 2. Alle Schlüssel extrahieren und alphabetisch sortieren.
   // Das ist der entscheidende Schritt für die Deterministik!

@@ -15,7 +15,7 @@ import {
 } from '#/components/ui/sidebar'
 import { authClient } from '#/lib/auth-client'
 import { useNavigate } from '@tanstack/react-router'
-import { User } from 'better-auth/types'
+import type { User } from 'better-auth/types'
 import { ChevronsUpDownIcon, LogOutIcon } from 'lucide-react'
 import { toast } from 'sonner'
 

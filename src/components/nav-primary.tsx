@@ -8,7 +8,7 @@ import {
   SidebarMenuItem,
 } from '#/components/ui/sidebar'
 import { Link } from '@tanstack/react-router'
-import { LucideIcon } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 export interface NavPrimaryProps {
   items: {

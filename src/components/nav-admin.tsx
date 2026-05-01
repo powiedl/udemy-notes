@@ -7,14 +7,15 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '#/components/ui/sidebar'
-import { LucideIcon, ShieldUser } from 'lucide-react'
+import { ShieldUser } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Button } from './ui/button'
 import { SidebarMenuSub } from './ui/sidebar-ori'
 
 export interface NavAdminProps {
   items: {
     title: string
-    callback: Function
+    callback: () => void
     icon: LucideIcon
   }[]
   isPending: boolean

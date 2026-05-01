@@ -5,7 +5,7 @@ import type {
   NoteSearchInput,
 } from '#/schemas/search-params'
 import { ServerActionError } from '#/types/errors'
-import { UpdateNoteContentInput } from './note'
+import type { UpdateNoteContentInput } from './note'
 
 // Hilfstyp, um TypeScript glücklich zu machen, egal aus welcher Query die Notiz kommt
 // Minimale Anforderung an ein Tag-Item, das aus der DB kommt
@@ -25,7 +25,7 @@ type NoteWithTagsConstraint = {
  */
 export function mapNoteDisplayTags<T extends NoteWithTagsConstraint>(note: T) {
   // 1. Extrahiere die eigentlichen Tag-Objekte (ohne die Prisma-Verknüpfungs-Hülle)
-  const directTags = note.tags?.map((t: any) => t.tag) || []
+  const directTags = note.tags.map((t: any) => t.tag)
   const courseTags = note.course?.tags?.map((t: any) => t.tag) || []
 
   // 2. Erstelle Sets für blitzschnellen O(1) Abgleich
@@ -89,7 +89,7 @@ export async function getNotesLogic(data: NoteSearchInput, userId: string) {
 
   // B. Tag-Filter (Notiz hat das Tag ODER der übergeordnete Kurs hat das Tag)
   const tagFilter: Prisma.NoteWhereInput | undefined =
-    tagIds && tagIds.length > 0
+    tagIds.length > 0
       ? {
           OR: [
             { tags: { some: { tagId: { in: tagIds } } } },
@@ -147,7 +147,7 @@ export async function getNotesLogic(data: NoteSearchInput, userId: string) {
     }),
     prisma.note.count({ where }),
   ])
-  //throw new ServerActionError('This is a test Server Action Error')
+  // throw new ServerActionError('This is a test Server Action Error')
 
   const mappedItems = items.map(mapNoteDisplayTags)
   return { items: mappedItems, totalCount }
@@ -158,7 +158,6 @@ export async function getNotesForCourseLogic(
   data: CourseNotesSearchInput,
   userId: string,
 ) {
-  const { prisma } = await import('#/lib/db.server')
   const { page, pageSize, search, tagIds } = data
   const skip = (page - 1) * pageSize
 

@@ -43,7 +43,7 @@ interface TrainerManagerProps {
   courseId: string
   // onAddTrainer: (id: string) => void
   // onRemoveTrainer: (id: string) => void
-  //onCreateTrainer?: (name: string) => void // NEU: Optionale Create-Funktion
+  // onCreateTrainer?: (name: string) => void // NEU: Optionale Create-Funktion
   isPending?: boolean
   isEditable?: boolean
   deletingTrainerId?: string | null
@@ -101,7 +101,7 @@ export function TrainerManager({
     } catch (error) {
       // Der Fehler wurde bereits von handleAction via Toast gemeldet.
       // Hier fangen wir ihn nur ab, damit der Hook nicht abstürzt.
-      //console.error('Löschvorgang abgebrochen:', error)
+      // console.error('Löschvorgang abgebrochen:', error)
     }
   }
   const handleAddTrainer = async (trainerId: string) => {
@@ -123,12 +123,12 @@ export function TrainerManager({
     } catch (error) {
       // Der Fehler wurde bereits von handleAction via Toast gemeldet.
       // Hier fangen wir ihn nur ab, damit der Hook nicht abstürzt.
-      //console.error('Löschvorgang abgebrochen:', error)
+      // console.error('Löschvorgang abgebrochen:', error)
     }
   }
   const handleCreateTrainer = async (trainerName: string) => {
     if (isQueryInTrainers(trainerName, trainers)) {
-      //console.log('Trainer already assigned to this course')
+      // console.log('Trainer already assigned to this course')
       toast.info(`Trainer '${trainerName}' already assigned to this course`)
       return
     }
@@ -151,7 +151,7 @@ export function TrainerManager({
     } catch (error) {
       // Der Fehler wurde bereits von handleAction via Toast gemeldet.
       // Hier fangen wir ihn nur ab, damit der Hook nicht abstürzt.
-      //console.error('Löschvorgang abgebrochen:', error)
+      // console.error('Löschvorgang abgebrochen:', error)
     }
   }
 

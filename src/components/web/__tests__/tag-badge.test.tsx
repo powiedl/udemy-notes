@@ -2,11 +2,11 @@
 // ^^^ WICHTIG: Diese erste Zeile sagt Vitest, dass hier ein Browser simuliert werden muss!
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-//import React from 'react'
+// import React from 'react'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest' // Schaltet Befehle wie .toBeInTheDocument() frei
 
-//import TagBadge from '../tag-badge'
+// import TagBadge from '../tag-badge'
 import TagBadge from '../tag-badge' // <-- Pfad zu deiner Komponente anpassen!
 import { Link2 } from 'lucide-react'
 

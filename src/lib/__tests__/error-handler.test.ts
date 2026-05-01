@@ -2,13 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { handleGlobalError } from '#/lib/error-handler.server'
 import { ServerActionError } from '#/types/errors'
 import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants'
+import { logToDb } from '#/lib/logging.server'
 
 // MOCK KORRIGIERT: Pfad muss exakt mit dem Import übereinstimmen!
 vi.mock('#/lib/logging.server', () => ({
   logToDb: vi.fn(async () => {}).mockResolvedValue(undefined),
 }))
 
-import { logToDb } from '#/lib/logging.server'
+// import { logToDb } from '#/lib/logging.server' // wäre notwendig, wenn man irgendwo mit dynamischen import arbeiten würde: const { logToDb } = await import('#/lib/logging.server')
 
 describe('Global Error Handling Logic', () => {
   beforeEach(() => {

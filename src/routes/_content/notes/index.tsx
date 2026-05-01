@@ -7,7 +7,7 @@ import {
 import { noteSearchSchema } from '#/schemas/search-params'
 // Achte darauf, dass der Import-Pfad zu deiner getNotesFn stimmt!
 import { getNotesFn } from '#/data/note'
-import { Check, Tag as TagIcon, X } from 'lucide-react'
+import { Check, Tag as TagIcon, X, AlertCircle } from 'lucide-react'
 import { Suspense, useDeferredValue, useEffect, useState } from 'react'
 import { cn } from '#/lib/utils'
 import { DataTableSearch } from '#/components/web/data-table-search'
@@ -37,7 +37,7 @@ import {
 } from '@/components/ui/popover'
 import NotesList from '#/components/web/notes-list'
 import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
-import { AlertCircle } from 'lucide-react'
+
 export const Route = createFileRoute('/_content/notes/')({
   // 1. URL als Source of Truth
   validateSearch: noteSearchSchema,
@@ -171,7 +171,7 @@ function NotesRouteComponent() {
 
             {/* Bestehender Sort-Select */}
             <Select
-              value={`${searchParams.sortBy || 'course'}-${searchParams.sortOrder || 'asc'}`}
+              value={`${searchParams.sortBy}-${searchParams.sortOrder}`}
               onValueChange={(val) => {
                 const [sortBy, sortOrder] = val.split('-')
                 navigate({

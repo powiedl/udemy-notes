@@ -11,13 +11,13 @@ import {
   BoldItalicUnderlineToggles,
   ListsToggle,
   UndoRedo,
-  MDXEditorMethods,
   linkPlugin,
   CreateLink,
   CodeToggle,
   diffSourcePlugin,
   DiffSourceToggleWrapper,
 } from '@mdxeditor/editor'
+import type { MDXEditorMethods } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
 import { useRef } from 'react'
 

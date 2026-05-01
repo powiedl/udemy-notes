@@ -111,12 +111,12 @@ export async function createAndLinkTagLogic(
     })
   }
   // FALL 2: NOTIZ
-  else if (data.targetType === 'note') {
+  else {
     const note = await prisma.note.findUnique({
       where: { id: data.targetId },
       include: { course: true },
     })
-    if (!note || note.course?.userId !== userId) {
+    if (!note || note.course.userId !== userId) {
       throw new ServerActionError('Note not found or unauthorized')
     }
 
@@ -139,7 +139,7 @@ export async function createAndLinkTagLogic(
 export const renameTagLogic = async (data: RenameTagInput, userId: string) => {
   const { id, newName } = data
   const trimmedNewName = newName.trim().toLowerCase()
-  //console.log('--- RENAME REQUEST ---', { id, trimmedNewName, userId })
+  // console.log('--- RENAME REQUEST ---', { id, trimmedNewName, userId })
   const existingTag = await prisma.tag.findUnique({
     where: {
       userId: userId,
@@ -155,7 +155,7 @@ export const renameTagLogic = async (data: RenameTagInput, userId: string) => {
     },
   })
   if (!isEmpty(conflictingTag)) {
-    //console.log('conflictingTag:', conflictingTag)
+    // console.log('conflictingTag:', conflictingTag)
     throw new ServerActionError(`Tag '${data.newName}' already exists`)
   }
   const updatedTag = await prisma.tag.update({
@@ -166,7 +166,7 @@ export const renameTagLogic = async (data: RenameTagInput, userId: string) => {
 }
 
 export const getTagUsageCountLogic = async (id: string, userId: string) => {
-  const { prisma } = await import('#/lib/db.server')
+  // const { prisma } = await import('#/lib/db.server')
 
   const tag = await prisma.tag.findUnique({
     where: {

@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription } from '../ui/card'
 import ReactMarkdown from 'react-markdown'
 import { BookOpenText, Edit2, Save, X, Eye, EyeOff } from 'lucide-react'
 import { useTagManagement } from '#/hooks/use-tag-management'
-import { TagDisplay, TagManager } from './tag-manager'
+import { TagManager } from './tag-manager'
+import type { TagDisplay } from './tag-manager'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
-import { Prisma } from '#/lib/db.server'
+import type { Prisma } from '#/lib/db.server'
 import { useState, useTransition, Suspense, lazy } from 'react'
 import { Button } from '../ui/button'
 import { handleAction } from '#/lib/client-utils'
@@ -65,8 +66,7 @@ const Note = ({
   const [showOriginal, setShowOriginal] = useState(false)
 
   // Prüfen, ob die Notiz von unserem User bearbeitet wurde
-  const isEdited =
-    note.editedContent !== null && note.editedContent.trim() !== ''
+  const isEdited = note.editedContent.trim() !== ''
 
   const displayTags: TagDisplay[] = (note.displayTags || []).map((dt) => ({
     id: dt.tag.id,
@@ -85,7 +85,7 @@ const Note = ({
 
   const handleSave = async () => {
     startTransition(async () => {
-      const result = await handleAction(
+      await handleAction(
         updateNoteContent({
           data: {
             noteId: note.id,
@@ -99,11 +99,9 @@ const Note = ({
         }),
       )
 
-      if (result) {
-        setIsEditing(false)
-        setShowOriginal(false)
-        router.invalidate()
-      }
+      setIsEditing(false)
+      setShowOriginal(false)
+      router.invalidate()
     })
   }
 
@@ -120,7 +118,7 @@ const Note = ({
   return (
     <Card className="relative pt-12">
       {/* Course Link Oben Links */}
-      {showCourseLink && note.course && (
+      {showCourseLink && (
         <Link
           to="/courses/$courseId"
           params={{ courseId: note.course.id }}
@@ -140,7 +138,7 @@ const Note = ({
               {/* Toggle für Originalansicht (Nur wenn bearbeitet wurde) */}
               {isEdited && (
                 <Button
-                  variant="default" //{showOriginal ? 'secondary' : 'ghost'}
+                  variant="default" // {showOriginal ? 'secondary' : 'ghost'}
                   size="icon"
                   className="h-7 w-7 cursor-pointer"
                   onClick={() => setShowOriginal(!showOriginal)}

@@ -29,7 +29,7 @@ export function useCourseActions() {
     } catch (error) {
       // Der Fehler wurde bereits von handleAction via Toast gemeldet.
       // Hier fangen wir ihn nur ab, damit der Hook nicht abstürzt.
-      //console.error('Löschvorgang abgebrochen:', error)
+      // console.error('Löschvorgang abgebrochen:', error)
     }
   }
   const handleExport = async (courseId: string) => {
@@ -49,12 +49,12 @@ export function useCourseActions() {
             },
           },
         }),
-        { successToast: 'Course exported successfully' },
+        { successToast: 'Course exported successfully', showErrorToast: true },
       )
 
-      if (!result) {
-        throw new Error('Server lieferte keine Antwort')
-      }
+      // if (!result) {
+      //   throw new Error('Server lieferte keine Antwort')
+      // }
 
       // ERFOLGSFALL: result.data.markdown ist jetzt sicher verfügbar
       const markdownContent = result.markdown
@@ -71,7 +71,7 @@ export function useCourseActions() {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
     } catch (e: any) {
-      //console.error('Export Error:', e)
+      // console.error('Export Error:', e)
     }
   }
 

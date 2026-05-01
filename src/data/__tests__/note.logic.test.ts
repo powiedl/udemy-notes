@@ -1,9 +1,11 @@
 /* @vitest-environment jsdom */
-// @ts-nocheck
+import { describe, it, expect } from 'vitest'
+
 process.env.TANSTACK_START_IMPORT_PROTECTION = 'off'
 
-import { describe, it, expect } from 'vitest'
-import { mapNoteDisplayTags } from '#/data/note.logic.server' // Pfad anpassen
+/* eslint-disable import/first */
+import { mapNoteDisplayTags } from '#/data/note.logic.server'
+/* eslint-enable import/first */
 
 describe('mapNoteDisplayTags', () => {
   it('sollte direkte Tags korrekt markieren', () => {
