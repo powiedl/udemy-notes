@@ -1,7 +1,7 @@
----
 # 📝 Architecture Documentation: Form System with `@tanstack/react-form`
 
 This document describes the architecture, the event lifecycle, and our mandatory conventions for implementing forms in the app. We use `@tanstack/react-form` in combination with `Zod` for maximum performance (targeted re-rendering of individual fields) and strict type safety.
+
 ---
 
 ## 1. The Event Lifecycle
@@ -41,3 +41,52 @@ If the button is located outside (e.g., isolated in a `DialogFooter` after closi
   </div>
 </form>
 ```
+
+---
+
+## 3. Developer Experience (DX) vs. User Experience (UX)
+
+A common problem when developing forms is the discrepancy between the initial `defaultValues` and the strict Zod schema (e.g., if fields are initially `undefined`, but the schema strictly expects a boolean).
+
+Since validation is only triggered upon interaction (`onChange`) by default, developers often only realize the form is broken when clicking "Save" (because the `onSubmit` block gets blocked).
+
+### The Solution for Developers: `onMount` Validation
+
+To force the form to check data validity immediately when the component mounts, we add the schema as an `onMount` validator as well:
+
+```tsx
+validators: {
+  onChange: myZodSchema,
+  onMount: myZodSchema, // Forces immediate validation
+}
+```
+
+**Effect:** An integrated form debugger (via `<form.Subscribe>`) now fills _immediately_ with all structural and validation errors without needing a submit click. `canSubmit` is immediately corrected to `false`.
+
+### The Solution for the User: `isTouched`
+
+The `onMount` validation has a dangerous UX side effect: All fields immediately know they are invalid. If we were to render our UI solely based on `isValid`, the user would be overwhelmed by a "sea of red error messages" right upon opening the popup, before they even had a chance to enter anything.
+
+**The Golden Rule for Error Display:**
+We separate the internal _state_ of the form from its _visibility_ in the UI. A field may only be rendered as invalid (red) if it is invalid **AND** has already been touched by the user (`isTouched`).
+
+```tsx
+<form.Field
+  name="myField"
+  children={(field) => {
+    // UX Filter: Only show errors if the field has been interacted with
+    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+
+    return (
+      <Field data-invalid={isInvalid}>
+        {/* Input UI and error messages here */}
+      </Field>
+    )
+  }}
+/>
+```
+
+Through this combination, we achieve the perfect setup:
+
+1. **For us (DX):** The form debugger immediately displays all missing data. The save button is blocked right from the start if data is missing.
+2. **For the user (UX):** The form fields look clean and innocent. Only when the user fills out a field and leaves it – or clicks the save button (which forces the "submitted/touched" state) – is the user visually informed of what is wrong.
