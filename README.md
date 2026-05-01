@@ -33,6 +33,8 @@ For now I don't have any "must have" improvements for the app in the queue, just
   - [German original](./docs/de/PRISMA-ERKLAERUNG-UND-WORKFLOW.md)
 - [CI-CD-SETUP-NEON-VERCEL-AND-GITHUB-ACTIONS](./docs/en/CI-CD-SETUP-NEON-VERCEL-AND-GITHUB-ACTIONS.md) - how to setup a CI/CD pipeline with protection of master branch, automatic tests during pull requests and cleanup of neon database branches after the pull request has been merged.
   - [German orginal](./docs/de/CI-CD-SETUP-NEON-VERCEL-UND-GITHUB-ACTIONS.md)
+- [FORM-SYSTEM-TANSTACK-REACT-FORM](./docs/en/FORM-SYSTEM-TANSTACK-REACT-FORM.md) - how to setup @tanstack/react-form and use a form debugger during development. It also contains "guidelines" for forms in this project
+  - [German original](./docs/de/FORMULAR-SYSTEM-TANSTACK-REACT-FORM.md)
 
 ### Misc knowledge gems
 
