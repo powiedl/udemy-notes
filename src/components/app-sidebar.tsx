@@ -27,6 +27,7 @@ import { NavAdmin } from './nav-admin'
 import { handleAction } from '#/lib/client-utils'
 import { useServerFn } from '@tanstack/react-start'
 import { useTransition } from 'react'
+import { hasRole } from '#/lib/permissions'
 
 const navItems: NavPrimaryProps['items'] = [
   {
@@ -88,7 +89,7 @@ export function AppSidebar({ user }: NavUserProps) {
       </SidebarHeader>
       <SidebarContent className="grow">
         <NavPrimary items={navItems} />
-        {user.email === 'tim@tom.io' && (
+        {hasRole(user, 'admin') && (
           <>
             <SidebarSeparator />
             {/* Wenn du willst, könntest du isPending hier an NavAdmin übergeben 

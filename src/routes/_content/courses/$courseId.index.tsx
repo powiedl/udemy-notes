@@ -5,7 +5,11 @@ import { getCourseByIdFn } from '#/data/course'
 import { getNotesForCourseFn } from '#/data/note' // NEU
 import { useCourseActions } from '#/hooks/use-course-actions'
 import { cn } from '#/lib/utils'
-import { createFileRoute, useRouterState } from '@tanstack/react-router' // NEU: useRouterState
+import {
+  createFileRoute,
+  useLoaderData,
+  useRouterState,
+} from '@tanstack/react-router' // NEU: useRouterState
 import { Loader2, Check, Tag as TagIcon, X } from 'lucide-react'
 import { Suspense, use, useDeferredValue, useState, useEffect } from 'react' // NEU: useState, useEffect
 
@@ -32,6 +36,7 @@ import {
 } from '#/components/ui/command'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import { hasRole } from '#/lib/permissions'
 
 export const Route = createFileRoute('/_content/courses/$courseId/')({
   component: RouteComponent,
@@ -138,6 +143,8 @@ function Course({
 // === KURS INHALT (Header + Suchleiste + Notizen) ===
 function CourseContent({ course, notesPromise, searchParams, navigate }: any) {
   const { handleExport, handleDelete } = useCourseActions()
+  const { user } = useLoaderData({ from: '/_content' })
+  const isAdmin = hasRole(user, 'admin')
 
   // 1. Tag-Daten und UI-States
   const { data: availableTags = [] } = useQuery(tagsQueryOptions)
@@ -309,7 +316,8 @@ function CourseContent({ course, notesPromise, searchParams, navigate }: any) {
         <CardHeader>
           <CourseHeader
             course={course}
-            onExport={() => handleExport(course.id)}
+            isAdmin={isAdmin}
+            onExport={(data) => handleExport(data)}
             onDelete={() => handleDelete(course.id)}
           />
         </CardHeader>

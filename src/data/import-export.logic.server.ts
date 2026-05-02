@@ -1,16 +1,23 @@
-import type { Course, Note } from '#/generated/prisma/client'
+import type { Course, Note, Prisma } from '#/generated/prisma/client'
 import type { ImportNote } from '#/types/course'
-import type z from 'zod'
-import type {
-  exportMdFileValidationSchema,
-  importHtmlFileValidationSchema,
-} from './import-export'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { ServerActionError } from '#/types/errors'
 import { processNoteForMarkdown } from '#/lib/export-helper'
+import type { ExportMdFileSchema } from '#/schemas/export-file'
+import type { ImportHtmlFileSchema } from '#/schemas/import-file'
+import { orderInfo } from '#/lib/udemy'
 
-type ImportHtmlFileInput = z.infer<typeof importHtmlFileValidationSchema>
-type ExportMdFileInput = z.infer<typeof exportMdFileValidationSchema>
+type ExportCoursePayload = Prisma.CourseGetPayload<{
+  include: {
+    tags: { include: { tag: true } }
+    trainers: { include: { trainer: true } }
+    notes: {
+      include: {
+        tags: { include: { tag: true } }
+      }
+    }
+  }
+}>
 
 /**
  * Prüft, ob eine neue Notiz von Udemy im Konflikt mit einer lokal bearbeiteten Notiz steht.
@@ -39,13 +46,13 @@ function checkConflict(
  * @param userId - ID des aktuell angemeldeten Benutzers.
  */
 export const importHtmlFileLogic = async (
-  data: ImportHtmlFileInput,
+  data: ImportHtmlFileSchema,
   userId: string,
 ) => {
   const { prisma } = await import('#/lib/db.server')
   const { prepareAndConvertHtmlToMarkdown } =
     await import('#/lib/convertHtmlToMarkdown')
-  const { orderInfo } = await import('#/lib/udemy')
+  // const { orderInfo } = await import('#/lib/udemy')
 
   const { htmlContent, fileName, fileSize, trainers, tagIds, newPrivateTags } =
     data
@@ -217,24 +224,32 @@ export const importHtmlFileLogic = async (
  * Diese Funktion ist für Unit-Tests zugänglich und unabhängig vom Request-Handling.
  */
 export const exportMdFileLogic = async (
-  data: ExportMdFileInput,
+  data: ExportMdFileSchema,
   userId: string,
 ) => {
   const { prisma } = await import('#/lib/db.server')
-  const { courseId, includeNotesMetadata, includeTags, includeOriginalNote } =
-    data
+  const {
+    courseId,
+    includeNotesMetadata,
+    includeNoteTags,
+    includeCourseTags,
+    includeTrainers,
+    noteVersion,
+  } = data
 
-  const course = await prisma.course.findUnique({
+  const prismaParameters = {
     where: {
       id: courseId,
       userId: userId,
     },
     include: {
-      tags: {
-        include: {
-          tag: true,
-        },
-      },
+      // 1. Kurs-Tags (holt die Join-Tabelle CourseTag und inkludiert das eigentliche Tag)
+      tags: includeCourseTags ? { include: { tag: true } } : false,
+
+      // 2. Trainer (holt die Join-Tabelle CourseTrainer und inkludiert den eigentlichen Trainer)
+      trainers: includeTrainers ? { include: { trainer: true } } : false,
+
+      // 3. Notizen (immer inkludieren, aber bedingt filtern und verschachteln)
       notes: {
         where: {
           isDeleted: false,
@@ -243,26 +258,37 @@ export const exportMdFileLogic = async (
           orderInfo: 'desc',
         },
         include: {
-          tags: {
-            include: {
-              tag: true,
-            },
-          },
+          // Notiz-Tags (holt die Join-Tabelle NoteTag und inkludiert das eigentliche Tag)
+          tags: includeNoteTags ? { include: { tag: true } } : false,
         },
       },
     },
-  })
+  } satisfies Prisma.CourseFindUniqueArgs
+
+  const course = (await prisma.course.findUnique(
+    prismaParameters,
+  )) as ExportCoursePayload | null
+
   if (!course) throw new ServerActionError('Course not found')
 
   // --- Markdown-Generierung ---
   let markdown = `# ${course.title}\n\n`
 
-  if (includeTags) {
+  if (includeTrainers && course.trainers.length > 0) {
+    markdown += `Trainers:\n`
+    course.trainers.forEach((t) => {
+      if (t.trainer.name) markdown += `* ${t.trainer.name}\n`
+    })
+    markdown += '\n'
+  }
+
+  if (includeCourseTags) {
     if (course.tags.length > 0) {
-      markdown += `Tags:\n\n`
+      markdown += `Tags:\n`
       course.tags.forEach((t) => {
-        if (t.tag.name) markdown += `* ${t.tag.name}`
+        if (t.tag.name) markdown += `* ${t.tag.name}\n`
       })
+      markdown += '\n'
     }
   }
 
@@ -273,7 +299,7 @@ export const exportMdFileLogic = async (
       notesMarkdownArray.push(
         processNoteForMarkdown(n, {
           includeNotesMetadata,
-          includeOriginalNote,
+          noteVersion,
         }),
       )
     })

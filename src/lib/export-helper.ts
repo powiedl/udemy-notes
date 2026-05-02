@@ -1,13 +1,14 @@
 import type { SingleNote } from './prisma-types'
+import type { ExportMdFileSchema } from '#/schemas/export-file'
 
 export function processNoteForMarkdown(
   note: SingleNote,
   {
     includeNotesMetadata = true,
-    includeOriginalNote = false,
+    noteVersion = 'edited_with_fallback',
   }: {
     includeNotesMetadata: boolean
-    includeOriginalNote: boolean
+    noteVersion: ExportMdFileSchema['noteVersion']
   },
 ): string {
   let markdown = '## Note\n\n'
@@ -28,9 +29,11 @@ export function processNoteForMarkdown(
     markdown += '\n\n'
   }
   markdown += '### Content\n\n'
-  if (note.editedContent.length > 0) {
+  if (noteVersion === 'original') {
+    markdown += note.originalContent + `\n\n`
+  } else if (note.editedContent.length > 0) {
     markdown += note.editedContent + '\n\n'
-    if (includeOriginalNote && note.originalContent.length > 0) {
+    if (noteVersion == 'both' && note.originalContent.length > 0) {
       markdown += `#### Original Content (from Udemy website)\n\n${note.originalContent}\n\n`
     }
   } else {
