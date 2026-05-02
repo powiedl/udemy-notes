@@ -34,7 +34,7 @@ const convertMock = prepareAndConvertHtmlToMarkdown as any
 describe('importHtmlFileLogic', () => {
   const userId = 'user_123'
   const defaultInput = {
-    htmlContent: '<html><body>Notes</body></html>',
+    content: '<html><body>Notes</body></html>',
     fileName: 'test.html',
     fileSize: 1000,
     trainers: ['Maximilian Schwarzmüller'],
@@ -59,10 +59,7 @@ describe('importHtmlFileLogic', () => {
 
     it('Wirft Fehler, wenn der Inhalt kein HTML ist', async () => {
       await expect(
-        importHtmlFileLogic(
-          { ...defaultInput, htmlContent: 'not html' },
-          userId,
-        ),
+        importHtmlFileLogic({ ...defaultInput, content: 'not html' }, userId),
       ).rejects.toThrow('Only HTML files are allowed')
     })
 
