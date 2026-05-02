@@ -1,6 +1,6 @@
 # 📝 Architecture Documentation: Form System with `@tanstack/react-form`
 
-This document describes the architecture, the event lifecycle, and our mandatory conventions for implementing forms in the app. We use `@tanstack/react-form` in combination with `Zod` for maximum performance (targeted re-rendering of individual fields) and strict type safety.
+This document describes the architecture, event lifecycle, and our binding conventions for implementing forms within the application. We use `@tanstack/react-form` in combination with `Zod` for maximum performance and strict type safety.
 
 ---
 
@@ -8,32 +8,21 @@ This document describes the architecture, the event lifecycle, and our mandatory
 
 To avoid unexpected behavior, it is important to understand how the form system is initialized and validated. By default, `@tanstack/react-form` follows a **Lazy Validation** strategy.
 
-1. **Initialization (`useForm`):** The form is loaded with the `defaultValues`. _Note:_ At this point, no validation against the Zod schema occurs by default. The form initially assumes it is valid (`canSubmit: true`).
-2. **User Interaction (`onChange`, `onBlur`):** As soon as the user changes a value or leaves a field, the triggers defined in the `validators` object take effect. Only now does Zod validate the input and update the internal metadata (`isValid`, `errors`) for this specific field.
-3. **Submission (`onSubmit`):** \* The user clicks the submit button.
-   - The native HTML event fires and calls `form.handleSubmit()`.
-   - **The Gatekeeper Check:** The system now validates _all_ fields against the Zod schema.
-   - **Success:** If all data is valid, the `onSubmit` callback of the `useForm` hook is executed. Here we call our Server Actions (e.g., via `handleAction` or `onExport`) and close dialogs if necessary.
-   - **Failure:** If the form is invalid, the `onSubmit` callback is _silently blocked_. The errors are written to `state.errorMap` and `state.fieldMeta`.
+1.  **Initialization (`useForm`):** The form is loaded with `defaultValues`. By default, no validation takes place yet; the form is initially considered valid (`canSubmit: true`).
+2.  **User Interaction (`onChange`, `onBlur`):** As soon as the user changes a value, the `validators` kick in. Zod updates the internal metadata (`isValid`, `errors`).
+3.  **Submission (`onSubmit`):**
+    - The system now validates **all** fields against the Zod schema.
+    - **Success:** The `onSubmit` callback of the `useForm` hook is executed.
+    - **Failure:** The callback is silently blocked. Errors are written to `state.errorMap`.
 
 ---
 
 ## 2. Structural Requirement: The Submit Button
 
-**Rule:** The submit button (`type="submit"`) **must** be physically defined within the `<form>` ... `</form>` HTML tags.
-
-**Why is this important?**
-We rely on native HTML mechanisms. A button with `type="submit"` automatically triggers the `onSubmit` event of the enclosing form.
-If the button is located outside (e.g., isolated in a `DialogFooter` after closing the form tag), it loses context. It doesn't know which form it should submit. Although this could be bypassed using `<form id="my-form">` and `<button form="my-form">`, nesting the button inside the form leads to a more robust and less error-prone component structure.
+**Rule:** The submit button (`type="submit"`) **must** be physically located within the `<form>` tag. This ensures that the native HTML submit event is correctly passed to the TanStack handler.
 
 ```tsx
-// ❌ WRONG: Button outside the form
-<form onSubmit={...}>
-  <Field ... />
-</form>
-<Button type="submit">Save</Button>
-
-// ✅ RIGHT: Button inside the form
+// ✅ CORRECT: Button inside the form
 <form onSubmit={...}>
   <Field ... />
   <div className="flex justify-end">
@@ -44,49 +33,72 @@ If the button is located outside (e.g., isolated in a `DialogFooter` after closi
 
 ---
 
-## 3. Developer Experience (DX) vs. User Experience (UX)
+## 3. The FormDebugger: The "Source of Truth"
 
-A common problem when developing forms is the discrepancy between the initial `defaultValues` and the strict Zod schema (e.g., if fields are initially `undefined`, but the schema strictly expects a boolean).
+A common issue is **Sync Loss**: The library can "forget" initial errors (e.g., from `onMount`) as soon as the user interacts with other fields, because static values without an active input field often fall out of the validation cycle.
 
-Since validation is only triggered upon interaction (`onChange`) by default, developers often only realize the form is broken when clicking "Save" (because the `onSubmit` block gets blocked).
+### 3.1 Functionality & Integration
 
-### The Solution for Developers: `onMount` Validation
+The [`FormDebugger`](/src/components/web/form-debugger.tsx) acts as an incorruptible guardian. It independently validates the current state against the provided Zod schema on every change, regardless of the library's internal logic.
 
-To force the form to check data validity immediately when the component mounts, we add the schema as an `onMount` validator as well:
-
-```tsx
-validators: {
-  onChange: myZodSchema,
-  onMount: myZodSchema, // Forces immediate validation
-}
-```
-
-**Effect:** An integrated form debugger (via `<form.Subscribe>`) now fills _immediately_ with all structural and validation errors without needing a submit click. `canSubmit` is immediately corrected to `false`.
-
-### The Solution for the User: `isTouched`
-
-The `onMount` validation has a dangerous UX side effect: All fields immediately know they are invalid. If we were to render our UI solely based on `isValid`, the user would be overwhelmed by a "sea of red error messages" right upon opening the popup, before they even had a chance to enter anything.
-
-**The Golden Rule for Error Display:**
-We separate the internal _state_ of the form from its _visibility_ in the UI. A field may only be rendered as invalid (red) if it is invalid **AND** has already been touched by the user (`isTouched`).
+**Integration in a Dialog:**
 
 ```tsx
-<form.Field
-  name="myField"
-  children={(field) => {
-    // UX Filter: Only show errors if the field has been interacted with
-    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
+const form = useForm({
+  defaultValues,
+  validators: { onChange: mySchema }
+})
 
-    return (
-      <Field data-invalid={isInvalid}>
-        {/* Input UI and error messages here */}
-      </Field>
-    )
-  }}
-/>
+return (
+  <form ...>
+    {/* Debugger only visible for admins and in dev environment */}
+    {isAdmin && <FormDebugger form={form} schema={mySchema} />}
+  </form>
+)
 ```
 
-Through this combination, we achieve the perfect setup:
+### 3.2 Features of the Debugger
 
-1. **For us (DX):** The form debugger immediately displays all missing data. The save button is blocked right from the start if data is missing.
-2. **For the user (UX):** The form fields look clean and innocent. Only when the user fills out a field and leaves it – or clicks the save button (which forces the "submitted/touched" state) – is the user visually informed of what is wrong.
+- **LED Status:** Red for schema violations, Green for validity, Yellow (Amber) during active validation.
+- **Sync Discrepancy:** A warning appears if the library reports "Green" but the Zod schema reports "Red" (Sync Loss).
+- **Force Validation:** A manual validation is forced via `onMouseDown` (higher priority than focus/click events), setting all fields to `isTouched: true`.
+- **Production Guard:** The component automatically renders `null` when `process.env.NODE_ENV === 'production'`.
+
+---
+
+## 4. Developer Experience (DX) vs. User Experience (UX)
+
+### The User Solution: `isTouched`
+
+To avoid overwhelming the user with errors immediately, we only display UI error messages if a field is invalid **AND** has been touched (`isTouched`).
+
+### The Developer Solution: Force Validation
+
+In the debugger, we can use "Force Validation" to force the `isTouched` status for all fields simultaneously. This simulates a failed submit attempt and makes all errors in the UI immediately visible.
+
+---
+
+## 5. Testing & Quality Assurance
+
+To guarantee the reliability of the debugger, a comprehensive [test suite exists under Vitest](/src/components/web/__tests__/form-debugger.test.tsx).
+
+### 5.1 Test Scenarios
+
+- **Production Protection:** Ensuring the tool never appears to the end customer.
+- **Schema Validity:** Checking whether Zod issues are correctly extracted from the state.
+- **Interaction Tests:** Validating the `onMouseDown` logic and the correct triggering of `form.validate()`.
+
+### 5.2 Best Practices for Testing
+
+When testing environment variables, we use `vi.stubEnv` to ensure type safety:
+
+```tsx
+it('should not render in production', () => {
+  vi.stubEnv('NODE_ENV', 'production')
+  const { container } = render(<FormDebugger form={mockForm} />)
+  expect(container.firstChild).toBeNull()
+  vi.unstubAllEnvs()
+})
+```
+
+**Important for the test environment:** Since we are checking DOM elements, `environment: 'jsdom'` must be set in the `vitest.config.ts`, and `jest-dom/matchers` must be registered via `expect.extend` to use matchers such as `toBeInTheDocument()`.

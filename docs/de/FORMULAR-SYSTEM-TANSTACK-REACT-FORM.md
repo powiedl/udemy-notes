@@ -1,42 +1,27 @@
-Hier ist ein Entwurf für deine Dokumentation, strukturiert als Leitfaden und Nachschlagewerk für das Projekt. Sie ist im Stil einer technischen Architektur- und Konzeptdokumentation gehalten.
-
----
-
 # 📝 Architektur-Dokumentation: Formular-System mit `@tanstack/react-form`
 
-Dieses Dokument beschreibt die Architektur, den Event-Lebenszyklus und unsere verbindlichen Konventionen für die Implementierung von Formularen in der App. Wir nutzen `@tanstack/react-form` in Kombination mit `Zod` für maximale Performance (gezieltes Re-Rendering einzelner Felder) und strikte Typsicherheit.
+Dieses Dokument beschreibt die Architektur, den Event-Lebenszyklus und unsere verbindlichen Konventionen für die Implementierung von Formularen in der App. Wir nutzen `@tanstack/react-form` in Kombination mit `Zod` für maximale Performance und strikte Typsicherheit.
 
 ---
 
 ## 1. Der Event-Lebenszyklus (Lifecycle)
 
-Um unerwartetes Verhalten zu vermeiden, ist es wichtig zu verstehen, wie das Formular-System initialisiert und validiert wird. `@tanstack/react-form` verfolgt standardmäßig eine **Lazy Validation** (träge Validierung) Strategie.
+Um unerwartetes Verhalten zu vermeiden, ist es wichtig zu verstehen, wie das Formular-System initialisiert und validiert wird. `@tanstack/react-form` verfolgt standardmäßig eine **Lazy Validation** Strategie.
 
-1. **Initialisierung (`useForm`):** Das Formular wird mit den `defaultValues` geladen. _Achtung:_ Zu diesem Zeitpunkt findet standardmäßig noch keine Validierung gegen das Zod-Schema statt. Das Formular geht zunächst davon aus, dass es gültig ist (`canSubmit: true`).
-2. **User Interaction (`onChange`, `onBlur`):** Sobald der Nutzer einen Wert ändert oder ein Feld verlässt, greifen die im `validators`-Objekt definierten Trigger. Erst jetzt validiert Zod die Eingabe und aktualisiert die internen Metadaten (`isValid`, `errors`) für dieses spezifische Feld.
-3. **Submission (`onSubmit`):** \* Der Nutzer klickt auf den Submit-Button.
-   - Das native HTML-Event feuert und ruft `form.handleSubmit()` auf.
-   - **Die Gatekeeper-Prüfung:** Das System validiert nun _alle_ Felder gegen das Zod-Schema.
-   - **Erfolg:** Sind alle Daten gültig, wird der `onSubmit`-Callback des `useForm`-Hooks ausgeführt. Hier rufen wir unsere Server Actions (z.B. via `handleAction` oder `onExport`) auf und schließen ggf. Dialoge.
-   - **Fehlschlag:** Ist das Formular ungültig, wird der `onSubmit`-Callback _stillschweigend blockiert_. Die Fehler werden in den `state.errorMap` und `state.fieldMeta` geschrieben.
+1.  **Initialisierung (`useForm`):** Das Formular wird mit den `defaultValues` geladen. Standardmäßig findet noch keine Validierung statt; das Formular gilt zunächst als gültig (`canSubmit: true`).
+2.  **User Interaction (`onChange`, `onBlur`):** Sobald der Nutzer einen Wert ändert, greifen die `validators`. Zod aktualisiert die internen Metadaten (`isValid`, `errors`).
+3.  **Submission (`onSubmit`):**
+    - Das System validiert nun **alle** Felder gegen das Zod-Schema.
+    - **Erfolg:** Der `onSubmit`-Callback des `useForm`-Hooks wird ausgeführt.
+    - **Fehlschlag:** Der Callback wird stillschweigend blockiert. Fehler werden in `state.errorMap` geschrieben.
 
 ---
 
 ## 2. Struktur-Vorgabe: Der Submit-Button
 
-**Regel:** Der Submit-Button (`type="submit"`) **muss** physisch innerhalb des `<form>` ... `</form>` HTML-Tags definiert werden.
-
-**Warum ist das wichtig?**
-Wir verlassen uns auf die nativen HTML-Mechanismen. Ein Button mit `type="submit"` löst automatisch das `onSubmit`-Event des umschließenden Formulars aus.
-Liegt der Button außerhalb (z. B. isoliert in einem `DialogFooter` nach dem Schließen des Form-Tags), verliert er den Kontext. Er weiß nicht, welches Formular er abschicken soll. Zwar ließe sich dies über `<form id="my-form">` und `<button form="my-form">` überbrücken, jedoch führt die Verschachtelung des Buttons im Formular zu einer robusteren und weniger fehleranfälligen Komponentenstruktur.
+**Regel:** Der Submit-Button (`type="submit"`) **muss** physisch innerhalb des `<form>`-Tags liegen. Dies stellt sicher, dass das native HTML-Submit-Event korrekt an den TanStack-Handler weitergegeben wird.
 
 ```tsx
-// ❌ FALSCH: Button außerhalb des Formulars
-<form onSubmit={...}>
-  <Field ... />
-</form>
-<Button type="submit">Speichern</Button>
-
 // ✅ RICHTIG: Button innerhalb des Formulars
 <form onSubmit={...}>
   <Field ... />
@@ -48,49 +33,72 @@ Liegt der Button außerhalb (z. B. isoliert in einem `DialogFooter` nach dem Sch
 
 ---
 
-## 3. Developer Experience (DX) vs. User Experience (UX)
+## 3. Der FormDebugger: Die "Source of Truth"
 
-Ein häufiges Problem bei der Entwicklung von Formularen ist die Diskrepanz zwischen den initialen `defaultValues` und dem strikten Zod-Schema (z. B. wenn Felder initial `undefined` sind, das Schema aber zwingend einen Boolean erwartet).
+Ein häufiges Problem ist der **Sync Loss**: Die Library kann initiale Fehler (z. B. aus `onMount`) "vergessen", sobald der Nutzer mit anderen Feldern interagiert, da statische Werte ohne aktives Input-Feld oft aus dem Validierungs-Zyklus fallen.
 
-Da die Validierung standardmäßig erst bei Interaktion (`onChange`) greift, merkt man als Entwickler oft erst beim Klick auf "Speichern", dass das Formular kaputt ist (da der `onSubmit`-Block blockiert wird).
+### 3.1 Funktionsweise & Integration
 
-### Die Lösung für Entwickler: `onMount` Validierung
+Der [`FormDebugger`](/src/components/web/form-debugger.tsx) fungiert als unbestechlicher Wächter. Er validiert den aktuellen State bei jeder Änderung eigenständig gegen das bereitgestellte Zod-Schema, unabhängig von der internen Logik der Library.
 
-Um das Formular zu zwingen, die Datenrelevanz sofort beim Aufbau der Komponente zu prüfen, ergänzen wir das Schema auch als `onMount`-Validator:
+**Integration im Dialog:**
 
 ```tsx
-validators: {
-  onChange: myZodSchema,
-  onMount: myZodSchema, // Zwingt zur sofortigen Überprüfung
-}
+const form = useForm({
+  defaultValues,
+  validators: { onChange: mySchema }
+})
+
+return (
+  <form ...>
+    {/* Debugger nur für Admins und in Dev-Umgebung sichtbar */}
+    {isAdmin && <FormDebugger form={form} schema={mySchema} />}
+  </form>
+)
 ```
 
-**Effekt:** Ein integrierter Form-Debugger (via `<form.Subscribe>`) füllt sich nun _sofort_ mit allen Struktur- und Validierungsfehlern, ohne dass ein Submit-Klick nötig ist. `canSubmit` wird sofort auf `false` korrigiert.
+### 3.2 Features des Debuggers
+
+- **LED-Status:** Rot bei Schema-Verletzungen, Grün bei Validität, Gelb (Amber) während aktiver Validierung.
+- **Sync Discrepancy:** Eine Warnung erscheint, wenn die Library "Grün" meldet, das Zod-Schema aber "Rot" (Sync Loss).
+- **Force Validation:** Über `onMouseDown` (höhere Priorität als Focus/Click Events) wird eine manuelle Validierung erzwungen und alle Felder auf `isTouched: true` gesetzt.
+- **Production Guard:** In `process.env.NODE_ENV === 'production'` rendert die Komponente automatisch `null`.
+
+---
+
+## 4. Developer Experience (DX) vs. User Experience (UX)
 
 ### Die Lösung für den Nutzer: `isTouched`
 
-Die `onMount`-Validierung hat einen gefährlichen UX-Seiteneffekt: Alle Felder wissen sofort, dass sie ungültig sind. Würden wir unsere UI nur nach `isValid` rendern, würde der Nutzer beim Öffnen des Popups sofort von einem "Meer aus roten Fehlermeldungen" erschlagen werden, bevor er überhaupt etwas eingeben konnte.
+Um den Nutzer nicht sofort mit Fehlern zu erschlagen, zeigen wir UI-Fehlermeldungen nur an, wenn ein Feld ungültig **UND** berührt (`isTouched`) wurde.
 
-**Die goldene Regel zur Fehleranzeige:**
-Wir trennen den internen _Status_ des Formulars von der _Sichtbarkeit_ in der UI. Ein Feld darf nur als fehlerhaft (rot) gerendert werden, wenn es ungültig **UND** vom Nutzer bereits berührt (`isTouched`) wurde.
+### Die Lösung für Entwickler: Force Validation
+
+Im Debugger können wir über "Force Validation" den `isTouched`-Status für alle Felder gleichzeitig erzwingen. Dies simuliert einen fehlgeschlagenen Submit-Versuch und macht alle Fehler in der UI sofort sichtbar.
+
+---
+
+## 5. Testing & Qualitätssicherung
+
+Um die Verlässlichkeit des Debuggers zu garantieren, existiert eine umfassende [Test-Suite unter Vitest](/src/components/web/__tests__/form-debugger.test.tsx).
+
+### 5.1 Test-Szenarien
+
+- **Production-Schutz:** Sicherstellung, dass das Tool niemals beim Endkunden erscheint.
+- **Schema-Validität:** Prüfung, ob Zod-Issues korrekt aus dem State extrahiert werden.
+- **Interaktions-Tests:** Validierung der `onMouseDown`-Logik und der korrekten Triggerung von `form.validate()`.
+
+### 5.2 Best Practices beim Testen
+
+Beim Testen der Umgebungsvariablen nutzen wir `vi.stubEnv`, um Typsicherheit zu gewährleisten:
 
 ```tsx
-<form.Field
-  name="myField"
-  children={(field) => {
-    // UX-Filter: Fehler nur zeigen, wenn das Feld interagiert wurde
-    const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid
-
-    return (
-      <Field data-invalid={isInvalid}>
-        {/* Input UI und Fehlermeldungen hier */}
-      </Field>
-    )
-  }}
-/>
+it('sollte in Production nicht rendern', () => {
+  vi.stubEnv('NODE_ENV', 'production')
+  const { container } = render(<FormDebugger form={mockForm} />)
+  expect(container.firstChild).toBeNull()
+  vi.unstubAllEnvs()
+})
 ```
 
-Durch diese Kombination erreichen wir das perfekte Setup:
-
-1. **Für uns (DX):** Der Form-Debugger zeigt sofort alle fehlenden Daten an. Der Speichern-Button ist von Beginn an blockiert, wenn Daten fehlen.
-2. **Für den Nutzer (UX):** Die Formularfelder sehen sauber und unschuldig aus. Erst wenn der Nutzer ein Feld ausfüllt und verlässt – oder den Speichern-Button klickt (was den Status "submitted/touched" forciert) –, wird dem Nutzer visuell mitgeteilt, wo es hakt.
+**Wichtig für die Test-Umgebung:** Da wir DOM-Elemente prüfen, muss in der `vitest.config.ts` die `environment: 'jsdom'` gesetzt sein und `jest-dom/matchers` via `expect.extend` registriert werden, um Matcher wie `toBeInTheDocument()` nutzen zu können.

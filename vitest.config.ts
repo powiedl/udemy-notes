@@ -23,5 +23,6 @@ export default defineConfig({
         inline: [/react/],
       },
     },
+    setupFiles: ['./src/test/setup.ts'],
   },
 })
