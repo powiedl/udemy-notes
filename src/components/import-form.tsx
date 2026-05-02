@@ -48,27 +48,30 @@ import {
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
-import { importHtmlFile } from '#/data/import-export'
+import { importHtmlFile, importMdFile } from '#/data/import-export'
 import { getTrainerSuggestionsFn } from '#/data/course'
 import { getTagsForSelectorFn } from '#/data/tag'
 import { handleAction } from '#/lib/client-utils'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
+import { prepareMdPayload, prepareHtmlPayload } from '#/lib/import-helpers'
 
-const importHtmlFormSchema = z.object({
+const importFormSchema = z.object({
   file: z
     .instanceof(File, { message: 'Invalid file format' })
     .refine((file) => file.size <= MAX_FILE_SIZE_UPLOAD, 'File too large')
     .refine(
-      (file) => file.type === 'text/html' || file.name.endsWith('.html'),
-      'Only HTML allowed',
+      (file) =>
+        file.type === 'text/html' ||
+        file.name.toLowerCase().endsWith('.html') ||
+        file.type === 'text/markdown' ||
+        file.name.toLowerCase().endsWith('.md'),
+      'Only HTML or Markdown (.md) allowed',
     )
-    // 1. Erlaubt "null" als validen Typen für den Initialzustand (Linter ist glücklich!)
     .nullable()
-    // 2. Fängt das "null" beim Abschicken ab, macht es also wieder zum Pflichtfeld
     .refine(
       (file) => file !== null,
-      'Please choose a Udemy course notes HTML file',
+      'Please choose a Udemy course notes file (HTML or MD)',
     ),
   trainers: z.array(z.string()),
   tagIds: z.array(z.string()),
@@ -78,7 +81,8 @@ const importHtmlFormSchema = z.object({
 export function ImportHtmlForm({ selector }: { selector: string }) {
   const navigate = useNavigate()
   const [isPending, startTransition] = useTransition()
-  const uploadFile = useServerFn(importHtmlFile)
+  const uploadHtmlFile = useServerFn(importHtmlFile)
+  const uploadMdFile = useServerFn(importMdFile)
   const getTrainerSuggestions = useServerFn(getTrainerSuggestionsFn)
   const getTagsForSelector = useServerFn(getTagsForSelectorFn)
 
@@ -103,49 +107,27 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
       newPrivateTags: [] as string[],
     },
     validators: {
-      onChange: importHtmlFormSchema,
+      onChange: importFormSchema,
     },
     onSubmit: async ({ value }) => {
-      const file = value.file // so Typescript also knows in the startTransition closure that file is not null
+      const file = value.file
       if (!file) return
 
       startTransition(async () => {
         try {
-          const rawHtml = await file.text()
-          const parser = new DOMParser()
-          const doc = parser.parseFromString(rawHtml, 'text/html')
+          const fileContent = await file.text()
+          const isMarkdown = file.name.toLowerCase().endsWith('.md')
 
-          const title = doc.title || 'Udemy Course'
-          const notesContainer = doc.querySelector(selector)
+          const actionPromise = isMarkdown
+            ? uploadMdFile({
+                data: prepareMdPayload(file, fileContent, value),
+              })
+            : uploadHtmlFile({
+                data: prepareHtmlPayload(file, fileContent, value, selector),
+              })
 
-          if (!notesContainer) {
-            throw new Error(
-              'No notes found. Are you sure the file is a Udemy HTML file (from the browsers Dev Tools)?',
-            )
-          }
-
-          const strippedHtml = `
-            <!DOCTYPE html>
-            <html>
-              <head><title>${title}</title></head>
-              <body>
-                ${notesContainer.outerHTML}
-              </body>
-            </html>
-          `.trim()
-
-          const result = await handleAction(
-            uploadFile({
-              data: {
-                htmlContent: strippedHtml,
-                fileName: file.name,
-                fileSize: new Blob([strippedHtml]).size,
-                trainers: value.trainers, // Hier senden wir das Array!
-                tagIds: value.tagIds,
-                newPrivateTags: value.newPrivateTags,
-                loggingMetadata: { component: 'ImportHtmlForm' },
-              },
-            }),
+          const result = await handleAction<{ courseId: string }>(
+            actionPromise,
             { successToast: 'Course notes processed successfully' },
           )
 
@@ -525,7 +507,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
                           ref={fileInputRef}
                           type="file"
                           className="hidden"
-                          accept=".html,text/html"
+                          accept=".html,text/html,.md,text/markdown"
                           onChange={(e) => {
                             if (e.target.files?.[0])
                               field.handleChange(e.target.files[0])
