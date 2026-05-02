@@ -1,4 +1,3 @@
-````markdown
 # Documentation: Fullstack CI/CD Setup with Neon, Vercel & GitHub Actions
 
 This documentation describes a modern, professional Continuous Integration and Continuous Deployment (CI/CD) setup for a fullstack application (Next.js/TanStack Start, Prisma v7+, Tailwind). It utilizes the concept of **Database Branching** as well as automated tests to test feature branches in isolation and security. After successful testing and merging, the system automatically cleans itself up.
@@ -234,4 +233,50 @@ Vercel preview deployments are temporary, but the corresponding Neon branches ca
 6. **Merge:** Click "Squash and merge" on GitHub (triggers Vercel Prod deployment).
 7. **Automation End:** GitHub Action automatically deletes the temporary Neon branch.
 8. **Clean up:** Switch to `master` locally, run `git pull`, and use `git branch -D my-feature` to remove the local branch.
-````
+
+---
+
+## Part 3: Troubleshooting (Known Issues & Solutions)
+
+### 1. BetterAuth "Invalid Origin" / 403 Forbidden in Previews
+
+In Vercel preview environments, login or sign-up often fails with a **403 Forbidden** error or an **"Invalid Origin"** toast. This is caused by BetterAuth's strict CSRF protection, which compares the browser URL with the configured `baseURL`.
+
+**The Cause:**
+Vercel generates two types of URLs for every deployment:
+
+1.  **The Deployment URL (ID-URL):** Contains a random ID (e.g., `project-id-username.vercel.app`).
+2.  **The Branch URL (Alias):** The "friendly name" that includes the Git branch name.
+
+By default, Vercel populates the `VERCEL_URL` variable only with the **ID-URL**. If you access the site via the "friendly" Branch URL, BetterAuth detects a mismatch and blocks the request.
+
+**The Solution:**
+Adjust the `getBaseUrl` logic in `auth.ts` to prioritize the Branch URL and enable `trustHost` mode:
+
+1.  **Code Adjustment in `auth.ts`:**
+
+    ```typescript
+    const getBaseUrl = () => {
+      if (process.env.VERCEL_ENV === 'preview') {
+        // Use the friendly branch name if available, otherwise fallback to the ID-URL
+        const url = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL
+        return `https://${url}`
+      }
+      return process.env.BETTER_AUTH_URL || 'http://localhost:3000'
+    }
+
+    export const auth = betterAuth({
+      baseURL: getBaseUrl(),
+      advanced: {
+        trustHost: true, // Allows BetterAuth to trust Vercel's host headers
+        cookiePrefix: 'your-project-name',
+      },
+      // ... remaining configuration
+    })
+    ```
+
+2.  **Vercel Settings:**
+    In your Vercel project settings, go to **Settings -> Environment Variables** and ensure that the option **"Automatically expose System Environment Variables"** is enabled. This makes `VERCEL_BRANCH_URL` available to your code.
+
+**Best Practice for Testing:**
+If login via the Branch URL ("friendly name") still causes issues, always use the **Deployment URL (ID-URL)** for manual

@@ -5,9 +5,10 @@ import { tanstackStartCookies } from 'better-auth/tanstack-start'
 
 // Hilfsfunktion zur Ermittlung der korrekten URL (lokal vs. Vercel Preview vs. Vercel Prod)
 const getBaseUrl = () => {
-  // 1. Wenn wir in einem Vercel Preview sind, nutze die dynamisch generierte URL
-  if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
+  if (process.env.VERCEL_ENV === 'preview') {
+    // Use the friendly branch name if available, otherwise fallback to the ID-URL
+    const url = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL
+    return `https://${url}`
   }
   // 2. Ansonsten (Produktion oder lokale Entwicklung) nutze die fixe Variable oder localhost
   return process.env.BETTER_AUTH_URL || 'http://localhost:3000'
