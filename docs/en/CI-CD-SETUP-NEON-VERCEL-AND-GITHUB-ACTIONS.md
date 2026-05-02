@@ -251,7 +251,7 @@ Vercel generates two types of URLs for every deployment:
 By default, Vercel populates the `VERCEL_URL` variable only with the **ID-URL**. If you access the site via the "friendly" Branch URL, BetterAuth detects a mismatch and blocks the request.
 
 **The Solution:**
-Adjust the `getBaseUrl` logic in `auth.ts` to prioritize the Branch URL and enable `trustHost` mode:
+Adjust the `getBaseUrl` logic in `auth.ts` to prioritize the Branch URL and enable `trustHost` mode (Attention: With this you can **ONLY** access the App with the Branch Url):
 
 1.  **Code Adjustment in `auth.ts`:**
 
