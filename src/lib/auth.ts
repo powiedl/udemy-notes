@@ -39,6 +39,7 @@ export const auth = betterAuth({
   ],
   advanced: {
     cookiePrefix: 'udemy-notes',
+    trustHosts: true,
   },
 })
 
