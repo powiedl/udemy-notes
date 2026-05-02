@@ -22,6 +22,7 @@ import type { ExportMdFileSchema } from '#/schemas/export-file'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
+  isAdmin?: boolean
   variant?: 'default' | 'compact'
   singleCourse?: boolean
   onExport?: (data: ExportMdFileSchema) => void
@@ -32,6 +33,7 @@ interface CourseHeaderProps {
 
 const CourseHeader = ({
   course,
+  isAdmin,
   variant = 'default',
   singleCourse = true,
   onExport,
@@ -168,6 +170,7 @@ const CourseHeader = ({
 
       <CardFooter className="flex flex-row gap-4">
         <ExportCourseDialog
+          isAdmin={isAdmin}
           courseId={course.id}
           onExportSubmit={handleExport}
           disabled={isPending}

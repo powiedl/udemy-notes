@@ -17,6 +17,7 @@ import { DataTablePagination } from '#/components/web/data-table-pagination'
 import { DataTableSearch } from '#/components/web/data-table-search'
 import { getCoursesFn } from '#/data/course'
 import { useCourseActions } from '#/hooks/use-course-actions'
+import { hasRole } from '#/lib/permissions'
 import { cn } from '#/lib/utils'
 import { courseSearchSchema } from '#/schemas/search-params'
 import type { ActionResponse, ServerFnData } from '#/types/api'
@@ -24,6 +25,7 @@ import {
   createFileRoute,
   getRouteApi,
   Link,
+  useLoaderData,
   useRouterState,
 } from '@tanstack/react-router'
 import { CommandEmpty } from 'cmdk'
@@ -77,6 +79,9 @@ function CoursesList({
   trainer?: string
 }) {
   const result = use(data) // Das Promise wird hier aufgelöst
+  const { user } = useLoaderData({ from: '/_content' })
+  const isAdmin = hasRole(user, 'admin')
+
   if (!result.success) {
     return (
       <div className="p-4 text-destructive bg-destructive/10 rounded-md">
@@ -111,6 +116,7 @@ function CoursesList({
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {courses.map((course) => (
           <CourseHeader
+            isAdmin={isAdmin}
             course={course}
             singleCourse={false}
             key={course.id}

@@ -16,8 +16,10 @@ import { Field, FieldError, FieldLabel } from './ui/field'
 import { Input } from './ui/input'
 import { Checkbox } from './ui/checkbox'
 import { RadioGroup, RadioGroupItem } from './ui/radio-group'
+import { FormDebugger } from './web/form-debugger'
 
 type ExportCourseDialogProps = {
+  isAdmin?: boolean
   courseId: string
   children: ReactElement
   className: string
@@ -34,6 +36,7 @@ const initialFormValues: ExportMdFileSchema = {
 }
 const ExportCourseDialog = ({
   courseId,
+  isAdmin = false,
   children,
   className,
   disabled,
@@ -48,6 +51,7 @@ const ExportCourseDialog = ({
     validators: {
       onChange: exportMdFileSchema,
       onMount: exportMdFileSchema,
+      // onSubmit: exportMdFileSchema,
     },
     onSubmit: ({ value }) => {
       setOpen(false)
@@ -319,43 +323,7 @@ const ExportCourseDialog = ({
               {children}
             </Button>
           </div>
-          <form.Subscribe
-            selector={(state) => ({
-              values: state.values,
-              canSubmit: state.canSubmit,
-              isTouched: state.isTouched,
-              errorMap: state.errorMap, // Formular-weite Fehler
-              fieldMeta: state.fieldMeta, // Fehler der einzelnen Felder
-            })}
-            children={(state) => (
-              <div className="mt-8 rounded-md bg-slate-900 p-4 text-xs text-green-400 overflow-auto max-h-64">
-                <h4 className="text-white font-bold mb-2 flex gap-x-2">
-                  Form Debugger
-                  {!state.canSubmit && (
-                    <span className="text-red-500">CAN NOT SUBMIT!</span>
-                  )}
-                </h4>
-                <ul className="list-disc pl-4 mb-4 text-red-400">
-                  {Object.entries(state.fieldMeta).map(([fieldName, meta]) => {
-                    // Nur Felder anzeigen, die auch wirklich Fehler haben
-                    if (meta.errors.length > 0) {
-                      return (
-                        <li key={fieldName}>
-                          <span className="text-white font-semibold">
-                            {fieldName}:
-                          </span>{' '}
-                          {meta.errors.map((e) => e.message)}
-                        </li>
-                      )
-                    }
-                    return null
-                  })}
-                </ul>
-
-                <pre>{JSON.stringify(state, null, 2)}</pre>
-              </div>
-            )}
-          />
+          {isAdmin && <FormDebugger form={form} schema={exportMdFileSchema} />}
         </form>
       </DialogContent>
     </Dialog>

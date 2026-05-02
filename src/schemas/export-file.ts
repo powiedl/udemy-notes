@@ -1,7 +1,7 @@
 import z from 'zod'
 
 export const exportMdFileSchema = z.object({
-  courseId: z.string(),
+  courseId: z.string(), // .max(10),
   includeNotesMetadata: z.boolean(),
   includeCourseTags: z.boolean(),
   includeNoteTags: z.boolean(),
