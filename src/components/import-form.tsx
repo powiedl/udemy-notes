@@ -169,6 +169,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
 
   const tagIds = useStore(form.store, (s) => s.values.tagIds)
   const newPrivateTags = useStore(form.store, (s) => s.values.newPrivateTags)
+  const file = useStore(form.store, (s) => s.values.file)
   const canSubmit = useStore(form.store, (s) => s.canSubmit)
 
   const fetchSuggestions = async (val: string) => {
@@ -479,10 +480,15 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
                           if (files.length > 0) field.handleChange(files[0])
                         }}
                         onClick={() => fileInputRef.current?.click()}
-                        className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-all
-                        ${isDragging ? 'border-primary bg-primary/10 scale-[1.01]' : 'border-slate-300 bg-slate-50'}
-                        ${isInvalid ? 'border-red-500 bg-red-50' : 'hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900'}
-                      `}
+                        className={cn(
+                          'flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-all',
+                          isDragging
+                            ? 'border-primary bg-primary/10 scale-[1.01]'
+                            : 'border-slate-300 bg-slate-50 dark:bg-slate-900/50 dark:border-slate-700',
+                          isInvalid
+                            ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                            : 'hover:bg-slate-100 dark:hover:bg-slate-800',
+                        )}
                       >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center pointer-events-none">
                           {field.state.value ? (
@@ -544,9 +550,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
                       )}
                     </div>
                     {isInvalid && (
-                      <FieldError>
-                        {field.state.meta.errors.join(', ')}
-                      </FieldError>
+                      <FieldError errors={field.state.meta.errors} />
                     )}
                   </Field>
                 )
@@ -557,7 +561,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
               <Button
                 type="submit"
                 className="w-full hover:cursor-pointer font-semibold"
-                disabled={isPending || !canSubmit}
+                disabled={isPending || !canSubmit || !file}
               >
                 {isPending ? (
                   <>

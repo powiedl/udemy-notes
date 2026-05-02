@@ -3,6 +3,7 @@ import { exportMdFile } from '#/data/import-export'
 import { deleteCourseByIdFn } from '#/data/course'
 import { handleAction } from '#/lib/client-utils'
 import { useRouter } from '@tanstack/react-router'
+import type { ExportMdFileSchema } from '#/schemas/export-file'
 
 export function useCourseActions() {
   const router = useRouter()
@@ -32,17 +33,28 @@ export function useCourseActions() {
       // console.error('Löschvorgang abgebrochen:', error)
     }
   }
-  const handleExport = async (courseId: string) => {
+  const handleExport = async (data: ExportMdFileSchema) => {
     try {
       // Hier rufen wir die Funktion auf.
       // WICHTIG: Das 'await' stellt sicher, dass result den Rückgabetyp der Server Fn hat
+      const {
+        courseId,
+        includeCourseTags,
+        includeNoteTags,
+        includeNotesMetadata,
+        includeTrainers,
+        noteVersion,
+      } = data
+      // console.log('use-course-actions,data:', data)
       const result = await handleAction(
         exportFn({
           data: {
             courseId,
-            includeNotesMetadata: true,
-            includeTags: true,
-            includeOriginalNote: true,
+            includeNotesMetadata,
+            includeCourseTags,
+            includeTrainers,
+            includeNoteTags,
+            noteVersion,
             loggingMetadata: {
               component: 'CourseHeader',
               actionSource: 'ExportButton',

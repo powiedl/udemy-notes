@@ -17,12 +17,15 @@ import type { TagDisplay } from './tag-manager'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 import type { TrainerDisplay } from './trainer-manager'
 import { TrainerManager } from './trainer-manager'
+import ExportCourseDialog from '../export-course-dialog'
+import type { ExportMdFileSchema } from '#/schemas/export-file'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
+  isAdmin?: boolean
   variant?: 'default' | 'compact'
   singleCourse?: boolean
-  onExport?: (id: string) => void
+  onExport?: (data: ExportMdFileSchema) => void
   onDelete?: (id: string) => void
   className?: string
   activeTagIds?: string[]
@@ -30,10 +33,11 @@ interface CourseHeaderProps {
 
 const CourseHeader = ({
   course,
+  isAdmin,
   variant = 'default',
   singleCourse = true,
-  onExport = async () => {},
-  onDelete = async () => {},
+  onExport,
+  onDelete,
   className,
   activeTagIds = [],
 }: CourseHeaderProps) => {
@@ -72,6 +76,16 @@ const CourseHeader = ({
     }),
   )
   const trainerSize = singleCourse ? 'default' : 'sm'
+
+  const handleExport = (data: ExportMdFileSchema) => {
+    const params = data
+
+    // console.log('CourseHeader, handleExport, data:', params)
+    if (!onExport) return
+    startExportTransition(async () => {
+      await onExport(params)
+    })
+  }
 
   if (variant === 'compact') {
     return (
@@ -155,35 +169,35 @@ const CourseHeader = ({
       </CardContent>
 
       <CardFooter className="flex flex-row gap-4">
-        <Button
-          type="button"
-          onClick={() => {
-            startExportTransition(async () => {
-              await onExport(course.id)
-            })
-          }}
+        <ExportCourseDialog
+          isAdmin={isAdmin}
+          courseId={course.id}
+          onExportSubmit={handleExport}
           disabled={isPending}
           className="hover:cursor-pointer"
         >
-          {isExporting ? (
-            <Loader2 className="size-4 mr-1 animate-spin" />
-          ) : (
-            <Download className="size-4 mr-1" />
-          )}{' '}
-          <span
-            className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
-          >
-            Export
-          </span>
-        </Button>
+          <>
+            {isExporting ? (
+              <Loader2 className="size-4 mr-1 animate-spin" />
+            ) : (
+              <Download className="size-4 mr-1" />
+            )}{' '}
+            <span
+              className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
+            >
+              Export
+            </span>
+          </>
+        </ExportCourseDialog>
         <Button
           type="button"
           variant="destructive"
-          onClick={() =>
+          onClick={() => {
+            if (!onDelete) return
             startDeleteTransition(async () => {
               await onDelete(course.id)
             })
-          }
+          }}
           disabled={isPending}
           className="hover:cursor-pointer"
         >
