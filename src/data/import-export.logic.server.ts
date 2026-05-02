@@ -4,7 +4,7 @@ import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { ServerActionError } from '#/types/errors'
 import { processNoteForMarkdown } from '#/lib/export-helper'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
-import type { ImportHtmlFileSchema } from '#/schemas/import-file'
+import type { ImportFileSchema } from '#/schemas/import-file'
 import { orderInfo } from '#/lib/udemy'
 
 type ExportCoursePayload = Prisma.CourseGetPayload<{
@@ -46,7 +46,7 @@ function checkConflict(
  * @param userId - ID des aktuell angemeldeten Benutzers.
  */
 export const importHtmlFileLogic = async (
-  data: ImportHtmlFileSchema,
+  data: ImportFileSchema,
   userId: string,
 ) => {
   const { prisma } = await import('#/lib/db.server')
@@ -54,8 +54,14 @@ export const importHtmlFileLogic = async (
     await import('#/lib/convertHtmlToMarkdown')
   // const { orderInfo } = await import('#/lib/udemy')
 
-  const { htmlContent, fileName, fileSize, trainers, tagIds, newPrivateTags } =
-    data
+  const {
+    content: htmlContent,
+    fileName,
+    fileSize,
+    trainers,
+    tagIds,
+    newPrivateTags,
+  } = data
 
   // --- 1. Validierung (Sicherheit & Integrität) ---
   if (fileSize > MAX_FILE_SIZE_UPLOAD) {
@@ -215,6 +221,13 @@ export const importHtmlFileLogic = async (
     numberOfConflicts,
     courseId,
   }
+}
+
+export const importMdFileLogic = async (
+  data: ImportFileSchema,
+  userId: string,
+) => {
+  return { originalData: data, userId: userId, courseId: '1234' }
 }
 
 /**
