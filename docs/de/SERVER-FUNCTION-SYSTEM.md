@@ -63,7 +63,7 @@ Dafür wickeln wir **jedes** Zod-Schema in der Transport-Datei (`*.ts`) in unser
 
 _Beispiel für die Erstellung einer Funktion in der Transport-Datei (`_.ts`):\*
 
-````typescript
+```typescript
 import { z } from 'zod'
 import { authGetFn } from '#/lib/rpc'
 import { withLogging } from '#/schemas/api-utils' // Pfad anpassen
@@ -71,8 +71,8 @@ import { withLogging } from '#/schemas/api-utils' // Pfad anpassen
 // 1. Schema definieren und mit Logging-Metadaten anreichern
 export const getNotesSchema = withLogging(
   z.object({
-    courseId: z.string().optional()
-  })
+    courseId: z.string().optional(),
+  }),
 )
 
 // 2. Server Function zusammenbauen
@@ -124,10 +124,7 @@ export async function handleGlobalError(error: any): Promise<never> {
     severity: isSafeError || isZodError ? 'warning' : 'critical',
     message: realErrorMessage,
   }).catch((logError) => {
-    console.error(
-      'FATAL: could not write fallback log',
-      logError,
-    )
+    console.error('FATAL: could not write fallback log', logError)
   })
 
   // 2. Error Masking anwenden oder im Original werfen
@@ -320,9 +317,7 @@ export async function handleAction<T>(
   } catch (error) {
     // Fängt Fehler, die direkt geworfen werden (z.B. vom globalen ErrorHandler)
     const errorMsg =
-      error instanceof Error
-        ? error.message
-        : 'An unexpected error occured.'
+      error instanceof Error ? error.message : 'An unexpected error occured.'
     if (showErrorToast) {
       toast.error(errorMsg)
     }
@@ -353,4 +348,3 @@ const onSubmit = async (values: FormValues) => {
   )
 }
 ```
-````

@@ -25,15 +25,15 @@ For now I don't have any "must have" improvements for the app in the queue, just
 
 ## Learnings
 
-- [SERVER-FUNCTION-SYSTEM](./docs/en/SERVER-FUNCTION-SYSTEM.md) - how to setup strong typed Server Functions with a standard return type for every server function. Add a possibility to log errors to the database (with the possibility to add a reference to the calling frontend component and the server function causing the error)
+- [SERVER FUNCTION SYSTEM](./docs/en/SERVER-FUNCTION-SYSTEM.md) - how to setup strong typed Server Functions with a standard return type for every server function. Add a possibility to log errors to the database (with the possibility to add a reference to the calling frontend component and the server function causing the error)
   - [German original](./docs/de/SERVER-FUNCTION-SYSTEM.md)
-- [LEITFADEN PERFORMANTE SUCHE UND PAGINATION MIT TANSTACK START](./docs/en/GUIDE-PERFORMANT-SEARCH-AND-PAGINATION-WITH-TANSTACK-START.md) - how to setup a general search and pagination container for "all" of your pages, where this makes sense. Right now it is only implemented in the Courses page, but will be added to additional routes in the future (to see if it is really "general")
+- [GUIDE: PERFORMANT SEARCH AND PAGINATION WITH TANSTACK START](./docs/en/GUIDE-PERFORMANT-SEARCH-AND-PAGINATION-WITH-TANSTACK-START.md) - how to setup a general search and pagination container for "all" of your pages, where this makes sense. Right now it is only implemented in the Courses page, but will be added to additional routes in the future (to see if it is really "general")
   - [German original](./docs/de/LEITFADEN-PERFORMANTE-SUCHE-UND-PAGINATION-MIT-TANSTACK-START.md)
-- [PRISMA-EXPLANATION-AND-WORKFLOW_ENGLISH](./docs/en/PRISMA-EXPLANATION-AND-WORKFLOW.md) - how to work with PRISMA and in which situation you should use which commands.
+- [PRISMA WORKFLOW & MIGRATION GUIDE](./docs/en/PRISMA-EXPLANATION-AND-WORKFLOW.md) - how to work with PRISMA and in which situation you should use which commands.
   - [German original](./docs/de/PRISMA-ERKLAERUNG-UND-WORKFLOW.md)
 - [CI-CD-SETUP-NEON-VERCEL-AND-GITHUB-ACTIONS](./docs/en/CI-CD-SETUP-NEON-VERCEL-AND-GITHUB-ACTIONS.md) - how to setup a CI/CD pipeline with protection of master branch, automatic tests during pull requests and cleanup of neon database branches after the pull request has been merged.
   - [German orginal](./docs/de/CI-CD-SETUP-NEON-VERCEL-UND-GITHUB-ACTIONS.md)
-- [FORM-SYSTEM-TANSTACK-REACT-FORM](./docs/en/FORM-SYSTEM-TANSTACK-REACT-FORM.md) - how to setup @tanstack/react-form and use a form debugger during development. It also contains "guidelines" for forms in this project
+- [ARCHITECTURE DOCUMENTATION: FORM SYSTEM WITH @tanstack/react-form](./docs/en/FORM-SYSTEM-TANSTACK-REACT-FORM.md) - how to setup @tanstack/react-form and use a form debugger during development. It also contains "guidelines" for forms in this project
   - [German original](./docs/de/FORMULAR-SYSTEM-TANSTACK-REACT-FORM.md)
 
 ### Misc knowledge gems

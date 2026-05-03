@@ -1,4 +1,3 @@
-````markdown
 # Server Function System
 
 **Version:** 26.418.1
@@ -32,7 +31,6 @@ export type ActionResponse<T = void> = {
   | { success: false; error: string }
 )
 ```
-````
 
 For known, user-caused errors (e.g., validation, missing permissions) that can safely be sent to the frontend, a dedicated error class exists:
 
@@ -349,8 +347,4 @@ const onSubmit = async (values: FormValues) => {
     },
   )
 }
-```
-
-```
-
 ```

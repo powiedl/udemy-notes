@@ -1,14 +1,15 @@
 import { exportMdFileSchema } from '#/schemas/export-file'
 import { authFn } from '#/lib/rpc'
 import { withLogging } from '#/schemas/api-utils'
-import { importHtmlFileSchema } from '#/schemas/import-file'
+import { importFileSchema } from '#/schemas/import-file'
 import {
   exportMdFileLogic,
   importHtmlFileLogic,
+  importMdFileLogic,
 } from './import-export.logic.server'
 
 // #region validation schemas
-export const importHtmlFileValidationSchema = importHtmlFileSchema
+export const importFileValidationSchema = importFileSchema
 export const exportMdFileValidationSchema = withLogging(exportMdFileSchema)
 // #endregion
 
@@ -25,11 +26,20 @@ export type AwaitedReturnTypeImportHtmlFile = Awaited<
  * delegiert die Verarbeitung an `importHtmlFileLogic`.
  */
 export const importHtmlFile = authFn
-  .inputValidator(importHtmlFileValidationSchema)
+  .inputValidator(importFileValidationSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction('importHtmlFile', context, data, async () => {
       return importHtmlFileLogic(data, context.session.user.id)
+    })
+  })
+
+export const importMdFile = authFn
+  .inputValidator(importFileValidationSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    return await wrapServerAction('importMdFile', context, data, async () => {
+      return importMdFileLogic(data, context.session.user.id)
     })
   })
 

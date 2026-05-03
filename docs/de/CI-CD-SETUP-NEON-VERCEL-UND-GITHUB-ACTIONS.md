@@ -233,3 +233,50 @@ Vercel-Deployments sind temporär, aber die dazugehörigen Neon-Branches können
 6. **Merge:** Auf GitHub "Squash and merge" klicken (löst Vercel Prod-Deployment aus).
 7. **Automatisierung Ende:** GitHub Action löscht den temporären Neon-Branch automatisch.
 8. **Aufräumen:** Lokal auf `master` wechseln, `git pull` ausführen und `git branch -D mein-feature` nutzen, um den lokalen Branch zu entfernen.
+
+---
+
+## Teil 3: Troubleshooting (Bekannte Probleme & Lösungen)
+
+### 1. BetterAuth "Invalid Origin" / 403 Forbidden in Previews
+
+In Vercel-Preview-Umgebungen schlägt der Login oder das Sign-Up oft mit einem **403 Forbidden** oder dem Fehler **"Invalid Origin"** fehl. Dies liegt am strengen CSRF-Schutz von BetterAuth, der die Browser-URL strikt mit der konfigurierten `baseURL` abgleicht.
+
+**Die Ursache:**
+Vercel generiert pro Deployment zwei Arten von URLs:
+
+1.  **Die Deployment-URL (ID-URL):** Enthält eine zufällige ID (z.B. `projekt-id-username.vercel.app`).
+2.  **Die Branch-URL (Alias):** Der "schöne Name", der den Git-Branch enthält.
+
+Standardmäßig befüllt Vercel die Variable `VERCEL_URL` nur mit der **ID-URL**. Wenn du jedoch die "schöne" Branch-URL im Browser nutzt, erkennt BetterAuth eine Diskrepanz und blockiert die Anfrage.
+
+**Die Lösung:**
+Passe die `getBaseUrl`-Logik in der `auth.ts` an, um die Branch-URL zu bevorzugen, und aktiviere den `trustHost`-Modus, damit funktioniert der Zugriff aber **NUR NOCH** über die Branch-URL:
+
+1.  **Code-Anpassung in `auth.ts`:**
+
+    ```typescript
+    const getBaseUrl = () => {
+      if (process.env.VERCEL_ENV === 'preview') {
+        // Nutzt den schönen Branch-Namen falls vorhanden, sonst die ID-URL
+        const url = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL
+        return `https://${url}`
+      }
+      return process.env.BETTER_AUTH_URL || 'http://localhost:3000'
+    }
+
+    export const auth = betterAuth({
+      baseURL: getBaseUrl(),
+      advanced: {
+        trustHost: true, // Erlaubt BetterAuth, dem Host-Header von Vercel zu vertrauen
+        cookiePrefix: 'dein-projekt-name',
+      },
+      // ... restliche Konfiguration
+    })
+    ```
+
+2.  **Vercel Einstellungen:**
+    Stelle sicher, dass in den Vercel Projekt-Einstellungen unter **Settings -> Environment Variables** die Option **"Automatically expose System Environment Variables"** aktiviert ist, damit `VERCEL_BRANCH_URL` verfügbar ist.
+
+**Best Practice für Tests:**
+Sollte der Login über die Branch-URL ("schöner Name") dennoch zicken, verwende für manuelle Tests in der Preview-Phase immer die **Deployment-URL (ID-URL)**. Diese ist die technisch "primäre" URL für Vercel und BetterAuth.
