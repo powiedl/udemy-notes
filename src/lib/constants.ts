@@ -27,3 +27,10 @@ export const EMPTY_CLIENT_LOGGING_METADATA: ClientLoggingMetadata = {
 
 export const SERVER_ERROR_SANITIZED_MESSAGE =
   'POWIDL - An unexpected Server error occured ...'
+
+export const HTML_COMMENT_START = '<!--'
+export const HTML_COMMENT_END = '-->'
+
+export const EXAMPLE_SIGNING_SECRET = 'udemy-notes-secure-metadata'
+export const SIGNING_SECRET =
+  process.env.SIGNING_SECRET || EXAMPLE_SIGNING_SECRET

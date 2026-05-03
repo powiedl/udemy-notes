@@ -1,9 +1,13 @@
 import type { Note } from '#/generated/prisma/client'
 import { prisma } from '#/lib/db.server'
 import type { Prisma } from '#/lib/db.server'
-import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
+import {
+  HTML_COMMENT_END,
+  HTML_COMMENT_START,
+  MAX_FILE_SIZE_UPLOAD,
+} from '#/lib/constants'
 import { ServerActionError } from '#/types/errors'
-import { processNoteForMarkdown } from '#/lib/export-helper'
+import { generateSignature, processNoteForMarkdown } from '#/lib/export-helper'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
 import type { ImportFileSchema } from '#/schemas/import-file'
 import { orderInfo } from '#/lib/udemy'
@@ -25,6 +29,7 @@ type ExportCoursePayload = Prisma.CourseGetPayload<{
 // Datentyp für die aus einer Datei (HTML oder Markdown) ausgelesenen Informationen
 export type ParsedCourseData = {
   title: string
+  courseId?: string
   courseTags: string[]
   courseTrainers: string[]
   notes: {
@@ -63,11 +68,11 @@ export function checkConflict(
 
 // #region import
 export const syncCourseToDatabase = async (
-  parsedData: ParsedCourseData,
+  parsedData: ParsedCourseData & { courseId?: string },
   data: ImportFileSchema,
   userId: string,
 ) => {
-  // 1. Trainer verschmelzen (Formular + Markdown)
+  // 1. Trainer verschmelzen
   const formTrainers = data.trainers
     .filter((t): t is string => typeof t === 'string')
     .map((t) => t.trim())
@@ -77,14 +82,27 @@ export const syncCourseToDatabase = async (
     new Set([...formTrainers, ...parsedData.courseTrainers]),
   )
 
-  // 2. Kurs laden (inklusive bestehender Verknüpfungen)
-  const existingCourse = await prisma.course.findFirst({
-    where: { userId, title: parsedData.title },
-    include: {
-      tags: { include: { tag: true } },
-      trainers: { include: { trainer: true } },
-    },
-  })
+  // 2. Kurs laden
+  let existingCourse = null
+  if (parsedData.courseId) {
+    existingCourse = await prisma.course.findFirst({
+      where: { id: parsedData.courseId, userId },
+      include: {
+        tags: { include: { tag: true } },
+        trainers: { include: { trainer: true } },
+      },
+    })
+  }
+
+  if (!existingCourse) {
+    existingCourse = await prisma.course.findFirst({
+      where: { userId, title: parsedData.title },
+      include: {
+        tags: { include: { tag: true } },
+        trainers: { include: { trainer: true } },
+      },
+    })
+  }
 
   // 3. Kurs-Tags verschmelzen
   let formTagIds = [...data.tagIds]
@@ -100,14 +118,12 @@ export const syncCourseToDatabase = async (
     formTagIds = [...formTagIds, ...createdTags.map((t) => t.id)]
   }
 
-  // Markdown-Tags in IDs umwandeln (und bestehende berücksichtigen)
   const resolvedParsedCourseTagIds = await resolveTagIds(
     parsedData.courseTags,
     userId,
     existingCourse?.tags || [],
   )
 
-  // Alle IDs zusammenwerfen (Set entfernt Duplikate)
   const allCourseTagIds = Array.from(
     new Set([...formTagIds, ...resolvedParsedCourseTagIds]),
   )
@@ -115,7 +131,7 @@ export const syncCourseToDatabase = async (
   let finishedCourse
   let existingNotes: any[] | null = null
 
-  // 4. Kurs Upsert (Delta-Logik)
+  // 4. Kurs Upsert
   if (existingCourse) {
     existingNotes = await prisma.note.findMany({
       where: { courseId: existingCourse.id },
@@ -177,11 +193,25 @@ export const syncCourseToDatabase = async (
 
   const courseId = finishedCourse.id
 
-  // 5. Notizen-Verarbeitung (Identisch mit letztem Schritt)
+  // 5. Notizen-Verarbeitung (String-basiert)
   const notePromises = []
   let numberOfConflicts = 0
 
   for (const note of parsedData.notes) {
+    const finalOriginalContent =
+      note.parsedOriginalContent !== null
+        ? note.parsedOriginalContent
+        : note.parsedContent
+
+    const finalEditedContent =
+      note.parsedOriginalContent !== null ? note.parsedContent : ''
+
+    // Validierung: Überspringe Notizen, die keinerlei Inhalt haben
+    if (!finalOriginalContent.trim() && !finalEditedContent.trim()) {
+      continue
+    }
+
+    // Vergleich erfolgt direkt als String ("hh:mm:ss")
     const existingNote = existingNotes?.find(
       (n) =>
         n.timestamp === note.timestamp &&
@@ -194,12 +224,6 @@ export const syncCourseToDatabase = async (
       note.lecture,
       note.timestamp,
     )
-    const finalOriginalContent =
-      note.parsedOriginalContent !== null
-        ? note.parsedOriginalContent
-        : note.parsedContent
-    const finalEditedContent =
-      note.parsedOriginalContent !== null ? note.parsedContent : ''
 
     const resolvedTagIds = await resolveTagIds(
       note.noteTags,
@@ -251,7 +275,9 @@ export const syncCourseToDatabase = async (
 
   await Promise.all(notePromises)
   return { courseId, numberOfConflicts }
-} // #region HTML
+}
+
+// #region HTML
 /**
  * Kern-Logik für den Import einer Udemy-HTML-Datei.
  *
@@ -395,6 +421,7 @@ export const importMdFileLogic = async (
   userId: string,
 ) => {
   // --- 1. Validierung ---
+  // @ts-ignore
   if (data.fileSize > MAX_FILE_SIZE_UPLOAD) {
     throw new ServerActionError('File too large. Maximum size exceeded.')
   }
@@ -422,7 +449,7 @@ export const importMdFileLogic = async (
     numberOfConflicts,
     courseId,
   }
-}
+} // #endregion
 // #endregion
 // #endregion
 
@@ -481,8 +508,20 @@ export const exportMdFileLogic = async (
   if (!course) throw new ServerActionError('Course not found')
 
   // --- Markdown-Generierung ---
-  let markdown = `# ${course.title}\n\n`
+  const courseMetaData = {
+    courseId: course.id,
+    courseTitle: course.title,
+  }
+  const courseSignature = generateSignature(courseMetaData)
+  const courseMetaWithSig = { ...courseMetaData, sig: courseSignature }
 
+  const courseMetaTag =
+    HTML_COMMENT_START +
+    ' udemy-course-meta: ' +
+    JSON.stringify(courseMetaWithSig) +
+    ' ' +
+    HTML_COMMENT_END
+  let markdown = `${courseMetaTag}\n# ${course.title}\n\n`
   if (includeTrainers && course.trainers.length > 0) {
     markdown += `Trainers:\n`
     course.trainers.forEach((t) => {
