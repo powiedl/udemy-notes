@@ -447,7 +447,9 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
                   field.state.meta.isTouched
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Course HTML</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>
+                      Course HTML or Markdown (by exporting a Course)
+                    </FieldLabel>
                     <div className="group relative mt-2">
                       <div
                         onDragOver={(e) => {

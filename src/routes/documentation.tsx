@@ -45,7 +45,12 @@ function RouteComponent() {
           <Link to="/" className="text-lagoon font-semibold hover:underline">
             Home page
           </Link>{' '}
-          to obtain your Udemy notes HTML file.
+          to obtain your Udemy notes HTML file. Alternatively you can import a
+          markdown file (which was previously exported from this application).
+          The markdown must contain the notes meta data. If it contains trainer
+          names and/or tags these information will be applied to the imported
+          course (in addition to existing tags and trainers and also in addtion
+          to the tags and trainers choosen in the import form)
         </p>
         <p className="text-base leading-8 text-(--sea-ink-soft) mb-4">
           The HTML file is preprocessed on your computer (only the title and the
@@ -67,6 +72,13 @@ function RouteComponent() {
             <li>
               <strong>Private vs Public:</strong> You can create new private
               tags during import that only you can see.
+            </li>
+            <li>
+              <strong>Existing informaton:</strong> If you re-import a course
+              the information already in the database (tags and trainer names)
+              will persist. If you want to remove them you have to do this
+              manual (or by completely deleting the course and importing it
+              again.)
             </li>
           </ul>
         </div>
