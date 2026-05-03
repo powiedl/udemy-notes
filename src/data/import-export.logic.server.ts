@@ -122,12 +122,12 @@ export const syncCourseToDatabase = async (
       include: { tags: { include: { tag: true } } },
     })
 
-    const existingCourseTagIds = (existingCourse.tags || []).map((t) => t.tagId)
+    const existingCourseTagIds = existingCourse.tags.map((t) => t.tagId)
     const courseTagsToCreate = allCourseTagIds.filter(
       (id) => !existingCourseTagIds.includes(id),
     )
 
-    const existingTrainerNames = (existingCourse.trainers || []).map(
+    const existingTrainerNames = existingCourse.trainers.map(
       (t) => t.trainer.name,
     )
     const trainersToCreate = allTrainerNames.filter(
@@ -360,13 +360,13 @@ export const parseMarkdownCourse = (mdContent: string): ParsedCourseData => {
       /\*\s*Timestamp:\s*(\d{1,2}:\d{2}(?::\d{2})?)/,
     )
 
-    const tagsSectionMatch = block.match(/\*\s*Tags:\s*([\s\S]*?)(?=###|$)/)
+    const noteTagsMatch = block.match(/\*\s*Tags:\s*([\s\S]*?)(?=###|$)/)
     let noteTags: string[] = []
-    if (tagsSectionMatch) {
-      noteTags = tagsSectionMatch[1]
+    if (noteTagsMatch) {
+      noteTags = noteTagsMatch[1]
         .split('\n')
         .map((line) => line.trim())
-        .filter((line) => line.startsWith('-') || line.startsWith('*')) // Akzeptiert - und *
+        .filter((line) => line.startsWith('-') || line.startsWith('*'))
         .map((line) => line.replace(/^[-*]\s*/, '').trim())
     }
 
@@ -437,7 +437,6 @@ export const exportMdFileLogic = async (
   data: ExportMdFileSchema,
   userId: string,
 ) => {
-  const { prisma } = await import('#/lib/db.server')
   const {
     courseId,
     includeNotesMetadata,

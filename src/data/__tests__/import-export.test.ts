@@ -157,6 +157,8 @@ describe('importHtmlFileLogic', () => {
       // Bestehender Kurs
       prismaMock.course.findFirst.mockResolvedValue({
         id: 'existing_id',
+        tags: [],
+        trainers: [],
       } as any)
       prismaMock.course.update.mockResolvedValue({ id: 'existing_id' } as any)
 

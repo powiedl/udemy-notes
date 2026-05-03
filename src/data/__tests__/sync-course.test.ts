@@ -1,12 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-  syncCourseToDatabase,
-  ParsedCourseData,
-} from '../import-export.logic.server'
+import { syncCourseToDatabase } from '../import-export.logic.server'
+import type { ParsedCourseData } from '../import-export.logic.server'
 import { prisma } from '#/lib/db.server'
 import { resolveTagIds } from '#/lib/tag-helpers.server'
 // import { checkConflict } from '../import-export.logic.server'
-import { ImportFileSchema } from '#/schemas/import-file'
+import type { ImportFileSchema } from '#/schemas/import-file'
 
 // --- 1. Mocks einrichten ---
 vi.mock('#/lib/db.server', () => ({
@@ -81,9 +79,9 @@ describe('syncCourseToDatabase', () => {
     const createCallArgs = vi.mocked(prisma.course.create).mock.calls[0][0].data
 
     // Erwartet "FormTrainer" und "MdTrainer"
-    expect(createCallArgs?.trainers?.create).toHaveLength(2)
+    expect(createCallArgs.trainers?.create).toHaveLength(2)
     // Erwartet "form-tag-1" und "resolved-md-tag-id"
-    expect(createCallArgs?.tags?.create).toHaveLength(2)
+    expect(createCallArgs.tags?.create).toHaveLength(2)
   })
 
   it('2. Delta-Logik: sollte bei existierendem Kurs nur NEUE Trainer und Tags hinzufügen', async () => {
@@ -105,8 +103,8 @@ describe('syncCourseToDatabase', () => {
 
     const updateCallArgs = vi.mocked(prisma.course.update).mock.calls[0][0].data
 
-    const createdTrainers = updateCallArgs?.trainers?.create as any[]
-    const createdTags = updateCallArgs?.tags?.create as any[]
+    const createdTrainers = updateCallArgs.trainers?.create as any[]
+    const createdTags = updateCallArgs.tags?.create as any[]
 
     // Da "FormTrainer" schon existiert, darf NUR noch "MdTrainer" neu angelegt werden!
     expect(createdTrainers).toHaveLength(1)
@@ -119,8 +117,8 @@ describe('syncCourseToDatabase', () => {
     expect(createdTags[0].tagId).toBe('resolved-md-tag-id')
 
     // WICHTIG: Prüfen, dass deleteMany NICHT aufgerufen wurde
-    expect(updateCallArgs?.tags?.deleteMany).toBeUndefined()
-    expect(updateCallArgs?.trainers?.deleteMany).toBeUndefined()
+    expect(updateCallArgs.tags?.deleteMany).toBeUndefined()
+    expect(updateCallArgs.trainers?.deleteMany).toBeUndefined()
   })
 
   it('3. Delta-Logik bei Notizen: sollte nur neue Note-Tags verknüpfen', async () => {
@@ -149,13 +147,9 @@ describe('syncCourseToDatabase', () => {
     expect(prisma.note.update).toHaveBeenCalledTimes(1)
 
     const noteUpdateArgs = vi.mocked(prisma.note.update).mock.calls[0][0].data
-    const createdNoteTags = noteUpdateArgs?.tags?.create as any[]
+    const createdNoteTags = noteUpdateArgs.tags?.create as any[]
 
     // Da das Tag schon an der Notiz hängt, darf "create" leer sein!
-    if (createdNoteTags) {
-      expect(createdNoteTags).toHaveLength(0)
-    } else {
-      expect(createdNoteTags).toBeUndefined()
-    }
+    expect(createdNoteTags).toHaveLength(0)
   })
 })

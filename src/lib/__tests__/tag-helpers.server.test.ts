@@ -43,7 +43,7 @@ describe('resolveTagIds', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ] as any)
+    ])
 
     const result = await resolveTagIds(['react'], userId, [])
 
@@ -69,7 +69,7 @@ describe('resolveTagIds', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ] as any)
+    ])
 
     const result = await resolveTagIds(['css'], userId, [])
 
@@ -109,7 +109,7 @@ describe('resolveTagIds', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-    ] as any)
+    ])
 
     vi.mocked(prisma.tag.create).mockResolvedValue({ id: 'new-3' } as any)
 

@@ -1,4 +1,5 @@
 import { prisma } from '#/lib/db.server'
+
 type ExistingNoteOrCourseTag = {
   tag: {
     id: string
