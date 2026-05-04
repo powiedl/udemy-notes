@@ -17,6 +17,16 @@ import {
 } from 'lucide-react'
 import { z } from 'zod'
 import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '#/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -48,7 +58,12 @@ import {
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
-import { importHtmlFile, importMdFile } from '#/data/import-export'
+// checkImportFile importiert
+import {
+  importHtmlFile,
+  importMdFile,
+  checkImportFile,
+} from '#/data/import-export'
 import { getTrainerSuggestionsFn } from '#/data/course'
 import { getTagsForSelectorFn } from '#/data/tag'
 import { handleAction } from '#/lib/client-utils'
@@ -78,11 +93,13 @@ const importFormSchema = z.object({
   newPrivateTags: z.array(z.string()),
 })
 
-export function ImportHtmlForm({ selector }: { selector: string }) {
+export function ImportForm({ selector }: { selector: string }) {
   const navigate = useNavigate()
   const [isPending, startTransition] = useTransition()
+
   const uploadHtmlFile = useServerFn(importHtmlFile)
   const uploadMdFile = useServerFn(importMdFile)
+  const checkFile = useServerFn(checkImportFile)
   const getTrainerSuggestions = useServerFn(getTrainerSuggestionsFn)
   const getTagsForSelector = useServerFn(getTagsForSelectorFn)
 
@@ -99,10 +116,64 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Neue States für den Sicherheits-Workflow
+  const [showWarningModal, setShowWarningModal] = useState(false)
+  const [pendingImportData, setPendingImportData] = useState<{
+    content: string
+    value: any
+    isMarkdown: boolean
+  } | null>(null)
+
+  // Ausgelagerte Funktion für den finalen Import (wird nach Check oder nach Modal-Bestätigung gerufen)
+  const executeFinalImport = async (
+    content: string,
+    value: any,
+    isMarkdown: boolean,
+    forceReplace: boolean = false,
+  ) => {
+    startTransition(async () => {
+      try {
+        const basePayload = isMarkdown
+          ? prepareMdPayload(value.file, content, value)
+          : prepareHtmlPayload(value.file, content, value, selector)
+
+        // Hängt das neue forceReplace Flag an den Payload an
+        const payload = { ...basePayload, forceReplace }
+
+        const actionPromise = isMarkdown
+          ? uploadMdFile({ data: payload })
+          : uploadHtmlFile({ data: payload })
+
+        const result = await handleAction<{ courseId: string }>(actionPromise, {
+          successToast: 'Course notes processed successfully',
+        })
+
+        if (result.courseId) {
+          await navigate({
+            to: '/courses/$courseId',
+            params: { courseId: result.courseId },
+            search: PAGINATION_DEFAULTS,
+          })
+        }
+      } catch (error) {
+        console.error('Submit Error:', error)
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Ein unerwarteter Fehler ist aufgetreten.'
+
+        toast.error(errorMessage)
+      } finally {
+        setShowWarningModal(false)
+        setPendingImportData(null)
+      }
+    })
+  }
+
   const form = useForm({
     defaultValues: {
       file: null as File | null,
-      trainers: [] as string[], // Geändert zu Array!
+      trainers: [] as string[],
       tagIds: [] as string[],
       newPrivateTags: [] as string[],
     },
@@ -118,31 +189,32 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
           const fileContent = await file.text()
           const isMarkdown = file.name.toLowerCase().endsWith('.md')
 
-          const actionPromise = isMarkdown
-            ? uploadMdFile({
-                data: prepareMdPayload(file, fileContent, value),
-              })
-            : uploadHtmlFile({
-                data: prepareHtmlPayload(file, fileContent, value, selector),
-              })
+          // HTML Dateien haben keine Signatur, direkter Import
+          if (!isMarkdown) {
+            await executeFinalImport(fileContent, value, isMarkdown, false)
+            return
+          }
 
-          const result = await handleAction<{ courseId: string }>(
-            actionPromise,
-            { successToast: 'Course notes processed successfully' },
+          // Voranalyse der Markdown-Datei
+          const checkResult = await handleAction(
+            checkFile({ data: { fileContent } }),
+            { showSuccessToast: false, showErrorToast: true },
           )
 
-          await navigate({
-            to: '/courses/$courseId',
-            params: { courseId: result.courseId },
-            search: PAGINATION_DEFAULTS,
-          })
+          if (checkResult.status === 'INTEGRITY_MISMATCH') {
+            // Manipulation! Wir speichern die Daten für den Fall, dass der User bestätigt
+            setPendingImportData({ content: fileContent, value, isMarkdown })
+            setShowWarningModal(true)
+          } else {
+            // Alles ok (INTEGRITY_OK oder NO_METADATA), ganz normal importieren
+            await executeFinalImport(fileContent, value, isMarkdown, false)
+          }
         } catch (error) {
-          console.error('Submit Error:', error)
+          console.error('Check Error:', error)
           const errorMessage =
             error instanceof Error
               ? error.message
-              : 'Ein unerwarteter Fehler ist aufgetreten.'
-
+              : 'Ein unerwarteter Fehler ist beim Prüfen aufgetreten.'
           toast.error(errorMessage)
         }
       })
@@ -156,7 +228,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
 
   const fetchSuggestions = async (val: string) => {
     const res = await getTrainerSuggestions({
-      data: { query: val, loggingMetadata: { component: 'ImportHtmlForm' } },
+      data: { query: val, loggingMetadata: { component: 'ImportForm' } },
     })
     if (res.success) {
       setSuggestions({
@@ -170,7 +242,7 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
   useEffect(() => {
     const loadTags = async () => {
       const res = await getTagsForSelector({
-        data: { loggingMetadata: { component: 'ImportHtmlForm' } },
+        data: { loggingMetadata: { component: 'ImportForm' } },
       })
       if (res.success) setAvailableTags(res.data)
     }
@@ -178,148 +250,171 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
   }, [])
 
   return (
-    <Card className="max-w-md w-full mx-auto">
-      <CardHeader>
-        <CardTitle>Import your course</CardTitle>
-        <CardDescription>
-          Select trainers, tags and upload your Udemy HTML notes or an exported
-          markdown file from this app.
-        </CardDescription>
-      </CardHeader>
+    <>
+      <Card className="max-w-md w-full mx-auto">
+        <CardHeader>
+          <CardTitle>Import your course</CardTitle>
+          <CardDescription>
+            Select trainers, tags and upload your Udemy HTML notes or an
+            exported markdown file from this app.
+          </CardDescription>
+        </CardHeader>
 
-      <CardContent>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            form.handleSubmit()
-          }}
-          className="space-y-6"
-        >
-          {/* Trainer Feld */}
-          <form.Field
-            name="trainers"
-            children={(field) => {
-              const selectedTrainers = field.state.value
-
-              const handleAddTrainer = (name: string) => {
-                const trimmed = name.trim()
-                if (trimmed && !selectedTrainers.includes(trimmed)) {
-                  field.handleChange([...selectedTrainers, trimmed])
-                }
-                setCurrentTrainerInput('')
-                setShowSuggestions(false)
-              }
-
-              const handleRemoveTrainer = (name: string) => {
-                field.handleChange(selectedTrainers.filter((t) => t !== name))
-              }
-
-              return (
-                <Field className="relative">
-                  <FieldLabel htmlFor="trainer-input">
-                    Trainer (Optional)
-                  </FieldLabel>
-
-                  {/* Ausgewählte Trainer als Badges anzeigen */}
-                  {selectedTrainers.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2 mb-2 min-h-6">
-                      {selectedTrainers.map((t) => (
-                        <Badge
-                          key={t}
-                          variant="secondary"
-                          className="pl-2 pr-1 py-0.5 gap-1 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
-                        >
-                          <User className="h-3 w-3" />
-                          {t}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveTrainer(t)}
-                            className="hover:bg-blue-200 rounded-full p-0.5 ml-1 transition-colors"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="relative mt-2">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="trainer-input"
-                      className="pl-9"
-                      value={currentTrainerInput}
-                      onFocus={(e) => fetchSuggestions(e.target.value)}
-                      onBlur={() =>
-                        setTimeout(() => setShowSuggestions(false), 200)
-                      }
-                      onChange={(e) => {
-                        setCurrentTrainerInput(e.target.value)
-                        fetchSuggestions(e.target.value)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleAddTrainer(currentTrainerInput)
-                        }
-                      }}
-                      placeholder="Name of the trainer ... (Press Enter)"
-                      autoComplete="off"
-                    />
-                  </div>
-
-                  {showSuggestions && (
-                    <div
-                      className="absolute left-0 right-0 z-100 bg-popover border border-border rounded-md shadow-xl"
-                      style={{
-                        top: 'calc(100% + 4px)',
-                        minWidth: '200px',
-                      }}
-                    >
-                      <div className="max-h-60 overflow-y-auto">
-                        {suggestions.suggestions.map((name) => (
-                          <button
-                            key={name}
-                            type="button"
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors"
-                            onClick={() => handleAddTrainer(name)}
-                          >
-                            {name}
-                          </button>
-                        ))}
-
-                        {suggestions.hasMore && (
-                          <div className="px-4 py-2 text-center text-muted-foreground bg-muted/30 border-t border-border/50 text-[10px] italic">
-                            ... more results available
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </Field>
-              )
+        <CardContent>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              form.handleSubmit()
             }}
-          />
+            className="space-y-6"
+          >
+            {/* Trainer Feld */}
+            <form.Field
+              name="trainers"
+              children={(field) => {
+                const selectedTrainers = field.state.value
 
-          {/* Tags Sektion */}
-          <div className="space-y-2">
-            <FieldLabel>Kurs-Tags</FieldLabel>
-            <div className="flex flex-wrap gap-2 min-h-6">
-              {tagIds.map((id: string) => {
-                const tag = availableTags.find((t) => t.id === id)
+                const handleAddTrainer = (name: string) => {
+                  const trimmed = name.trim()
+                  if (trimmed && !selectedTrainers.includes(trimmed)) {
+                    field.handleChange([...selectedTrainers, trimmed])
+                  }
+                  setCurrentTrainerInput('')
+                  setShowSuggestions(false)
+                }
+
+                const handleRemoveTrainer = (name: string) => {
+                  field.handleChange(selectedTrainers.filter((t) => t !== name))
+                }
+
                 return (
+                  <Field className="relative">
+                    <FieldLabel htmlFor="trainer-input">
+                      Trainer (Optional)
+                    </FieldLabel>
+
+                    {/* Ausgewählte Trainer als Badges anzeigen */}
+                    {selectedTrainers.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2 mb-2 min-h-6">
+                        {selectedTrainers.map((t) => (
+                          <Badge
+                            key={t}
+                            variant="secondary"
+                            className="pl-2 pr-1 py-0.5 gap-1 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
+                          >
+                            <User className="h-3 w-3" />
+                            {t}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveTrainer(t)}
+                              className="hover:bg-blue-200 rounded-full p-0.5 ml-1 transition-colors"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="relative mt-2">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="trainer-input"
+                        className="pl-9"
+                        value={currentTrainerInput}
+                        onFocus={(e) => fetchSuggestions(e.target.value)}
+                        onBlur={() =>
+                          setTimeout(() => setShowSuggestions(false), 200)
+                        }
+                        onChange={(e) => {
+                          setCurrentTrainerInput(e.target.value)
+                          fetchSuggestions(e.target.value)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleAddTrainer(currentTrainerInput)
+                          }
+                        }}
+                        placeholder="Name of the trainer ... (Press Enter)"
+                        autoComplete="off"
+                      />
+                    </div>
+
+                    {showSuggestions && (
+                      <div
+                        className="absolute left-0 right-0 z-100 bg-popover border border-border rounded-md shadow-xl"
+                        style={{
+                          top: 'calc(100% + 4px)',
+                          minWidth: '200px',
+                        }}
+                      >
+                        <div className="max-h-60 overflow-y-auto">
+                          {suggestions.suggestions.map((name) => (
+                            <button
+                              key={name}
+                              type="button"
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors"
+                              onClick={() => handleAddTrainer(name)}
+                            >
+                              {name}
+                            </button>
+                          ))}
+
+                          {suggestions.hasMore && (
+                            <div className="px-4 py-2 text-center text-muted-foreground bg-muted/30 border-t border-border/50 text-[10px] italic">
+                              ... more results available
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </Field>
+                )
+              }}
+            />
+
+            {/* Tags Sektion */}
+            <div className="space-y-2">
+              <FieldLabel>Kurs-Tags</FieldLabel>
+              <div className="flex flex-wrap gap-2 min-h-6">
+                {tagIds.map((id: string) => {
+                  const tag = availableTags.find((t) => t.id === id)
+                  return (
+                    <Badge
+                      key={id}
+                      variant="secondary"
+                      className="pl-2 pr-1 py-0.5 gap-1"
+                    >
+                      {tag?.name}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          form.setFieldValue('tagIds', (prev) =>
+                            prev.filter((i) => i !== id),
+                          )
+                        }
+                        className="hover:bg-muted rounded-full p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )
+                })}
+                {newPrivateTags.map((name: string) => (
                   <Badge
-                    key={id}
-                    variant="secondary"
-                    className="pl-2 pr-1 py-0.5 gap-1"
+                    key={name}
+                    variant="outline"
+                    className="pl-2 pr-1 py-0.5 gap-1 border-primary/50 bg-primary/5"
                   >
-                    {tag?.name}
+                    {name}{' '}
+                    <span className="text-[10px] text-primary/70">(Neu)</span>
                     <button
                       type="button"
                       onClick={() =>
-                        form.setFieldValue('tagIds', (prev) =>
-                          prev.filter((i) => i !== id),
+                        form.setFieldValue('newPrivateTags', (prev) =>
+                          prev.filter((n) => n !== name),
                         )
                       }
                       className="hover:bg-muted rounded-full p-0.5"
@@ -327,239 +422,267 @@ export function ImportHtmlForm({ selector }: { selector: string }) {
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>
-                )
-              })}
-              {newPrivateTags.map((name: string) => (
-                <Badge
-                  key={name}
-                  variant="outline"
-                  className="pl-2 pr-1 py-0.5 gap-1 border-primary/50 bg-primary/5"
-                >
-                  {name}{' '}
-                  <span className="text-[10px] text-primary/70">(Neu)</span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      form.setFieldValue('newPrivateTags', (prev) =>
-                        prev.filter((n) => n !== name),
-                      )
-                    }
-                    className="hover:bg-muted rounded-full p-0.5"
+                ))}
+              </div>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between font-normal text-muted-foreground"
                   >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between font-normal text-muted-foreground"
+                    <div className="flex items-center">
+                      <TagIcon className="mr-2 h-4 w-4" /> Choose Tag ...
+                    </div>
+                    <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="p-0 w-(--radix-popover-trigger-width)"
+                  align="start"
                 >
-                  <div className="flex items-center">
-                    <TagIcon className="mr-2 h-4 w-4" /> Tags auswählen...
-                  </div>
-                  <ChevronsUpDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="p-0 w-(--radix-popover-trigger-width)"
-                align="start"
-              >
-                <Command>
-                  <CommandInput
-                    placeholder="Suchen..."
-                    value={tagQuery}
-                    onValueChange={setTagQuery}
-                  />
-                  <CommandList>
-                    <CommandEmpty className="p-0">
-                      <button
-                        type="button"
-                        className="flex items-center w-full px-4 py-3 text-sm hover:bg-accent transition-colors text-primary"
-                        onClick={() => {
-                          if (tagQuery && !newPrivateTags.includes(tagQuery)) {
-                            form.setFieldValue('newPrivateTags', (prev) => [
-                              ...prev,
-                              tagQuery,
-                            ])
-                            setTagQuery('')
-                          }
-                        }}
-                      >
-                        <Plus className="mr-2 h-4 w-4" /> Privates Tag "
-                        {tagQuery}" erstellen
-                      </button>
-                    </CommandEmpty>
-                    <CommandGroup>
-                      {availableTags.map((tag) => {
-                        const isSelected = tagIds.includes(tag.id)
-                        return (
-                          <CommandItem
-                            key={tag.id}
-                            onSelect={() => {
-                              if (!isSelected)
-                                form.setFieldValue('tagIds', (prev) => [
-                                  ...prev,
-                                  tag.id,
-                                ])
-                              else
-                                form.setFieldValue('tagIds', (prev) =>
-                                  prev.filter((id) => id !== tag.id),
-                                )
-                            }}
-                          >
-                            <div
-                              className={cn(
-                                'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
-                                isSelected
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'opacity-50',
-                              )}
-                            >
-                              {isSelected && <Check className="h-3 w-3" />}
-                            </div>
-                            {tag.name}
-                            {tag.userId && (
-                              <span className="ml-auto text-[10px] text-muted-foreground uppercase">
-                                Privat
-                              </span>
-                            )}
-                          </CommandItem>
-                        )
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Dropzone */}
-          <FieldGroup>
-            <form.Field
-              name="file"
-              children={(field) => {
-                const isInvalid =
-                  field.state.meta.errors.length > 0 &&
-                  field.state.meta.isTouched
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>
-                      Course HTML or Markdown (by exporting a Course)
-                    </FieldLabel>
-                    <div className="group relative mt-2">
-                      <div
-                        onDragOver={(e) => {
-                          e.preventDefault()
-                          setIsDragging(true)
-                        }}
-                        onDragLeave={() => setIsDragging(false)}
-                        onDrop={(e) => {
-                          e.preventDefault()
-                          setIsDragging(false)
-                          const files = e.dataTransfer.files
-                          if (files.length > 0) field.handleChange(files[0])
-                        }}
-                        onClick={() => fileInputRef.current?.click()}
-                        className={cn(
-                          'flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-all',
-                          isDragging
-                            ? 'border-primary bg-primary/10 scale-[1.01]'
-                            : 'border-slate-300 bg-slate-50 dark:bg-slate-900/50 dark:border-slate-700',
-                          isInvalid
-                            ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
-                            : 'hover:bg-slate-100 dark:hover:bg-slate-800',
-                        )}
-                      >
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center pointer-events-none">
-                          {field.state.value ? (
-                            <>
-                              <div className="p-3 bg-primary/10 rounded-full mb-3 text-primary">
-                                <FileText className="w-8 h-8" />
-                              </div>
-                              <p className="text-sm font-semibold">
-                                {field.state.value.name}
-                              </p>
-                              <p className="text-xs text-slate-500 mt-1">
-                                Ready for import.
-                              </p>
-                            </>
-                          ) : (
-                            <>
-                              <CloudUpload
-                                className={`w-10 h-10 mb-3 ${isInvalid ? 'text-red-500' : 'text-slate-400'}`}
-                              />
-                              <p className="mb-2 text-sm font-medium">
-                                Click to upload{' '}
-                                <span className="text-slate-400 font-normal">
-                                  or drag and drop
-                                </span>
-                              </p>
-                              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                                HTML only
-                              </p>
-                            </>
-                          )}
-                        </div>
-                        <Input
-                          id={field.name}
-                          ref={fileInputRef}
-                          type="file"
-                          className="hidden"
-                          accept=".html,text/html,.md,text/markdown"
-                          onChange={(e) => {
-                            if (e.target.files?.[0])
-                              field.handleChange(e.target.files[0])
-                          }}
-                        />
-                      </div>
-                      {field.state.value && (
-                        <Button
+                  <Command>
+                    <CommandInput
+                      placeholder="Suchen..."
+                      value={tagQuery}
+                      onValueChange={setTagQuery}
+                    />
+                    <CommandList>
+                      <CommandEmpty className="p-0">
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-2 right-2 h-8 w-8 rounded-full z-10"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            field.handleChange(null)
-                            if (fileInputRef.current)
-                              fileInputRef.current.value = ''
+                          className="flex items-center w-full px-4 py-3 text-sm hover:bg-accent transition-colors text-primary"
+                          onClick={() => {
+                            if (
+                              tagQuery &&
+                              !newPrivateTags.includes(tagQuery)
+                            ) {
+                              form.setFieldValue('newPrivateTags', (prev) => [
+                                ...prev,
+                                tagQuery,
+                              ])
+                              setTagQuery('')
+                            }
                           }}
                         >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                    {isInvalid && (
-                      <FieldError errors={field.state.meta.errors} />
-                    )}
-                  </Field>
-                )
-              }}
-            />
-
-            <div className="pt-4">
-              <Button
-                type="submit"
-                className="w-full hover:cursor-pointer font-semibold"
-                disabled={isPending || !canSubmit || !file}
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{' '}
-                    Importing...
-                  </>
-                ) : (
-                  'Import course'
-                )}
-              </Button>
+                          <Plus className="mr-2 h-4 w-4" /> Create private Tag "
+                          {tagQuery}"
+                        </button>
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {availableTags.map((tag) => {
+                          const isSelected = tagIds.includes(tag.id)
+                          return (
+                            <CommandItem
+                              key={tag.id}
+                              onSelect={() => {
+                                if (!isSelected)
+                                  form.setFieldValue('tagIds', (prev) => [
+                                    ...prev,
+                                    tag.id,
+                                  ])
+                                else
+                                  form.setFieldValue('tagIds', (prev) =>
+                                    prev.filter((id) => id !== tag.id),
+                                  )
+                              }}
+                            >
+                              <div
+                                className={cn(
+                                  'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                                  isSelected
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'opacity-50',
+                                )}
+                              >
+                                {isSelected && <Check className="h-3 w-3" />}
+                              </div>
+                              {tag.name}
+                              {tag.userId && (
+                                <span className="ml-auto text-[10px] text-muted-foreground uppercase">
+                                  Privat
+                                </span>
+                              )}
+                            </CommandItem>
+                          )
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
-          </FieldGroup>
-        </form>
-      </CardContent>
-    </Card>
+
+            {/* Dropzone */}
+            <FieldGroup>
+              <form.Field
+                name="file"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.errors.length > 0 &&
+                    field.state.meta.isTouched
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <FieldLabel htmlFor={field.name}>
+                        Course HTML or Markdown (by exporting a Course)
+                      </FieldLabel>
+                      <div className="group relative mt-2">
+                        <div
+                          onDragOver={(e) => {
+                            e.preventDefault()
+                            setIsDragging(true)
+                          }}
+                          onDragLeave={() => setIsDragging(false)}
+                          onDrop={(e) => {
+                            e.preventDefault()
+                            setIsDragging(false)
+                            const files = e.dataTransfer.files
+                            if (files.length > 0) field.handleChange(files[0])
+                          }}
+                          onClick={() => fileInputRef.current?.click()}
+                          className={cn(
+                            'flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer transition-all',
+                            isDragging
+                              ? 'border-primary bg-primary/10 scale-[1.01]'
+                              : 'border-slate-300 bg-slate-50 dark:bg-slate-900/50 dark:border-slate-700',
+                            isInvalid
+                              ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                              : 'hover:bg-slate-100 dark:hover:bg-slate-800',
+                          )}
+                        >
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center pointer-events-none">
+                            {field.state.value ? (
+                              <>
+                                <div className="p-3 bg-primary/10 rounded-full mb-3 text-primary">
+                                  <FileText className="w-8 h-8" />
+                                </div>
+                                <p className="text-sm font-semibold">
+                                  {field.state.value.name}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">
+                                  Ready for import.
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <CloudUpload
+                                  className={`w-10 h-10 mb-3 ${isInvalid ? 'text-red-500' : 'text-slate-400'}`}
+                                />
+                                <p className="mb-2 text-sm font-medium">
+                                  Click to upload{' '}
+                                  <span className="text-slate-400 font-normal">
+                                    or drag and drop
+                                  </span>
+                                </p>
+                                <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
+                                  HTML only
+                                </p>
+                              </>
+                            )}
+                          </div>
+                          <Input
+                            id={field.name}
+                            ref={fileInputRef}
+                            type="file"
+                            className="hidden"
+                            accept=".html,text/html,.md,text/markdown"
+                            onChange={(e) => {
+                              if (e.target.files?.[0])
+                                field.handleChange(e.target.files[0])
+                            }}
+                          />
+                        </div>
+                        {field.state.value && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 h-8 w-8 rounded-full z-10"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              field.handleChange(null)
+                              if (fileInputRef.current)
+                                fileInputRef.current.value = ''
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              />
+
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  className="w-full hover:cursor-pointer font-semibold"
+                  disabled={isPending || !canSubmit || !file}
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />{' '}
+                      Importing...
+                    </>
+                  ) : (
+                    'Import course'
+                  )}
+                </Button>
+              </div>
+            </FieldGroup>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Warn-Modal bei erkannten Manipulationen */}
+      <AlertDialog open={showWarningModal} onOpenChange={setShowWarningModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Attention: Metadata in the file has been changed!
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Metadata in the file does not fit the signature.
+              <br />
+              <br />
+              If you try to import this file, it will replace the information of
+              this course in the database with the information in the file.
+              <br />
+              <br />
+              Do you really want to import this file?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>
+              Abbrechen
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                if (pendingImportData) {
+                  executeFinalImport(
+                    pendingImportData.content,
+                    pendingImportData.value,
+                    pendingImportData.isMarkdown,
+                    true, // forceReplace = true
+                  )
+                }
+              }}
+              disabled={isPending}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              {isPending ? 'Overwriting ...' : 'Yes, overwrite course'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

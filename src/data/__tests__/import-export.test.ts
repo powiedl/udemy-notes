@@ -2,12 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mockDeep, mockReset } from 'vitest-mock-extended'
 import type { DeepMockProxy } from 'vitest-mock-extended'
 import type { PrismaClient } from '#/generated/prisma/client'
-import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
+import {
+  MAX_FILE_SIZE_UPLOAD,
+  HTML_COMMENT_START,
+  HTML_COMMENT_END,
+} from '#/lib/constants'
 import { prisma } from '#/lib/db.server'
 import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown'
 import {
   importHtmlFileLogic,
   exportMdFileLogic,
+  importMdFileLogic, // NEU hinzugefügt
 } from '../import-export.logic.server'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
 
@@ -26,10 +31,96 @@ vi.mock('#/lib/udemy', () => ({
 
 vi.mock('#/lib/export-helper', () => ({
   processNoteForMarkdown: vi.fn(() => 'Mocked Note Markdown'),
+  generateSignature: vi.fn().mockReturnValue('mock-signature-123'),
 }))
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>
 const convertMock = prepareAndConvertHtmlToMarkdown as any
+
+// --- NEUER BLOCK: Tabula Rasa & Markdown Import Sicherheit ---
+describe('importMdFileLogic (Tabula Rasa & Sicherheit)', () => {
+  const userId = 'user_123'
+  const targetCourseId = 'c_999'
+
+  // Ein perfekt signierter Markdown-String für unsere Tests (DNA-Sicher)
+  const mdContent = [
+    HTML_COMMENT_START +
+      ' udemy-course-meta: {"courseId":"' +
+      targetCourseId +
+      '","courseTitle":"DNA Title","sig":"mock-signature-123"} ' +
+      HTML_COMMENT_END,
+    '# DNA Title',
+    HTML_COMMENT_START +
+      ' udemy-note-meta: {"section":"S","lecture":"L","timestamp":"00:00","sig":"mock-signature-123"} ' +
+      HTML_COMMENT_END,
+    '## Note',
+    '* Section: S',
+    '* Lecture: L',
+    '* Timestamp: 00:00',
+    '### Content',
+    'Valid content',
+  ].join('\n')
+
+  const baseInput = {
+    content: mdContent,
+    fileName: 'test.md',
+    fileSize: 1000,
+    trainers: [],
+    tagIds: [],
+    newPrivateTags: [],
+    forceReplace: true, // Wir testen explizit das erzwungene Überschreiben
+  }
+
+  beforeEach(() => {
+    mockReset(prismaMock)
+    vi.clearAllMocks()
+  })
+
+  it('1. Tabula Rasa: Sollte den Kurs und Notizen löschen, wenn forceReplace=true und der Kurs dem User gehört', async () => {
+    // --- GIVEN ---
+    // Der findFirst wird zweimal aufgerufen:
+    // 1. Im Tabula-Rasa-Check (wir sagen: Ja, Kurs gehört dem User -> Objekt zurückgeben)
+    // 2. In der syncCourseToDatabase (wir sagen: Null, da er ja im Schritt davor gelöscht wurde)
+    prismaMock.course.findFirst
+      .mockResolvedValueOnce({ id: targetCourseId } as any)
+      .mockResolvedValueOnce(null)
+
+    prismaMock.course.create.mockResolvedValue({ id: 'new_id' } as any)
+
+    // --- WHEN ---
+    await importMdFileLogic(baseInput, userId)
+
+    // --- THEN ---
+    // Erwartung: Das System hat die alten Daten restlos gelöscht
+    expect(prismaMock.note.deleteMany).toHaveBeenCalledWith({
+      where: { courseId: targetCourseId },
+    })
+    expect(prismaMock.course.delete).toHaveBeenCalledWith({
+      where: { id: targetCourseId },
+    })
+    // Und danach den Kurs neu angelegt
+    expect(prismaMock.course.create).toHaveBeenCalled()
+  })
+
+  it('2. Eigentümer-Schutz: Sollte das Löschen VERWEIGERN, wenn der Kurs-Eigentümer nicht übereinstimmt', async () => {
+    // --- GIVEN ---
+    // User hat eine fremde ID ins Markdown geschmuggelt.
+    // Der findFirst mit { id, userId } wird daher nichts finden -> null
+    prismaMock.course.findFirst.mockResolvedValue(null)
+    prismaMock.course.create.mockResolvedValue({ id: 'new_id' } as any)
+
+    // --- WHEN ---
+    await importMdFileLogic(baseInput, userId)
+
+    // --- THEN ---
+    // Erwartung: Das System ignoriert den Löschbefehl, da der Kurs dem User nicht gehört.
+    expect(prismaMock.note.deleteMany).not.toHaveBeenCalled()
+    expect(prismaMock.course.delete).not.toHaveBeenCalled()
+
+    // Stattdessen wird der Kurs einfach als komplett neuer Kurs für diesen User angelegt.
+    expect(prismaMock.course.create).toHaveBeenCalled()
+  })
+})
 
 describe('importHtmlFileLogic', () => {
   const userId = 'user_123'

@@ -1,8 +1,178 @@
-import { describe, it, expect } from 'vitest'
-import { parseMarkdownCourse } from '../import-export.logic.server' // Pfad ggf. anpassen
+import { describe, it, expect, vi } from 'vitest'
+import {
+  parseMarkdownCourse,
+  checkImportFileLogic,
+} from '../import-export.logic.server'
+import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants'
+import type * as ExportHelper from '#/lib/export-helper'
 
-describe('parseMarkdownCourse', () => {
-  it('1. sollte Titel, Kurs-Trainer und Kurs-Tags aus dem Header korrekt extrahieren', () => {
+// Sicherer Mock mit importOriginal, damit die restlichen Export-Helper intakt bleiben
+vi.mock('#/lib/export-helper', async (importOriginal) => {
+  // Hier nutzen wir nun den sauber importierten Typen
+  const actual = await importOriginal<typeof ExportHelper>()
+  return {
+    ...actual,
+    generateSignature: vi.fn().mockReturnValue('mock-signature-123'),
+  }
+})
+
+describe('A) Voranalyse: checkImportFileLogic (Das Alarmsystem)', () => {
+  it('1. Erlaubte Änderungen: Sollte INTEGRITY_OK zurückgeben, wenn nur Inhalte, Tags oder Trainer verändert wurden', () => {
+    const md = [
+      HTML_COMMENT_START +
+        ' udemy-course-meta: {"courseId":"123","courseTitle":"Original Kurs","sig":"mock-signature-123"} ' +
+        HTML_COMMENT_END,
+      '# Original Kurs',
+      '',
+      'Trainers:',
+      '* Ein völlig neuer Trainer',
+      '',
+      'Tags:',
+      '* neues-tag',
+      '',
+      HTML_COMMENT_START +
+        ' udemy-note-meta: {"section":"1. Intro","lecture":"1. Welcome","timestamp":"00:00","sig":"mock-signature-123"} ' +
+        HTML_COMMENT_END,
+      '## Note',
+      '* Section: 1. Intro',
+      '* Lecture: 1. Welcome',
+      '* Timestamp: 00:00',
+      '* Tags:',
+      '  - note-tag-neu',
+      '',
+      '### Content',
+      'Ich habe den gesamten Text hier umgeschrieben. Die DNA ist aber unangetastet geblieben!',
+    ].join('\n')
+
+    const result = checkImportFileLogic(md)
+    expect(result.status).toBe('INTEGRITY_OK')
+    expect(result.courseTitle).toBe('Original Kurs')
+  })
+
+  it('2. Verbotene Änderung (Kurs): Sollte INTEGRITY_MISMATCH zurückgeben, wenn die H1 visuell manipuliert wurde', () => {
+    const md = [
+      HTML_COMMENT_START +
+        ' udemy-course-meta: {"courseId":"123","courseTitle":"Original Kurs","sig":"mock-signature-123"} ' +
+        HTML_COMMENT_END,
+      '# Ein heimlich geänderter Kurstitel',
+      '',
+      '## Note',
+    ].join('\n')
+
+    const result = checkImportFileLogic(md)
+    expect(result.status).toBe('INTEGRITY_MISMATCH')
+  })
+
+  it('3. Verbotene Änderung (Notiz): Sollte INTEGRITY_MISMATCH zurückgeben, wenn Section, Lecture oder Timestamp manipuliert wurden', () => {
+    const md = [
+      HTML_COMMENT_START +
+        ' udemy-course-meta: {"courseId":"123","courseTitle":"Original Kurs","sig":"mock-signature-123"} ' +
+        HTML_COMMENT_END,
+      '# Original Kurs',
+      '',
+      HTML_COMMENT_START +
+        ' udemy-note-meta: {"section":"1. Intro","lecture":"1. Welcome","timestamp":"00:00","sig":"mock-signature-123"} ' +
+        HTML_COMMENT_END,
+      '## Note',
+      '* Section: 1. Intro',
+      '* Lecture: 1. Welcome',
+      '* Timestamp: 10:05',
+      '',
+      '### Content',
+      'Ich habe heimlich die Zeit auf 10:05 geändert!',
+    ].join('\n')
+
+    const result = checkImportFileLogic(md)
+    expect(result.status).toBe('INTEGRITY_MISMATCH')
+  })
+
+  it('4. Krypto-Sicherheit: Sollte INTEGRITY_MISMATCH zurückgeben, wenn die Signatur im JSON gebrochen/falsch ist', () => {
+    const md = [
+      HTML_COMMENT_START +
+        ' udemy-course-meta: {"courseId":"123","courseTitle":"Original Kurs","sig":"falsche-signatur-vom-hacker"} ' +
+        HTML_COMMENT_END,
+      '# Original Kurs',
+      '',
+      '## Note',
+    ].join('\n')
+
+    const result = checkImportFileLogic(md)
+    expect(result.status).toBe('INTEGRITY_MISMATCH')
+  })
+})
+
+describe('B) Parser: parseMarkdownCourse (Die Eiserne Wahrheit)', () => {
+  it('6. DNA sticht Markdown (Kurs): Sollte den Kurstitel aus den Metadaten verwenden und die H1 ignorieren', () => {
+    const md = [
+      HTML_COMMENT_START +
+        ' udemy-course-meta: {"courseId":"999","courseTitle":"Der echte DNA Titel","sig":"mock-signature-123"} ' +
+        HTML_COMMENT_END,
+      '# Ein vom User manipulierter Fake-Titel',
+      '',
+      '## Note',
+    ].join('\n')
+
+    const result = parseMarkdownCourse(md)
+    expect(result.title).toBe('Der echte DNA Titel')
+    expect(result.courseId).toBe('999')
+  })
+
+  it('7. DNA sticht Markdown (Notiz): Sollte Section, Lecture und Timestamp strikt aus dem JSON holen', () => {
+    const md = [
+      HTML_COMMENT_START +
+        ' udemy-note-meta: {"section":"1. Wahre Section","lecture":"2. Wahre Lecture","timestamp":"05:00","sig":"mock-signature-123"} ' +
+        HTML_COMMENT_END,
+      '## Note',
+      '* Section: Fake Section',
+      '* Lecture: Fake Lecture',
+      '* Timestamp: 99:99',
+      '',
+      '### Content',
+      'Inhalt',
+    ].join('\n')
+
+    const result = parseMarkdownCourse(md)
+    const note = result.notes[0]
+
+    expect(note.section).toBe('1. Wahre Section')
+    expect(note.lecture).toBe('2. Wahre Lecture')
+    expect(note.timestamp).toBe('05:00')
+  })
+
+  it('8. Fallback: Wenn die Signatur ungültig ist, muss der Parser auf den visuellen Text zurückfallen (und die DNA ignorieren)', () => {
+    const md = [
+      HTML_COMMENT_START +
+        ' udemy-course-meta: {"courseId":"999","courseTitle":"Hacker Titel","sig":"ungueltig"} ' +
+        HTML_COMMENT_END,
+      '# Visueller Fallback Titel',
+      '',
+      HTML_COMMENT_START +
+        ' udemy-note-meta: {"section":"Hacker Section","lecture":"Hacker Lecture","timestamp":"99:99","sig":"ungueltig"} ' +
+        HTML_COMMENT_END,
+      '## Note',
+      '* Section: Visuelle Section',
+      '* Lecture: Visuelle Lecture',
+      '* Timestamp: 01:23',
+      '',
+      '### Content',
+      'Inhalt',
+    ].join('\n')
+
+    const result = parseMarkdownCourse(md)
+    const note = result.notes[0]
+
+    // Da die Signatur falsch ist, wird courseId verworfen und der visuelle Titel genommen
+    expect(result.courseId).toBeUndefined()
+    expect(result.title).toBe('Visueller Fallback Titel')
+
+    // Bei der Notiz greift ebenfalls der visuelle Fallback
+    expect(note.section).toBe('Visuelle Section')
+    expect(note.timestamp).toBe('01:23')
+  })
+
+  // --- Legacy-Tests für den sauberen Markdown-Fallback (ohne HTML Kommentare) ---
+
+  it('1. sollte Titel, Kurs-Trainer und Kurs-Tags aus dem Header korrekt extrahieren (Legacy ohne Meta)', () => {
     const md = `
 # Mein toller React Kurs
 
@@ -98,7 +268,6 @@ Das ist der Text von Udemy.
     const result = parseMarkdownCourse(md)
     const note = result.notes[0]
 
-    // Da ein Original-Block existiert, muss parsedContent der bearbeitete Text sein
     expect(note.parsedContent).toContain('Mein eigener, bearbeiteter Text.')
     expect(note.parsedOriginalContent).toContain('Das ist der Text von Udemy.')
   })
