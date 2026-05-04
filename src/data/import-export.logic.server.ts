@@ -14,6 +14,17 @@ import { orderInfo } from '#/lib/udemy'
 import { resolveTagIds } from '#/lib/tag-helpers.server'
 
 // #region allgemeines
+export type IntegrityStatus =
+  | 'INTEGRITY_OK'
+  | 'INTEGRITY_MISMATCH'
+  | 'NO_METADATA'
+
+export interface CheckImportResult {
+  status: IntegrityStatus
+  totalNotes: number
+  courseTitle: string
+}
+
 type ExportCoursePayload = Prisma.CourseGetPayload<{
   include: {
     tags: { include: { tag: true } }
@@ -67,6 +78,89 @@ export function checkConflict(
 // #endregion
 
 // #region import
+export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
+  let status: IntegrityStatus = 'NO_METADATA'
+
+  // Reguläre Ausdrücke für die Metadaten
+  const courseMetaRegex = new RegExp(
+    `${HTML_COMMENT_START} udemy-course-meta:\\s*(\\{.*?\\})\\s*${HTML_COMMENT_END}`,
+  )
+  const noteMetaRegex = new RegExp(
+    `${HTML_COMMENT_START} udemy-note-meta:\\s*(\\{.*?\\})\\s*${HTML_COMMENT_END}`,
+    'g',
+  )
+
+  const courseMetaMatch = mdContent.match(courseMetaRegex)
+  const noteMetaMatches = [...mdContent.matchAll(noteMetaRegex)]
+
+  // Wenn wir Metadaten finden, gehen wir erstmal von OK aus
+  if (courseMetaMatch || noteMetaMatches.length > 0) {
+    status = 'INTEGRITY_OK'
+  }
+
+  let courseTitle = 'Unbekannter Kurs'
+
+  // 1. Kurs-Metadaten prüfen
+  if (courseMetaMatch) {
+    try {
+      const meta = JSON.parse(courseMetaMatch[1])
+      const { sig, ...dataWithoutSig } = meta
+
+      if (meta.courseTitle) courseTitle = meta.courseTitle
+
+      // Signatur prüfen
+      if (sig !== generateSignature(dataWithoutSig)) {
+        return {
+          status: 'INTEGRITY_MISMATCH',
+          totalNotes: noteMetaMatches.length,
+          courseTitle,
+        }
+      }
+    } catch (e) {
+      return {
+        status: 'INTEGRITY_MISMATCH',
+        totalNotes: noteMetaMatches.length,
+        courseTitle: 'Fehlerhaftes Format',
+      }
+    }
+  }
+
+  // 2. Notiz-Metadaten prüfen
+  for (const match of noteMetaMatches) {
+    try {
+      const meta = JSON.parse(match[1])
+      const { sig, ...dataWithoutSig } = meta
+
+      // Signatur prüfen
+      if (sig !== generateSignature(dataWithoutSig)) {
+        return {
+          status: 'INTEGRITY_MISMATCH',
+          totalNotes: noteMetaMatches.length,
+          courseTitle,
+        }
+      }
+    } catch (e) {
+      return {
+        status: 'INTEGRITY_MISMATCH',
+        totalNotes: noteMetaMatches.length,
+        courseTitle,
+      }
+    }
+  }
+
+  // Fallback für den Titel, falls er nicht in den Metadaten stand
+  if (courseTitle === 'Unbekannter Kurs') {
+    const titleMatch = mdContent.match(/^#\s+(.+)$/m)
+    if (titleMatch) courseTitle = titleMatch[1].trim()
+  }
+
+  return {
+    status,
+    totalNotes: noteMetaMatches.length,
+    courseTitle,
+  }
+}
+
 export const syncCourseToDatabase = async (
   parsedData: ParsedCourseData & { courseId?: string },
   data: ImportFileSchema,

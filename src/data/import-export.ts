@@ -1,7 +1,7 @@
 import { exportMdFileSchema } from '#/schemas/export-file'
 import { authFn } from '#/lib/rpc'
 import { withLogging } from '#/schemas/api-utils'
-import { importFileSchema } from '#/schemas/import-file'
+import { checkImportFileSchema, importFileSchema } from '#/schemas/import-file'
 import {
   exportMdFileLogic,
   importHtmlFileLogic,
@@ -11,6 +11,9 @@ import {
 // #region validation schemas
 export const importFileValidationSchema = importFileSchema
 export const exportMdFileValidationSchema = withLogging(exportMdFileSchema)
+export const checkImportFileValidationSchema = withLogging(
+  checkImportFileSchema,
+)
 // #endregion
 
 export type AwaitedReturnTypeExportMdFile = Awaited<
@@ -20,6 +23,22 @@ export type AwaitedReturnTypeImportHtmlFile = Awaited<
   ReturnType<typeof importHtmlFile>
 >
 
+export const checkImportFile = authFn
+  .inputValidator(checkImportFileValidationSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { checkImportFileLogic } =
+      await import('./import-export.logic.server')
+
+    return await wrapServerAction(
+      'checkImportFile',
+      context,
+      data,
+      async () => {
+        return checkImportFileLogic(data.fileContent)
+      },
+    )
+  })
 /**
  * Authentifizierte Server Function (RPC) für den Import einer Udemy-HTML-Datei.
  * Übernimmt die Validierung der Eingaben, stellt den Benutzerkontext bereit und

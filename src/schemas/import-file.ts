@@ -20,6 +20,11 @@ export const importFileSchema = withLogging(
 )
 export type ImportFileSchema = z.infer<typeof importFileSchema>
 
+export const checkImportFileSchema = z.object({
+  fileContent: z.string().min(1, 'File is empty'),
+})
+export type CheckImportFileSchema = z.infer<typeof checkImportFileSchema>
+
 export const ImportedNoteSchema = z.object({
   section: z.string().min(1, 'Section fehlt'),
   lecture: z.string().min(1, 'Lecture fehlt'),
