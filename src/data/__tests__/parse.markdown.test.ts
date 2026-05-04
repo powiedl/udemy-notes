@@ -2,12 +2,14 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   parseMarkdownCourse,
   checkImportFileLogic,
-} from '../import-export.logic.server' // Pfad ggf. anpassen
-import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants' // Pfad prüfen!
+} from '../import-export.logic.server'
+import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants'
+import type * as ExportHelper from '#/lib/export-helper'
 
 // Sicherer Mock mit importOriginal, damit die restlichen Export-Helper intakt bleiben
 vi.mock('#/lib/export-helper', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('#/lib/export-helper')>()
+  // Hier nutzen wir nun den sauber importierten Typen
+  const actual = await importOriginal<typeof ExportHelper>()
   return {
     ...actual,
     generateSignature: vi.fn().mockReturnValue('mock-signature-123'),
