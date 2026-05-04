@@ -16,6 +16,7 @@ export const importFileSchema = withLogging(
     trainers: z.array(z.string().optional()),
     tagIds: z.array(z.string()).default([]),
     newPrivateTags: z.array(z.string()).default([]),
+    forceReplace: z.boolean().optional(),
   }),
 )
 export type ImportFileSchema = z.infer<typeof importFileSchema>

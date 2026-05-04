@@ -1,4 +1,4 @@
-import crypto from 'crypto'
+import crypto from 'node:crypto'
 import type { SingleNote } from './prisma-types'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
 import {

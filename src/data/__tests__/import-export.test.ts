@@ -26,6 +26,7 @@ vi.mock('#/lib/udemy', () => ({
 
 vi.mock('#/lib/export-helper', () => ({
   processNoteForMarkdown: vi.fn(() => 'Mocked Note Markdown'),
+  generateSignature: vi.fn().mockReturnValue('mock-signature-123'),
 }))
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>

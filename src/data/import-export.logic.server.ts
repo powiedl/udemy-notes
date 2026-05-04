@@ -515,7 +515,6 @@ export const importMdFileLogic = async (
   userId: string,
 ) => {
   // --- 1. Validierung ---
-  // @ts-ignore
   if (data.fileSize > MAX_FILE_SIZE_UPLOAD) {
     throw new ServerActionError('File too large. Maximum size exceeded.')
   }
@@ -527,14 +526,43 @@ export const importMdFileLogic = async (
     throw new ServerActionError('Markdown does not contain any valid notes.')
   }
 
-  // --- 3. Synchronisation ---
+  // --- 3. Tabula Rasa (Sicherheits-Overwrite) ---
+  if (data.forceReplace) {
+    // Wir verlassen uns für das Überschreiben strikt auf die manipulierte ID.
+    // Wer die ID fälscht und dann das Überschreiben bestätigt, überschreibt exakt diesen Kurs.
+    const courseToDeleteId = parsedData.courseId
+      ? String(parsedData.courseId)
+      : null
+
+    if (courseToDeleteId) {
+      // Sicherheits-Check: Gehört der manipulierte Kurs überhaupt diesem User?
+      const courseToOverwrite = await prisma.course.findFirst({
+        where: { id: courseToDeleteId, userId },
+        select: { id: true },
+      })
+
+      if (courseToOverwrite) {
+        // Zur absoluten Sicherheit löschen wir zuerst die Notizen explizit
+        await prisma.note.deleteMany({
+          where: { courseId: courseToOverwrite.id },
+        })
+
+        // Danach löschen wir den Kurs selbst
+        await prisma.course.delete({
+          where: { id: courseToOverwrite.id },
+        })
+      }
+    }
+  }
+
+  // --- 4. Synchronisation ---
   const { courseId, numberOfConflicts } = await syncCourseToDatabase(
     parsedData,
     data,
     userId,
   )
 
-  // --- 4. Rückgabe ---
+  // --- 5. Rückgabe ---
   return {
     originalFileName: data.fileName,
     size: data.fileSize,
@@ -543,7 +571,8 @@ export const importMdFileLogic = async (
     numberOfConflicts,
     courseId,
   }
-} // #endregion
+}
+// #endregion
 // #endregion
 // #endregion
 
