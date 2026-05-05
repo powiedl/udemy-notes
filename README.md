@@ -9,6 +9,7 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 ## Current project status
 
 - You can import a html file with your Udemy course notes (during import you can assign tags and trainers to the course)
+  - You can also import a previous exported markdown file (if you export the metadata this will be used to ensure that you can successfully update the course in the database - if the metadata is manipulated you will get a warning, that the import will delete the course in the database)
 - These courses ant the corresponding notes are stored in the database
 - You can view and edit your notes of the course - in the course details page
 - You can export your notes of the course - in the course details page

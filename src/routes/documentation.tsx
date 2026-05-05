@@ -50,7 +50,11 @@ function RouteComponent() {
           The markdown must contain the notes meta data. If it contains trainer
           names and/or tags these information will be applied to the imported
           course (in addition to existing tags and trainers and also in addtion
-          to the tags and trainers choosen in the import form)
+          to the tags and trainers choosen in the import form). The metadata in
+          the markdown file is also stored as checksum, to ensure integrity of
+          the metadata (the notes, the tags and the trainer names can be safely
+          modified outside of the app - but the metadata must be unchanged to
+          ensure a correct re-import)
         </p>
         <p className="text-base leading-8 text-(--sea-ink-soft) mb-4">
           The HTML file is preprocessed on your computer (only the title and the
