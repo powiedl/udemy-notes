@@ -1,7 +1,8 @@
 import { PrismaClient, Prisma } from '#/generated/prisma/client.js'
 import { PrismaPg } from '@prisma/adapter-pg'
+import { env } from './env.server'
 
-let connectionString = process.env.DATABASE_URL
+let connectionString = env.DATABASE_URL
 
 // Prüfen, ob die URL fehlt (außer im Test-Modus)
 if (!connectionString && process.env.NODE_ENV !== 'test') {
