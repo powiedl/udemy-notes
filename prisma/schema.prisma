@@ -167,6 +167,7 @@ model Tag {
 model NoteTag {
   noteId String @map("note_id")
   tagId  String @map("tag_id")
+  status String @default("APPROVED") // Werte: "APPROVED" | "SUGGESTION"
 
   note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
   tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
@@ -178,6 +179,7 @@ model NoteTag {
 model CourseTag {
   courseId String @map("course_id")
   tagId    String @map("tag_id")
+  status   String @default("APPROVED") // Werte: "APPROVED" | "SUGGESTION"
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
