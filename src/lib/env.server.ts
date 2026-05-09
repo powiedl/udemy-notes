@@ -13,7 +13,7 @@ const envSchema = z.object({
 
   // Authentifizierung
   BETTER_AUTH_SECRET: z.string().min(1, 'Better Auth Secret fehlt'),
-  BETTER_AUTH_URL: z.string().url(),
+  BETTER_AUTH_URL: z.string().url().optional(),
 
   // OpenRouter (KI)
   OPENROUTER_API_KEY: z.string().min(1, 'OpenRouter API Key fehlt'),
