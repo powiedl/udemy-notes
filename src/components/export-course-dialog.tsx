@@ -63,7 +63,9 @@ const ExportCourseDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger disabled={disabled} asChild>
-        <Button type="button">{children}</Button>
+        <Button type="button" className={className}>
+          {children}
+        </Button>
       </DialogTrigger>
       <DialogContent showCloseButton={false}>
         <DialogHeader>

@@ -17,6 +17,7 @@ export interface TagDisplay {
   id: string
   name: string
   userId?: string | null
+  status?: 'APPROVED' | 'SUGGESTION'
   isInherited?: boolean
   isDeletable?: boolean
   isHighlighted?: boolean
@@ -28,9 +29,11 @@ interface TagManagerProps {
   availableTags: { id: string; name: string }[]
   onAddTag?: (id: string) => void
   onRemoveTag?: (id: string) => void
-  onCreateTag?: (name: string) => void // NEU: Optionale Create-Funktion
+  onCreateTag?: (name: string) => void
+  onApproveTag?: (id: string) => void
   isPending?: boolean
   deletingTagId?: string | null
+  approvingTagId?: string | null
   className?: string
   addIconVariant?: 'purple' | 'default'
 }
@@ -41,8 +44,10 @@ export function TagManager({
   onAddTag,
   onRemoveTag,
   onCreateTag,
+  onApproveTag,
   isPending,
   deletingTagId,
+  approvingTagId,
   className,
   addIconVariant = 'default',
 }: TagManagerProps) {
@@ -59,17 +64,23 @@ export function TagManager({
       {tags.map((tag) => (
         <TagBadge
           key={tag.id}
-          tag={tag}
+          tag={tag} // TagBadge liest jetzt tag.status automatisch aus!
           size="sm"
           onDelete={
             tag.isDeletable && onRemoveTag
               ? () => onRemoveTag(tag.id)
               : undefined
           }
+          // NEU: Approve-Handler weiterreichen
+          onApprove={
+            tag.status === 'SUGGESTION' && onApproveTag
+              ? () => onApproveTag(tag.id)
+              : undefined
+          }
+          isApproving={approvingTagId === tag.id}
           isDeleting={deletingTagId === tag.id}
           title={tag.tooltip}
           isHighlighted={tag.isHighlighted}
-          // Das Link-Icon für vererbte Tags reichen wir hier rein
           icon={
             tag.isInherited ? (
               <Link2 className="mr-1 h-3 w-3 opacity-70" />

@@ -80,12 +80,12 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.5.0
- * Query Engine version: 280c870be64f457428992c43c1f6d557fab6e29e
+ * Prisma Client JS version: 7.8.0
+ * Query Engine version: 3c6e192761c0362d496ed980de936e2f3cebcd3a
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.5.0",
-  engine: "280c870be64f457428992c43c1f6d557fab6e29e"
+  client: "7.8.0",
+  engine: "3c6e192761c0362d496ed980de936e2f3cebcd3a"
 }
 
 /**
@@ -395,6 +395,7 @@ export const ModelName = {
   Tag: 'Tag',
   NoteTag: 'NoteTag',
   CourseTag: 'CourseTag',
+  AiUsageLog: 'AiUsageLog',
   Log: 'Log'
 } as const
 
@@ -411,7 +412,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "course" | "note" | "trainer" | "courseTrainer" | "tag" | "noteTag" | "courseTag" | "log"
+    modelProps: "user" | "session" | "account" | "verification" | "course" | "note" | "trainer" | "courseTrainer" | "tag" | "noteTag" | "courseTag" | "aiUsageLog" | "log"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1229,6 +1230,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AiUsageLog: {
+      payload: Prisma.$AiUsageLogPayload<ExtArgs>
+      fields: Prisma.AiUsageLogFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AiUsageLogFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AiUsageLogFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload>
+        }
+        findFirst: {
+          args: Prisma.AiUsageLogFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AiUsageLogFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload>
+        }
+        findMany: {
+          args: Prisma.AiUsageLogFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload>[]
+        }
+        create: {
+          args: Prisma.AiUsageLogCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload>
+        }
+        createMany: {
+          args: Prisma.AiUsageLogCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AiUsageLogCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload>[]
+        }
+        delete: {
+          args: Prisma.AiUsageLogDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload>
+        }
+        update: {
+          args: Prisma.AiUsageLogUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload>
+        }
+        deleteMany: {
+          args: Prisma.AiUsageLogDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AiUsageLogUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AiUsageLogUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload>[]
+        }
+        upsert: {
+          args: Prisma.AiUsageLogUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageLogPayload>
+        }
+        aggregate: {
+          args: Prisma.AiUsageLogAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAiUsageLog>
+        }
+        groupBy: {
+          args: Prisma.AiUsageLogGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiUsageLogGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AiUsageLogCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiUsageLogCountAggregateOutputType> | number
+        }
+      }
+    }
     Log: {
       payload: Prisma.$LogPayload<ExtArgs>
       fields: Prisma.LogFieldRefs
@@ -1465,7 +1540,8 @@ export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagSca
 
 export const NoteTagScalarFieldEnum = {
   noteId: 'noteId',
-  tagId: 'tagId'
+  tagId: 'tagId',
+  status: 'status'
 } as const
 
 export type NoteTagScalarFieldEnum = (typeof NoteTagScalarFieldEnum)[keyof typeof NoteTagScalarFieldEnum]
@@ -1473,10 +1549,28 @@ export type NoteTagScalarFieldEnum = (typeof NoteTagScalarFieldEnum)[keyof typeo
 
 export const CourseTagScalarFieldEnum = {
   courseId: 'courseId',
-  tagId: 'tagId'
+  tagId: 'tagId',
+  status: 'status'
 } as const
 
 export type CourseTagScalarFieldEnum = (typeof CourseTagScalarFieldEnum)[keyof typeof CourseTagScalarFieldEnum]
+
+
+export const AiUsageLogScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  modelName: 'modelName',
+  feature: 'feature',
+  entityId: 'entityId',
+  userId: 'userId',
+  durationMs: 'durationMs',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  isSuccess: 'isSuccess',
+  errorMessage: 'errorMessage'
+} as const
+
+export type AiUsageLogScalarFieldEnum = (typeof AiUsageLogScalarFieldEnum)[keyof typeof AiUsageLogScalarFieldEnum]
 
 
 export const LogScalarFieldEnum = {
@@ -1575,6 +1669,20 @@ export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'In
 export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int[]'>
     
 
+
+/**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
+ * Reference to a field of type 'Float[]'
+ */
+export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -1668,6 +1776,21 @@ export type PrismaClientOptions = ({
    * ```
    */
   comments?: runtime.SqlCommenterPlugin[]
+  /**
+   * Optional maximum size for the query plan cache. If not provided, a default size will be used.
+   * A value of `0` can be used to disable the cache entirely. A higher cache size can improve
+   * performance for applications that execute a large number of unique queries, while a smaller
+   * cache size can reduce memory usage.
+   * 
+   * @example
+   * ```
+   * const prisma = new PrismaClient({
+   *   adapter,
+   *   queryPlanCacheMaxSize: 100,
+   * })
+   * ```
+   */
+  queryPlanCacheMaxSize?: number
 }
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
@@ -1681,6 +1804,7 @@ export type GlobalOmitConfig = {
   tag?: Prisma.TagOmit
   noteTag?: Prisma.NoteTagOmit
   courseTag?: Prisma.CourseTagOmit
+  aiUsageLog?: Prisma.AiUsageLogOmit
   log?: Prisma.LogOmit
 }
 

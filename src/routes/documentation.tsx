@@ -22,6 +22,7 @@ import {
   Bold,
   List,
   Code,
+  Sparkles,
 } from 'lucide-react'
 
 export const Route = createFileRoute('/documentation')({
@@ -97,6 +98,25 @@ function RouteComponent() {
           several quick actions:
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/50">
+            <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <div>
+              <p className="font-bold text-sm text-blue-900 dark:text-blue-100">
+                Auto-Tag
+              </p>
+              <p className="text-xs text-blue-800/80 dark:text-blue-200/80 leading-relaxed">
+                Tag this course and it's notes with the help of AI (might take
+                some time). After the AI is finished you can accept or decline
+                the tags for the course. The tags for the single notes are
+                stored as suggestions and you can accept or decline them later.
+              </p>
+              <p>
+                <strong>ATTENTION!</strong> It is very likely that this feature
+                doesn't work, because the AI is too slow for my hosting service
+                (and that's why the hosting service kills the waiting call)
+              </p>
+            </div>
+          </div>
           <div className="flex gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/50">
             <Download className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
             <div>

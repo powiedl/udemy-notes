@@ -264,7 +264,6 @@ export async function addTrainerToCourseLogic(
   if (!trainer) {
     throw new ServerActionError('Trainer not found')
   }
-  console.log(course.trainers)
   if (course.trainers.map((t) => t.trainerId).includes(data.trainerId)) {
     throw new ServerActionError('Trainer is already assigned to the course')
   }

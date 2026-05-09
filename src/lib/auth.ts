@@ -2,21 +2,29 @@ import { prisma } from '#/lib/db.server'
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
+import { env } from './env.server'
 
 // Hilfsfunktion zur Ermittlung der korrekten URL (lokal vs. Vercel Preview vs. Vercel Prod)
 const getBaseUrl = () => {
-  if (process.env.VERCEL_ENV === 'preview') {
-    // Use the friendly branch name if available, otherwise fallback to the ID-URL
-    const url = process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL
-    return `https://${url}`
+  if (env.VERCEL_ENV === 'preview' && env.VERCEL_URL) {
+    return `https://${env.VERCEL_URL}`
   }
-  // 2. Ansonsten (Produktion oder lokale Entwicklung) nutze die fixe Variable oder localhost
-  return process.env.BETTER_AUTH_URL || 'http://localhost:3000'
+  return env.BETTER_AUTH_URL || 'http://localhost:3000'
 }
 
+const getTrustedOrigins = () => {
+  if (env.VERCEL_ENV === 'preview') {
+    return [
+      env.VERCEL_BRANCH_URL ? `https://${env.VERCEL_BRANCH_URL}` : '',
+      env.VERCEL_URL ? `https://${env.VERCEL_URL}` : '',
+    ].filter(Boolean) // Filtert leere Strings heraus
+  }
+  return []
+}
 export const auth = betterAuth({
   // Hier übergeben wir unsere dynamische URL:
   baseURL: getBaseUrl(),
+  trustedOrigins: getTrustedOrigins(),
 
   database: prismaAdapter(prisma, {
     provider: 'postgresql',

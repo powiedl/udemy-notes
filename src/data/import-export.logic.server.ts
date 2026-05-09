@@ -12,6 +12,7 @@ import type { ExportMdFileSchema } from '#/schemas/export-file'
 import type { ImportFileSchema } from '#/schemas/import-file'
 import { orderInfo } from '#/lib/udemy'
 import { resolveTagIds } from '#/lib/tag-helpers.server'
+import { UDEMY_SELECTORS } from '#/lib/constants.server'
 
 // #region allgemeines
 export type IntegrityStatus =
@@ -450,7 +451,10 @@ export const importHtmlFileLogic = async (
   }
 
   // --- 2. HTML parsen ---
-  const conversionResult = prepareAndConvertHtmlToMarkdown(data.content)
+  const conversionResult = prepareAndConvertHtmlToMarkdown(
+    data.content,
+    UDEMY_SELECTORS,
+  )
   if (conversionResult.status === 'ERROR') {
     throw new ServerActionError(conversionResult.message)
   }

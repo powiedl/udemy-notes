@@ -1,3 +1,5 @@
+import type { UdemySelectors } from '#/types/api'
+
 export const validateMarkdown = (content: string): boolean => {
   if (!content || content.trim() === '') {
     return false
@@ -50,12 +52,12 @@ export const prepareHtmlPayload = (
   file: File,
   fileContent: string,
   values: ImportValues,
-  selector: string,
+  selectors: UdemySelectors,
 ) => {
   const parser = new DOMParser()
   const doc = parser.parseFromString(fileContent, 'text/html')
   const title = doc.title || 'Udemy Course'
-  const notesContainer = doc.querySelector(selector)
+  const notesContainer = doc.querySelector(selectors.notesContainerSelector)
 
   if (!notesContainer) {
     throw new Error(

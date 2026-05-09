@@ -10,7 +10,7 @@ interface FormDebuggerProps {
 export const FormDebugger = ({ form, schema }: FormDebuggerProps) => {
   const [isBusy, setIsBusy] = useState(false)
 
-  if (process.env.NODE_ENV === 'production') return null
+  if (process.env.NODE_ENV === 'production') return null // hier ist process.env.NODE_ENV erlaubt - es wird vom vite build statisch durch das jeweilige Environment ersetzt
   if (!form) return null
 
   const handleForceValidation = useCallback(async () => {

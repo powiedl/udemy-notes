@@ -24,5 +24,11 @@ export default defineConfig({
       },
     },
     setupFiles: ['./src/test/setup.ts'],
+    env: {
+      DATABASE_URL: 'postgresql://dummy:dummy@localhost:5432/test',
+      BETTER_AUTH_SECRET: 'super-secret-test-key',
+      BETTER_AUTH_URL: 'http://localhost:3000',
+      OPENROUTER_API_KEY: 'sk-or-dummy-key-for-tests',
+    },
   },
 })

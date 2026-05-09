@@ -70,6 +70,7 @@ import { handleAction } from '#/lib/client-utils'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 import { prepareMdPayload, prepareHtmlPayload } from '#/lib/import-helpers'
+import type { UdemySelectors } from '#/types/api'
 
 const importFormSchema = z.object({
   file: z
@@ -93,7 +94,7 @@ const importFormSchema = z.object({
   newPrivateTags: z.array(z.string()),
 })
 
-export function ImportForm({ selector }: { selector: string }) {
+export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
   const navigate = useNavigate()
   const [isPending, startTransition] = useTransition()
 
@@ -133,9 +134,10 @@ export function ImportForm({ selector }: { selector: string }) {
   ) => {
     startTransition(async () => {
       try {
+        // console.log('ImportForm,selectors', selectors)
         const basePayload = isMarkdown
           ? prepareMdPayload(value.file, content, value)
-          : prepareHtmlPayload(value.file, content, value, selector)
+          : prepareHtmlPayload(value.file, content, value, selectors)
 
         // Hängt das neue forceReplace Flag an den Payload an
         const payload = { ...basePayload, forceReplace }

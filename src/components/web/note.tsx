@@ -2,7 +2,15 @@ import { Link, useRouter } from '@tanstack/react-router'
 import { cn } from '#/lib/utils'
 import { Card, CardContent, CardDescription } from '../ui/card'
 import ReactMarkdown from 'react-markdown'
-import { BookOpenText, Edit2, Save, X, Eye, EyeOff } from 'lucide-react'
+import {
+  BookOpenText,
+  Edit2,
+  Save,
+  X,
+  Eye,
+  EyeOff,
+  Loader2,
+} from 'lucide-react'
 import { useTagManagement } from '#/hooks/use-tag-management'
 import { TagManager } from './tag-manager'
 import type { TagDisplay } from './tag-manager'
@@ -13,6 +21,8 @@ import { Button } from '../ui/button'
 import { handleAction } from '#/lib/client-utils'
 import { updateNoteContentFn } from '#/data/note'
 import { useServerFn } from '@tanstack/react-start'
+// rejectNoteTagFn können wir entfernen, da onRemoveTag (handleDelete) exakt denselben Job macht!
+import { approveNoteTagFn } from '#/data/tag'
 
 const MarkdownEditor = lazy(() => import('./markdown-editor'))
 
@@ -24,18 +34,27 @@ type BaseNoteData = Prisma.NoteGetPayload<{
         title: true
       }
     }
+    tags: {
+      include: {
+        tag: true
+      }
+    }
   }
 }>
 
 interface NoteProps {
-  note: BaseNoteData & {
-    displayTags?:
-      | {
-          isDirect: boolean
-          isFromCourse: boolean
-          tag: { id: string; name: string; userId?: string | null }
-        }[]
-      | undefined
+  note: Omit<BaseNoteData, 'tags'> & {
+    tags?: any[]
+    displayTags?: {
+      isDirect: boolean
+      isFromCourse: boolean
+      status?: 'APPROVED' | 'SUGGESTION'
+      tag: {
+        id: string
+        name: string
+        userId?: string | null
+      }
+    }[]
   }
   activeTagIds?: string[]
   showCourseLink?: boolean
@@ -47,14 +66,16 @@ const Note = ({
   activeTagIds = [],
 }: NoteProps) => {
   const router = useRouter()
+
   const {
     availableTags,
-    isPending,
+    isPending: isTagPending,
     deletingTagId,
     handleLink,
     handleDeleteTagAssociation,
     handleCreateAndLink,
   } = useTagManagement(note.id, 'note', 'NoteCard')
+
   const updateNoteContent = useServerFn(updateNoteContentFn)
 
   const [isEditing, setIsEditing] = useState(false)
@@ -62,26 +83,35 @@ const Note = ({
     note.editedContent || note.originalContent,
   )
   const [isPendingSave, startTransition] = useTransition()
-
   const [showOriginal, setShowOriginal] = useState(false)
 
-  // Prüfen, ob die Notiz von unserem User bearbeitet wurde
+  // --- NEU: State für das spezifische Approve-Loading ---
+  const [approvingTagId, setApprovingTagId] = useState<string | null>(null)
+  const [isApproving, startApproveTransition] = useTransition()
+
+  // Kombinierter Status für alle Tag-Aktionen
+  const isAnyTagActionPending = isTagPending || isApproving
+
   const isEdited = note.editedContent.trim() !== ''
 
-  const displayTags: TagDisplay[] = (note.displayTags || []).map((dt) => ({
-    id: dt.tag.id,
-    name: dt.tag.name,
-    userId: dt.tag.userId,
-    isInherited: !dt.isDirect && dt.isFromCourse,
-    isDeletable: dt.isDirect,
-    isHighlighted: activeTagIds.includes(dt.tag.id),
-    tooltip:
-      !dt.isDirect && dt.isFromCourse
-        ? 'inherited from the course'
-        : dt.isDirect && dt.isFromCourse
-          ? 'direct tag (but also inherited)'
-          : 'direct tag',
-  }))
+  // --- NEU: Wir mappen den Status in die displayTags ---
+  const displayTags: TagDisplay[] = (note.displayTags || []).map((dt) => {
+    return {
+      id: dt.tag.id,
+      name: dt.tag.name,
+      userId: dt.tag.userId,
+      status: dt.status as 'APPROVED' | 'SUGGESTION', // Kommt jetzt direkt sauber aus dem Backend!
+      isInherited: !dt.isDirect && dt.isFromCourse,
+      isDeletable: dt.isDirect, // Auch Suggestions sind direkt und damit löschbar
+      isHighlighted: activeTagIds.includes(dt.tag.id),
+      tooltip:
+        dt.status === 'SUGGESTION'
+          ? 'AI suggestion'
+          : dt.isDirect
+            ? 'direct tag'
+            : 'inherited from course',
+    }
+  })
 
   const handleSave = async () => {
     startTransition(async () => {
@@ -110,7 +140,24 @@ const Note = ({
     setIsEditing(false)
   }
 
-  // Welcher Text soll aktuell als Markdown gerendert werden?
+  const handleApprove = (tagId: string) => {
+    setApprovingTagId(tagId) // Haken wird zum Spinner
+    startApproveTransition(async () => {
+      try {
+        await handleAction(
+          approveNoteTagFn({ data: { noteId: note.id, tagId } }),
+          {
+            showSuccessToast: false,
+            showErrorToast: true,
+          },
+        )
+        router.invalidate()
+      } finally {
+        setApprovingTagId(null)
+      }
+    })
+  }
+
   const displayContent = showOriginal
     ? note.originalContent
     : note.editedContent || note.originalContent
@@ -135,17 +182,16 @@ const Note = ({
         <div className="flex gap-1">
           {!isEditing ? (
             <>
-              {/* Toggle für Originalansicht (Nur wenn bearbeitet wurde) */}
               {isEdited && (
                 <Button
-                  variant="default" // {showOriginal ? 'secondary' : 'ghost'}
+                  variant="default"
                   size="icon"
                   className="h-7 w-7 cursor-pointer"
                   onClick={() => setShowOriginal(!showOriginal)}
                   title={
                     showOriginal
-                      ? 'Geänderte Version anzeigen'
-                      : 'Original anzeigen'
+                      ? 'show edited version'
+                      : 'show original version'
                   }
                 >
                   {showOriginal ? (
@@ -155,8 +201,6 @@ const Note = ({
                   )}
                 </Button>
               )}
-
-              {/* Edit Button */}
               <Button
                 variant="default"
                 size="icon"
@@ -165,8 +209,8 @@ const Note = ({
                 disabled={showOriginal}
                 title={
                   showOriginal
-                    ? 'Im Originalmodus ist das Bearbeiten deaktiviert'
-                    : 'Bearbeiten'
+                    ? 'disabled (because you view the original version of the note)'
+                    : 'edit'
                 }
               >
                 <Edit2 className="size-4" />
@@ -174,28 +218,29 @@ const Note = ({
             </>
           ) : (
             <>
-              {/* ABBRECHEN: Jetzt in Destructive (Rot) */}
               <Button
                 variant="destructive"
                 size="icon"
                 className="h-7 w-7 cursor-pointer"
                 onClick={handleCancel}
                 disabled={isPendingSave}
-                title="Abbrechen"
+                title="Cancel"
               >
                 <X className="size-4" />
               </Button>
-
-              {/* SPEICHERN: Default (Lila) */}
               <Button
                 variant="default"
                 size="icon"
                 className="h-7 w-7 cursor-pointer"
                 onClick={handleSave}
                 disabled={isPendingSave}
-                title="Speichern"
+                title="Save"
               >
-                <Save className="size-4" />
+                {isPendingSave ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
               </Button>
             </>
           )}
@@ -214,14 +259,16 @@ const Note = ({
       <CardDescription className="flex flex-col gap-y-0.5 px-2 py-1">
         <h2 className="text-xl font-semibold">{note.section}</h2>
         <h3 className="text-lg">{note.lecture}</h3>
-        {/* Tag-Anzeige */}
+
         <TagManager
           tags={displayTags}
           availableTags={availableTags}
           onAddTag={handleLink}
-          onRemoveTag={handleDeleteTagAssociation}
+          onRemoveTag={handleDeleteTagAssociation} // Löscht Tags (und dient als "Reject" für Suggestions)
           onCreateTag={handleCreateAndLink}
-          isPending={isPending}
+          onApproveTag={handleApprove} // <-- Reicht den Approve-Handler weiter
+          approvingTagId={approvingTagId} // <-- Steuert den Haken-Spinner
+          isPending={isAnyTagActionPending}
           deletingTagId={deletingTagId}
           addIconVariant="purple"
         />
@@ -241,7 +288,6 @@ const Note = ({
               'prose-headings:scroll-m-20',
               'prose-code:before:content-none prose-code:after:contain-none',
               'max-w-full',
-              // Transparenz für die Read-Only Originalansicht
               showOriginal && 'opacity-70',
             )}
           >

@@ -49,7 +49,8 @@ export const importHtmlFile = authFn
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction('importHtmlFile', context, data, async () => {
-      return importHtmlFileLogic(data, context.session.user.id)
+      const result = importHtmlFileLogic(data, context.session.user.id)
+      return result
     })
   })
 

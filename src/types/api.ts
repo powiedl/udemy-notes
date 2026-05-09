@@ -28,3 +28,13 @@ export type ActionResponse<T = void> = {
   | { success: true; data: T; message?: string }
   | { success: false; error: string }
 )
+
+export interface UdemySelectors {
+  notesContainerSelector: string
+  noteSelector: string
+  durationSelector: string
+  sectionSelector: string
+  lectureSelector: string
+  noteBodySelector: string
+  noteCodeBlockSelector: string
+}

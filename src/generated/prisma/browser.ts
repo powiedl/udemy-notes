@@ -73,6 +73,11 @@ export type NoteTag = Prisma.NoteTagModel
  */
 export type CourseTag = Prisma.CourseTagModel
 /**
+ * Model AiUsageLog
+ * 
+ */
+export type AiUsageLog = Prisma.AiUsageLogModel
+/**
  * Model Log
  * 
  */

@@ -167,6 +167,7 @@ model Tag {
 model NoteTag {
   noteId String @map("note_id")
   tagId  String @map("tag_id")
+  status String @default("APPROVED") // Werte: "APPROVED" | "SUGGESTION"
 
   note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
   tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
@@ -178,12 +179,45 @@ model NoteTag {
 model CourseTag {
   courseId String @map("course_id")
   tagId    String @map("tag_id")
+  status   String @default("APPROVED") // Werte: "APPROVED" | "SUGGESTION"
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([courseId, tagId])
   @@map("course_to_tag")
+}
+
+model AiUsageLog {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  // Welches Modell wurde genutzt? (z. B. "gemini-1.5-flash", "gpt-4o-mini")
+  modelName String
+
+  // Welches Feature wurde getriggert? (z. B. "COURSE_AUTO_TAG", "NOTE_AUTO_TAG")
+  feature String
+
+  // Die ID des Kurses oder der Notiz, um später Stichproben zu machen
+  entityId String?
+
+  // Welcher User hat die Aktion ausgelöst?
+  userId String?
+
+  // --- Telemetrie (Optional, aber extrem nützlich) ---
+  durationMs       Int? // Wie lange hat der API-Call gedauert?
+  promptTokens     Int? // Input-Kosten
+  completionTokens Int? // Output-Kosten
+
+  // War der Call erfolgreich? (Falls du später auch Fallbacks/Fehler loggen willst)
+  isSuccess    Boolean @default(true)
+  errorMessage String? // Falls isSuccess false ist, z. B. "JSON Parse Error"
+
+  // Indizes für schnelle Auswertungen später (z.B. im Admin-Dashboard)
+  @@index([modelName])
+  @@index([feature])
+  @@index([userId])
+  @@map("ai_usage_log")
 }
 
 model Log {
