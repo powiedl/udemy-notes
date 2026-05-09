@@ -159,11 +159,6 @@ export const addTrainerToCourseFn = authFn
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.server')
     const { addTrainerToCourseLogic } = await import('./course.logic.server')
-    console.log(
-      'addTrainerToCourse,courseId,trainerId',
-      data.courseId,
-      data.trainerId,
-    )
     return await wrapServerAction('addTrainerToCourseFn', context, data, () =>
       addTrainerToCourseLogic(data, context.session.user.id),
     )
