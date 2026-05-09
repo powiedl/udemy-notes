@@ -7,6 +7,7 @@
   },
   "scripts": {
     "dev": "vite dev --port 3000",
+    "vercel-build": "prisma generate && prisma migrate deploy && pnpm run build",
     "build": "vite build",
     "build:local": "dotenv -e .env.production.local pnpm run build",
     "start:local": "node --env-file=.env.production.local .output/server/index.mjs",
@@ -17,8 +18,7 @@
     "check": "prettier --write . && eslint --fix",
     "post-cta-init": "npx -y create-db@latest --user-agent tanstack/tsrouter",
     "prod:db:generate": "dotenv -e .env.production.local -- prisma generate",
-    "prod:db:push": "dotenv -e .env.production.local -- prisma db push",
-    "prod:db:migrate": "dotenv -e .env.production.local -- prisma migrate deploy",
+    "prod:db:deploy": "dotenv -e .env.production.local -- prisma migrate deploy",
     "prod:db:studio": "dotenv -e .env.production.local -- prisma studio",
     "prod:db:seed": "dotenv -e .env.production.local -- prisma db seed",
     "db:generate": "dotenv -e .env.development.local -- prisma generate",
