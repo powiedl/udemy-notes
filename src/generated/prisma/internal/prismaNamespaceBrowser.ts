@@ -62,6 +62,7 @@ export const ModelName = {
   Tag: 'Tag',
   NoteTag: 'NoteTag',
   CourseTag: 'CourseTag',
+  AiUsageLog: 'AiUsageLog',
   Log: 'Log'
 } as const
 
@@ -218,6 +219,23 @@ export const CourseTagScalarFieldEnum = {
 } as const
 
 export type CourseTagScalarFieldEnum = (typeof CourseTagScalarFieldEnum)[keyof typeof CourseTagScalarFieldEnum]
+
+
+export const AiUsageLogScalarFieldEnum = {
+  id: 'id',
+  createdAt: 'createdAt',
+  modelName: 'modelName',
+  feature: 'feature',
+  entityId: 'entityId',
+  userId: 'userId',
+  durationMs: 'durationMs',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  isSuccess: 'isSuccess',
+  errorMessage: 'errorMessage'
+} as const
+
+export type AiUsageLogScalarFieldEnum = (typeof AiUsageLogScalarFieldEnum)[keyof typeof AiUsageLogScalarFieldEnum]
 
 
 export const LogScalarFieldEnum = {
