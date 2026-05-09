@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-  BuildBatchTaggingPromptInput,
-  suggestTagsWithAIBatch,
-} from '#/lib/ai.server'
+import { suggestTagsWithAIBatch } from '#/lib/ai.server'
+import type { BuildBatchTaggingPromptInput } from '#/lib/ai.server'
 import { ServerActionError } from '#/types/errors'
 
 // -----------------------------------------------------------------------------
