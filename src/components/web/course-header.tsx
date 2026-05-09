@@ -85,6 +85,7 @@ const CourseHeader = ({
     id: t.tag.id,
     name: t.tag.name,
     userId: t.tag.userId,
+    status: 'APPROVED',
     isDeletable: variant === 'default' ? true : false,
     isInherited: false,
     isHighlighted: activeTagIds.includes(t.tag.id),

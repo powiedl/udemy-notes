@@ -24,23 +24,31 @@ type NoteWithTagsConstraint = {
  * und fügt das Flag `isInherited` hinzu.
  */
 export function mapNoteDisplayTags<T extends NoteWithTagsConstraint>(note: T) {
-  // 1. Extrahiere die eigentlichen Tag-Objekte (ohne die Prisma-Verknüpfungs-Hülle)
-  const directTags = note.tags.map((t: any) => t.tag)
-  const courseTags = note.course?.tags?.map((t: any) => t.tag) || []
+  // 1. Erstelle Sets für blitzschnellen O(1) Abgleich
+  const directTagIds = new Set(note.tags.map((t: any) => t.tag.id))
+  const courseTagIds = new Set(
+    note.course?.tags?.map((t: any) => t.tag.id) || [],
+  )
 
-  // 2. Erstelle Sets für blitzschnellen O(1) Abgleich
-  const directTagIds = new Set(directTags.map((t: any) => t.id))
-  const courseTagIds = new Set(courseTags.map((t: any) => t.id))
-
-  // 3. Fasse alle Tags zusammen und nutze eine Map, um Duplikate automatisch zu filtern
+  // 2. Map bauen, die die relation-Daten NICHT wegwirft
   const allTagsMap = new Map()
-  directTags.forEach((t: any) => allTagsMap.set(t.id, t))
-  courseTags.forEach((t: any) => allTagsMap.set(t.id, t))
 
-  // 4. Bilde das neue logische Format und sortiere alphabetisch
+  // Zuerst Kurs-Tags rein (sind immer regulär APPROVED)
+  note.course?.tags?.forEach((t: any) => {
+    allTagsMap.set(t.tag.id, { tag: t.tag, status: 'APPROVED' })
+  })
+
+  // Dann direkte Notiz-Tags rein (die haben einen echten status in t.status!)
+  // Überschreibt Kurs-Tags, falls es als direct-Tag SUGGESTION oder APPROVED ist
+  note.tags.forEach((t: any) => {
+    allTagsMap.set(t.tag.id, { tag: t.tag, status: t.status || 'APPROVED' })
+  })
+
+  // 3. Neues logisches Format bilden und den geretteten Status anfügen
   const displayTags = Array.from(allTagsMap.values())
-    .map((tag) => ({
+    .map(({ tag, status }) => ({
       tag,
+      status, // <--- BINGO! Der Status ist jetzt direkt Teil der displayTags
       isDirect: directTagIds.has(tag.id),
       isFromCourse: courseTagIds.has(tag.id),
     }))
@@ -190,6 +198,7 @@ export async function getNotesForCourseLogic(
       include: {
         tags: {
           select: {
+            status: true,
             tag: { select: { id: true, name: true, userId: true } },
           },
           orderBy: { tag: { name: 'asc' } },
