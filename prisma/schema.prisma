@@ -190,28 +190,28 @@ model CourseTag {
 
 model AiUsageLog {
   id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Welches Modell wurde genutzt? (z. B. "gemini-1.5-flash", "gpt-4o-mini")
-  modelName String
+  modelName String @map("model_name")
 
   // Welches Feature wurde getriggert? (z. B. "COURSE_AUTO_TAG", "NOTE_AUTO_TAG")
   feature String
 
   // Die ID des Kurses oder der Notiz, um später Stichproben zu machen
-  entityId String?
+  entityId String? @map("entity_id")
 
   // Welcher User hat die Aktion ausgelöst?
-  userId String?
+  userId String? @map("user_id")
 
   // --- Telemetrie (Optional, aber extrem nützlich) ---
-  durationMs       Int? // Wie lange hat der API-Call gedauert?
-  promptTokens     Int? // Input-Kosten
-  completionTokens Int? // Output-Kosten
+  durationMs       Int? @map("duration_ms") // Wie lange hat der API-Call gedauert?
+  promptTokens     Int? @map("prompt_tokens") // Input-Kosten
+  completionTokens Int? @map("completion_tokens") // Output-Kosten
 
   // War der Call erfolgreich? (Falls du später auch Fallbacks/Fehler loggen willst)
-  isSuccess    Boolean @default(true)
-  errorMessage String? // Falls isSuccess false ist, z. B. "JSON Parse Error"
+  isSuccess    Boolean @default(true) @map("is_success")
+  errorMessage String? @map("error_message") // Falls isSuccess false ist, z. B. "JSON Parse Error"
 
   // Indizes für schnelle Auswertungen später (z.B. im Admin-Dashboard)
   @@index([modelName])
