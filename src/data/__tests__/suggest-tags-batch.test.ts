@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { suggestTagsWithAIBatch } from '#/lib/ai.server'
+import {
+  BuildBatchTaggingPromptInput,
+  suggestTagsWithAIBatch,
+} from '#/lib/ai.server'
 import { ServerActionError } from '#/types/errors'
 
 // -----------------------------------------------------------------------------
@@ -31,8 +34,8 @@ describe('Integration: suggestTagsWithAIBatch', () => {
     // Leeres Array -> Keine Allowance -> Kein API Call
     const input: any = {
       entities: [],
-      availableGlobalTags: [],
-      availablePrivateTags: [],
+      globalTags: [],
+      privateUserTags: [],
     }
 
     const result = await suggestTagsWithAIBatch(input)
@@ -42,17 +45,18 @@ describe('Integration: suggestTagsWithAIBatch', () => {
   })
 
   it('2. Truncation & Auto-Wrap: Repariert nackte Arrays und kappt auf Allowance ab', async () => {
-    const input: any = {
+    const input: BuildBatchTaggingPromptInput = {
       entities: [
         {
           entityId: 'note-1',
-          content: 'Test Note',
+          entityType: 'note',
+          contentPayload: { content: 'Test Note' },
           existingTags: [],
           maxTotalTags: 5,
         },
       ],
-      availableGlobalTags: [],
-      availablePrivateTags: [],
+      globalTags: [],
+      privateUserTags: [],
     }
 
     // BÖSE KI: Schickt direkt ein Array [ ... ] OHNE das "results" Objekt!
@@ -84,17 +88,18 @@ describe('Integration: suggestTagsWithAIBatch', () => {
   })
 
   it('3. Full Pipeline: Verarbeitet Markdown-Quatsch, korrigiert isNew und sortiert', async () => {
-    const input: any = {
+    const input: BuildBatchTaggingPromptInput = {
       entities: [
         {
           entityId: 'note-1',
-          content: 'Test Note',
+          entityType: 'note',
+          contentPayload: { content: 'Test Note' },
           existingTags: [],
           maxTotalTags: 5,
         },
       ],
-      availableGlobalTags: [{ name: 'react' }],
-      availablePrivateTags: [],
+      globalTags: ['react'],
+      privateUserTags: [],
     }
 
     // BRAVE KI: Nutzt Markdown, aber schickt das korrekte { "results": [...] } Format
@@ -131,17 +136,18 @@ describe('Integration: suggestTagsWithAIBatch', () => {
   })
 
   it('4. Error Handling: Wirft einen sauberen ServerActionError bei 429', async () => {
-    const input: any = {
+    const input: BuildBatchTaggingPromptInput = {
       entities: [
         {
           entityId: 'note-1',
-          content: 'Test Note',
+          entityType: 'note',
+          contentPayload: { content: 'Test Note' },
           existingTags: [], // <-- Gefixt!
           maxTotalTags: 5, // <-- Gefixt!
         },
       ],
-      availableGlobalTags: [],
-      availablePrivateTags: [],
+      globalTags: [],
+      privateUserTags: [],
     }
 
     const rateLimitError: any = new Error('Rate Limited')
