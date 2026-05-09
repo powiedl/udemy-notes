@@ -27,16 +27,19 @@ export type AggregateCourseTag = {
 export type CourseTagMinAggregateOutputType = {
   courseId: string | null
   tagId: string | null
+  status: string | null
 }
 
 export type CourseTagMaxAggregateOutputType = {
   courseId: string | null
   tagId: string | null
+  status: string | null
 }
 
 export type CourseTagCountAggregateOutputType = {
   courseId: number
   tagId: number
+  status: number
   _all: number
 }
 
@@ -44,16 +47,19 @@ export type CourseTagCountAggregateOutputType = {
 export type CourseTagMinAggregateInputType = {
   courseId?: true
   tagId?: true
+  status?: true
 }
 
 export type CourseTagMaxAggregateInputType = {
   courseId?: true
   tagId?: true
+  status?: true
 }
 
 export type CourseTagCountAggregateInputType = {
   courseId?: true
   tagId?: true
+  status?: true
   _all?: true
 }
 
@@ -132,12 +138,13 @@ export type CourseTagGroupByArgs<ExtArgs extends runtime.Types.Extensions.Intern
 export type CourseTagGroupByOutputType = {
   courseId: string
   tagId: string
+  status: string
   _count: CourseTagCountAggregateOutputType | null
   _min: CourseTagMinAggregateOutputType | null
   _max: CourseTagMaxAggregateOutputType | null
 }
 
-type GetCourseTagGroupByPayload<T extends CourseTagGroupByArgs> = Prisma.PrismaPromise<
+export type GetCourseTagGroupByPayload<T extends CourseTagGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CourseTagGroupByOutputType, T['by']> &
       {
@@ -158,6 +165,7 @@ export type CourseTagWhereInput = {
   NOT?: Prisma.CourseTagWhereInput | Prisma.CourseTagWhereInput[]
   courseId?: Prisma.StringFilter<"CourseTag"> | string
   tagId?: Prisma.StringFilter<"CourseTag"> | string
+  status?: Prisma.StringFilter<"CourseTag"> | string
   course?: Prisma.XOR<Prisma.CourseScalarRelationFilter, Prisma.CourseWhereInput>
   tag?: Prisma.XOR<Prisma.TagScalarRelationFilter, Prisma.TagWhereInput>
 }
@@ -165,6 +173,7 @@ export type CourseTagWhereInput = {
 export type CourseTagOrderByWithRelationInput = {
   courseId?: Prisma.SortOrder
   tagId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   course?: Prisma.CourseOrderByWithRelationInput
   tag?: Prisma.TagOrderByWithRelationInput
 }
@@ -176,6 +185,7 @@ export type CourseTagWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CourseTagWhereInput | Prisma.CourseTagWhereInput[]
   courseId?: Prisma.StringFilter<"CourseTag"> | string
   tagId?: Prisma.StringFilter<"CourseTag"> | string
+  status?: Prisma.StringFilter<"CourseTag"> | string
   course?: Prisma.XOR<Prisma.CourseScalarRelationFilter, Prisma.CourseWhereInput>
   tag?: Prisma.XOR<Prisma.TagScalarRelationFilter, Prisma.TagWhereInput>
 }, "courseId_tagId">
@@ -183,6 +193,7 @@ export type CourseTagWhereUniqueInput = Prisma.AtLeast<{
 export type CourseTagOrderByWithAggregationInput = {
   courseId?: Prisma.SortOrder
   tagId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   _count?: Prisma.CourseTagCountOrderByAggregateInput
   _max?: Prisma.CourseTagMaxOrderByAggregateInput
   _min?: Prisma.CourseTagMinOrderByAggregateInput
@@ -194,9 +205,11 @@ export type CourseTagScalarWhereWithAggregatesInput = {
   NOT?: Prisma.CourseTagScalarWhereWithAggregatesInput | Prisma.CourseTagScalarWhereWithAggregatesInput[]
   courseId?: Prisma.StringWithAggregatesFilter<"CourseTag"> | string
   tagId?: Prisma.StringWithAggregatesFilter<"CourseTag"> | string
+  status?: Prisma.StringWithAggregatesFilter<"CourseTag"> | string
 }
 
 export type CourseTagCreateInput = {
+  status?: string
   course: Prisma.CourseCreateNestedOneWithoutTagsInput
   tag: Prisma.TagCreateNestedOneWithoutCoursesInput
 }
@@ -204,9 +217,11 @@ export type CourseTagCreateInput = {
 export type CourseTagUncheckedCreateInput = {
   courseId: string
   tagId: string
+  status?: string
 }
 
 export type CourseTagUpdateInput = {
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   course?: Prisma.CourseUpdateOneRequiredWithoutTagsNestedInput
   tag?: Prisma.TagUpdateOneRequiredWithoutCoursesNestedInput
 }
@@ -214,20 +229,23 @@ export type CourseTagUpdateInput = {
 export type CourseTagUncheckedUpdateInput = {
   courseId?: Prisma.StringFieldUpdateOperationsInput | string
   tagId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CourseTagCreateManyInput = {
   courseId: string
   tagId: string
+  status?: string
 }
 
 export type CourseTagUpdateManyMutationInput = {
-
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CourseTagUncheckedUpdateManyInput = {
   courseId?: Prisma.StringFieldUpdateOperationsInput | string
   tagId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CourseTagListRelationFilter = {
@@ -248,16 +266,19 @@ export type CourseTagCourseIdTagIdCompoundUniqueInput = {
 export type CourseTagCountOrderByAggregateInput = {
   courseId?: Prisma.SortOrder
   tagId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
 }
 
 export type CourseTagMaxOrderByAggregateInput = {
   courseId?: Prisma.SortOrder
   tagId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
 }
 
 export type CourseTagMinOrderByAggregateInput = {
   courseId?: Prisma.SortOrder
   tagId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
 }
 
 export type CourseTagCreateNestedManyWithoutCourseInput = {
@@ -345,11 +366,13 @@ export type CourseTagUncheckedUpdateManyWithoutTagNestedInput = {
 }
 
 export type CourseTagCreateWithoutCourseInput = {
+  status?: string
   tag: Prisma.TagCreateNestedOneWithoutCoursesInput
 }
 
 export type CourseTagUncheckedCreateWithoutCourseInput = {
   tagId: string
+  status?: string
 }
 
 export type CourseTagCreateOrConnectWithoutCourseInput = {
@@ -384,14 +407,17 @@ export type CourseTagScalarWhereInput = {
   NOT?: Prisma.CourseTagScalarWhereInput | Prisma.CourseTagScalarWhereInput[]
   courseId?: Prisma.StringFilter<"CourseTag"> | string
   tagId?: Prisma.StringFilter<"CourseTag"> | string
+  status?: Prisma.StringFilter<"CourseTag"> | string
 }
 
 export type CourseTagCreateWithoutTagInput = {
+  status?: string
   course: Prisma.CourseCreateNestedOneWithoutTagsInput
 }
 
 export type CourseTagUncheckedCreateWithoutTagInput = {
   courseId: string
+  status?: string
 }
 
 export type CourseTagCreateOrConnectWithoutTagInput = {
@@ -422,34 +448,42 @@ export type CourseTagUpdateManyWithWhereWithoutTagInput = {
 
 export type CourseTagCreateManyCourseInput = {
   tagId: string
+  status?: string
 }
 
 export type CourseTagUpdateWithoutCourseInput = {
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   tag?: Prisma.TagUpdateOneRequiredWithoutCoursesNestedInput
 }
 
 export type CourseTagUncheckedUpdateWithoutCourseInput = {
   tagId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CourseTagUncheckedUpdateManyWithoutCourseInput = {
   tagId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CourseTagCreateManyTagInput = {
   courseId: string
+  status?: string
 }
 
 export type CourseTagUpdateWithoutTagInput = {
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   course?: Prisma.CourseUpdateOneRequiredWithoutTagsNestedInput
 }
 
 export type CourseTagUncheckedUpdateWithoutTagInput = {
   courseId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type CourseTagUncheckedUpdateManyWithoutTagInput = {
   courseId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 
@@ -457,6 +491,7 @@ export type CourseTagUncheckedUpdateManyWithoutTagInput = {
 export type CourseTagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   courseId?: boolean
   tagId?: boolean
+  status?: boolean
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
   tag?: boolean | Prisma.TagDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["courseTag"]>
@@ -464,6 +499,7 @@ export type CourseTagSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
 export type CourseTagSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   courseId?: boolean
   tagId?: boolean
+  status?: boolean
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
   tag?: boolean | Prisma.TagDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["courseTag"]>
@@ -471,6 +507,7 @@ export type CourseTagSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
 export type CourseTagSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   courseId?: boolean
   tagId?: boolean
+  status?: boolean
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
   tag?: boolean | Prisma.TagDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["courseTag"]>
@@ -478,9 +515,10 @@ export type CourseTagSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
 export type CourseTagSelectScalar = {
   courseId?: boolean
   tagId?: boolean
+  status?: boolean
 }
 
-export type CourseTagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"courseId" | "tagId", ExtArgs["result"]["courseTag"]>
+export type CourseTagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"courseId" | "tagId" | "status", ExtArgs["result"]["courseTag"]>
 export type CourseTagInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   course?: boolean | Prisma.CourseDefaultArgs<ExtArgs>
   tag?: boolean | Prisma.TagDefaultArgs<ExtArgs>
@@ -503,6 +541,7 @@ export type $CourseTagPayload<ExtArgs extends runtime.Types.Extensions.InternalA
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     courseId: string
     tagId: string
+    status: string
   }, ExtArgs["result"]["courseTag"]>
   composites: {}
 }
@@ -930,6 +969,7 @@ export interface Prisma__CourseTagClient<T, Null = never, ExtArgs extends runtim
 export interface CourseTagFieldRefs {
   readonly courseId: Prisma.FieldRef<"CourseTag", 'String'>
   readonly tagId: Prisma.FieldRef<"CourseTag", 'String'>
+  readonly status: Prisma.FieldRef<"CourseTag", 'String'>
 }
     
 

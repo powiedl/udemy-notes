@@ -27,16 +27,19 @@ export type AggregateNoteTag = {
 export type NoteTagMinAggregateOutputType = {
   noteId: string | null
   tagId: string | null
+  status: string | null
 }
 
 export type NoteTagMaxAggregateOutputType = {
   noteId: string | null
   tagId: string | null
+  status: string | null
 }
 
 export type NoteTagCountAggregateOutputType = {
   noteId: number
   tagId: number
+  status: number
   _all: number
 }
 
@@ -44,16 +47,19 @@ export type NoteTagCountAggregateOutputType = {
 export type NoteTagMinAggregateInputType = {
   noteId?: true
   tagId?: true
+  status?: true
 }
 
 export type NoteTagMaxAggregateInputType = {
   noteId?: true
   tagId?: true
+  status?: true
 }
 
 export type NoteTagCountAggregateInputType = {
   noteId?: true
   tagId?: true
+  status?: true
   _all?: true
 }
 
@@ -132,12 +138,13 @@ export type NoteTagGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 export type NoteTagGroupByOutputType = {
   noteId: string
   tagId: string
+  status: string
   _count: NoteTagCountAggregateOutputType | null
   _min: NoteTagMinAggregateOutputType | null
   _max: NoteTagMaxAggregateOutputType | null
 }
 
-type GetNoteTagGroupByPayload<T extends NoteTagGroupByArgs> = Prisma.PrismaPromise<
+export type GetNoteTagGroupByPayload<T extends NoteTagGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<NoteTagGroupByOutputType, T['by']> &
       {
@@ -158,6 +165,7 @@ export type NoteTagWhereInput = {
   NOT?: Prisma.NoteTagWhereInput | Prisma.NoteTagWhereInput[]
   noteId?: Prisma.StringFilter<"NoteTag"> | string
   tagId?: Prisma.StringFilter<"NoteTag"> | string
+  status?: Prisma.StringFilter<"NoteTag"> | string
   note?: Prisma.XOR<Prisma.NoteScalarRelationFilter, Prisma.NoteWhereInput>
   tag?: Prisma.XOR<Prisma.TagScalarRelationFilter, Prisma.TagWhereInput>
 }
@@ -165,6 +173,7 @@ export type NoteTagWhereInput = {
 export type NoteTagOrderByWithRelationInput = {
   noteId?: Prisma.SortOrder
   tagId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   note?: Prisma.NoteOrderByWithRelationInput
   tag?: Prisma.TagOrderByWithRelationInput
 }
@@ -176,6 +185,7 @@ export type NoteTagWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.NoteTagWhereInput | Prisma.NoteTagWhereInput[]
   noteId?: Prisma.StringFilter<"NoteTag"> | string
   tagId?: Prisma.StringFilter<"NoteTag"> | string
+  status?: Prisma.StringFilter<"NoteTag"> | string
   note?: Prisma.XOR<Prisma.NoteScalarRelationFilter, Prisma.NoteWhereInput>
   tag?: Prisma.XOR<Prisma.TagScalarRelationFilter, Prisma.TagWhereInput>
 }, "noteId_tagId">
@@ -183,6 +193,7 @@ export type NoteTagWhereUniqueInput = Prisma.AtLeast<{
 export type NoteTagOrderByWithAggregationInput = {
   noteId?: Prisma.SortOrder
   tagId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   _count?: Prisma.NoteTagCountOrderByAggregateInput
   _max?: Prisma.NoteTagMaxOrderByAggregateInput
   _min?: Prisma.NoteTagMinOrderByAggregateInput
@@ -194,9 +205,11 @@ export type NoteTagScalarWhereWithAggregatesInput = {
   NOT?: Prisma.NoteTagScalarWhereWithAggregatesInput | Prisma.NoteTagScalarWhereWithAggregatesInput[]
   noteId?: Prisma.StringWithAggregatesFilter<"NoteTag"> | string
   tagId?: Prisma.StringWithAggregatesFilter<"NoteTag"> | string
+  status?: Prisma.StringWithAggregatesFilter<"NoteTag"> | string
 }
 
 export type NoteTagCreateInput = {
+  status?: string
   note: Prisma.NoteCreateNestedOneWithoutTagsInput
   tag: Prisma.TagCreateNestedOneWithoutNotesInput
 }
@@ -204,9 +217,11 @@ export type NoteTagCreateInput = {
 export type NoteTagUncheckedCreateInput = {
   noteId: string
   tagId: string
+  status?: string
 }
 
 export type NoteTagUpdateInput = {
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   note?: Prisma.NoteUpdateOneRequiredWithoutTagsNestedInput
   tag?: Prisma.TagUpdateOneRequiredWithoutNotesNestedInput
 }
@@ -214,20 +229,23 @@ export type NoteTagUpdateInput = {
 export type NoteTagUncheckedUpdateInput = {
   noteId?: Prisma.StringFieldUpdateOperationsInput | string
   tagId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type NoteTagCreateManyInput = {
   noteId: string
   tagId: string
+  status?: string
 }
 
 export type NoteTagUpdateManyMutationInput = {
-
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type NoteTagUncheckedUpdateManyInput = {
   noteId?: Prisma.StringFieldUpdateOperationsInput | string
   tagId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type NoteTagListRelationFilter = {
@@ -248,16 +266,19 @@ export type NoteTagNoteIdTagIdCompoundUniqueInput = {
 export type NoteTagCountOrderByAggregateInput = {
   noteId?: Prisma.SortOrder
   tagId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
 }
 
 export type NoteTagMaxOrderByAggregateInput = {
   noteId?: Prisma.SortOrder
   tagId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
 }
 
 export type NoteTagMinOrderByAggregateInput = {
   noteId?: Prisma.SortOrder
   tagId?: Prisma.SortOrder
+  status?: Prisma.SortOrder
 }
 
 export type NoteTagCreateNestedManyWithoutNoteInput = {
@@ -345,11 +366,13 @@ export type NoteTagUncheckedUpdateManyWithoutTagNestedInput = {
 }
 
 export type NoteTagCreateWithoutNoteInput = {
+  status?: string
   tag: Prisma.TagCreateNestedOneWithoutNotesInput
 }
 
 export type NoteTagUncheckedCreateWithoutNoteInput = {
   tagId: string
+  status?: string
 }
 
 export type NoteTagCreateOrConnectWithoutNoteInput = {
@@ -384,14 +407,17 @@ export type NoteTagScalarWhereInput = {
   NOT?: Prisma.NoteTagScalarWhereInput | Prisma.NoteTagScalarWhereInput[]
   noteId?: Prisma.StringFilter<"NoteTag"> | string
   tagId?: Prisma.StringFilter<"NoteTag"> | string
+  status?: Prisma.StringFilter<"NoteTag"> | string
 }
 
 export type NoteTagCreateWithoutTagInput = {
+  status?: string
   note: Prisma.NoteCreateNestedOneWithoutTagsInput
 }
 
 export type NoteTagUncheckedCreateWithoutTagInput = {
   noteId: string
+  status?: string
 }
 
 export type NoteTagCreateOrConnectWithoutTagInput = {
@@ -422,34 +448,42 @@ export type NoteTagUpdateManyWithWhereWithoutTagInput = {
 
 export type NoteTagCreateManyNoteInput = {
   tagId: string
+  status?: string
 }
 
 export type NoteTagUpdateWithoutNoteInput = {
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   tag?: Prisma.TagUpdateOneRequiredWithoutNotesNestedInput
 }
 
 export type NoteTagUncheckedUpdateWithoutNoteInput = {
   tagId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type NoteTagUncheckedUpdateManyWithoutNoteInput = {
   tagId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type NoteTagCreateManyTagInput = {
   noteId: string
+  status?: string
 }
 
 export type NoteTagUpdateWithoutTagInput = {
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   note?: Prisma.NoteUpdateOneRequiredWithoutTagsNestedInput
 }
 
 export type NoteTagUncheckedUpdateWithoutTagInput = {
   noteId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 export type NoteTagUncheckedUpdateManyWithoutTagInput = {
   noteId?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
 }
 
 
@@ -457,6 +491,7 @@ export type NoteTagUncheckedUpdateManyWithoutTagInput = {
 export type NoteTagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   noteId?: boolean
   tagId?: boolean
+  status?: boolean
   note?: boolean | Prisma.NoteDefaultArgs<ExtArgs>
   tag?: boolean | Prisma.TagDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["noteTag"]>
@@ -464,6 +499,7 @@ export type NoteTagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 export type NoteTagSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   noteId?: boolean
   tagId?: boolean
+  status?: boolean
   note?: boolean | Prisma.NoteDefaultArgs<ExtArgs>
   tag?: boolean | Prisma.TagDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["noteTag"]>
@@ -471,6 +507,7 @@ export type NoteTagSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type NoteTagSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   noteId?: boolean
   tagId?: boolean
+  status?: boolean
   note?: boolean | Prisma.NoteDefaultArgs<ExtArgs>
   tag?: boolean | Prisma.TagDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["noteTag"]>
@@ -478,9 +515,10 @@ export type NoteTagSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type NoteTagSelectScalar = {
   noteId?: boolean
   tagId?: boolean
+  status?: boolean
 }
 
-export type NoteTagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"noteId" | "tagId", ExtArgs["result"]["noteTag"]>
+export type NoteTagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"noteId" | "tagId" | "status", ExtArgs["result"]["noteTag"]>
 export type NoteTagInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   note?: boolean | Prisma.NoteDefaultArgs<ExtArgs>
   tag?: boolean | Prisma.TagDefaultArgs<ExtArgs>
@@ -503,6 +541,7 @@ export type $NoteTagPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     noteId: string
     tagId: string
+    status: string
   }, ExtArgs["result"]["noteTag"]>
   composites: {}
 }
@@ -930,6 +969,7 @@ export interface Prisma__NoteTagClient<T, Null = never, ExtArgs extends runtime.
 export interface NoteTagFieldRefs {
   readonly noteId: Prisma.FieldRef<"NoteTag", 'String'>
   readonly tagId: Prisma.FieldRef<"NoteTag", 'String'>
+  readonly status: Prisma.FieldRef<"NoteTag", 'String'>
 }
     
 

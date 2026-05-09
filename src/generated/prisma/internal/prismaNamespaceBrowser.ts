@@ -204,7 +204,8 @@ export type TagScalarFieldEnum = (typeof TagScalarFieldEnum)[keyof typeof TagSca
 
 export const NoteTagScalarFieldEnum = {
   noteId: 'noteId',
-  tagId: 'tagId'
+  tagId: 'tagId',
+  status: 'status'
 } as const
 
 export type NoteTagScalarFieldEnum = (typeof NoteTagScalarFieldEnum)[keyof typeof NoteTagScalarFieldEnum]
@@ -212,7 +213,8 @@ export type NoteTagScalarFieldEnum = (typeof NoteTagScalarFieldEnum)[keyof typeo
 
 export const CourseTagScalarFieldEnum = {
   courseId: 'courseId',
-  tagId: 'tagId'
+  tagId: 'tagId',
+  status: 'status'
 } as const
 
 export type CourseTagScalarFieldEnum = (typeof CourseTagScalarFieldEnum)[keyof typeof CourseTagScalarFieldEnum]
