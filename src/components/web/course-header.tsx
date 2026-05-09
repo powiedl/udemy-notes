@@ -28,6 +28,7 @@ import {
   ReviewCourseTagsDialog,
 } from './review-course-tags-dialog'
 import { toast } from 'sonner' // Für die Info, falls keine Tags gefunden wurden
+import { useServerFn } from '@tanstack/react-start'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
@@ -69,6 +70,8 @@ const CourseHeader = ({
   const [isAITagging, startAITaggingTransition] = useTransition()
   // --- NEU: Transition für das Speichern der Tags aus dem Dialog ---
   const [isSavingTags, startSavingTagsTransition] = useTransition()
+  const autoTagCourseBatch = useServerFn(autoTagCourseBatchFn)
+  const approveCourseTagsBatch = useServerFn(approveCourseTagsBatchFn)
 
   // KI-Tagging blockiert jetzt ebenfalls alle anderen Buttons
   const isPending = isDeleting || isExporting || isTagPending || isAITagging
@@ -109,7 +112,7 @@ const CourseHeader = ({
     startAITaggingTransition(async () => {
       try {
         const result = await handleAction(
-          autoTagCourseBatchFn({ data: { courseId: course.id } }),
+          autoTagCourseBatch({ data: { courseId: course.id } }),
           {
             showSuccessToast: true,
             showErrorToast: true,
@@ -139,7 +142,7 @@ const CourseHeader = ({
     startSavingTagsTransition(async () => {
       try {
         await handleAction(
-          approveCourseTagsBatchFn({
+          approveCourseTagsBatch({
             data: { courseId: course.id, tagNames: selectedTagNames },
           }),
           { showSuccessToast: true, showErrorToast: true },
@@ -237,7 +240,7 @@ const CourseHeader = ({
         <CardFooter className="flex flex-row gap-4">
           <Button
             type="button"
-            variant="secondary"
+            // variant="secondary"
             onClick={handleAITagging}
             disabled={isPending}
             className="hover:cursor-pointer"
@@ -245,7 +248,7 @@ const CourseHeader = ({
             {isAITagging ? (
               <Loader2 className="size-4 mr-1 animate-spin" />
             ) : (
-              <Sparkles className="size-4 mr-1 text-amber-500" />
+              <Sparkles className="size-4 mr-1" />
             )}
             <span
               className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
@@ -259,7 +262,7 @@ const CourseHeader = ({
             courseId={course.id}
             onExportSubmit={handleExport}
             disabled={isPending}
-            className="hover:cursor-pointer"
+            className="cursor-pointer"
           >
             <>
               {isExporting ? (

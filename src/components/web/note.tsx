@@ -2,7 +2,17 @@ import { Link, useRouter } from '@tanstack/react-router'
 import { cn } from '#/lib/utils'
 import { Card, CardContent, CardDescription } from '../ui/card'
 import ReactMarkdown from 'react-markdown'
-import { BookOpenText, Edit2, Save, X, Eye, EyeOff } from 'lucide-react'
+import {
+  Check,
+  Loader2,
+  Sparkles,
+  BookOpenText,
+  Edit2,
+  Save,
+  X,
+  Eye,
+  EyeOff,
+} from 'lucide-react'
 import { useTagManagement } from '#/hooks/use-tag-management'
 import { TagManager } from './tag-manager'
 import type { TagDisplay } from './tag-manager'
@@ -10,9 +20,11 @@ import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 import type { Prisma } from '#/lib/db.server'
 import { useState, useTransition, Suspense, lazy } from 'react'
 import { Button } from '../ui/button'
+import { Badge } from '#/components/ui/badge'
 import { handleAction } from '#/lib/client-utils'
 import { updateNoteContentFn } from '#/data/note'
 import { useServerFn } from '@tanstack/react-start'
+import { approveNoteTagFn, rejectNoteTagFn } from '#/data/tag'
 
 const MarkdownEditor = lazy(() => import('./markdown-editor'))
 
@@ -24,18 +36,29 @@ type BaseNoteData = Prisma.NoteGetPayload<{
         title: true
       }
     }
+    tags: {
+      include: {
+        tag: true
+      }
+    }
   }
 }>
 
 interface NoteProps {
-  note: BaseNoteData & {
-    displayTags?:
-      | {
-          isDirect: boolean
-          isFromCourse: boolean
-          tag: { id: string; name: string; userId?: string | null }
-        }[]
-      | undefined
+  // Wir nehmen BaseNoteData, ignorieren aber die strikten Prisma-Tags
+  note: Omit<BaseNoteData, 'tags'> & {
+    // Wir machen die originalen Tags optional oder flexibel,
+    // da wir sie in dieser Komponente meist gar nicht direkt nutzen
+    tags?: any[]
+    displayTags?: {
+      isDirect: boolean
+      isFromCourse: boolean
+      tag: {
+        id: string
+        name: string
+        userId?: string | null
+      }
+    }[]
   }
   activeTagIds?: string[]
   showCourseLink?: boolean
@@ -47,14 +70,17 @@ const Note = ({
   activeTagIds = [],
 }: NoteProps) => {
   const router = useRouter()
+
+  // Namenskonflikt behoben: isPending zu isTagPending umbenannt
   const {
     availableTags,
-    isPending,
+    isPending: isTagPending,
     deletingTagId,
     handleLink,
     handleDeleteTagAssociation,
     handleCreateAndLink,
   } = useTagManagement(note.id, 'note', 'NoteCard')
+
   const updateNoteContent = useServerFn(updateNoteContentFn)
 
   const [isEditing, setIsEditing] = useState(false)
@@ -64,6 +90,17 @@ const Note = ({
   const [isPendingSave, startTransition] = useTransition()
 
   const [showOriginal, setShowOriginal] = useState(false)
+
+  // Die Transitions für das KI-Tagging
+  const [isApproving, startApproveTransition] = useTransition()
+  const [isRejecting, startRejectTransition] = useTransition()
+
+  // Kombinierter Status für alle Tag-Aktionen (sperrt das UI bei Interaktion)
+  const isAnyTagActionPending = isTagPending || isApproving || isRejecting
+
+  // Filtern der Tags (KI-Vorschläge extrahieren)
+  const suggestedTags =
+    note.tags?.filter((t) => t.status === 'SUGGESTION') || []
 
   // Prüfen, ob die Notiz von unserem User bearbeitet wurde
   const isEdited = note.editedContent.trim() !== ''
@@ -110,6 +147,36 @@ const Note = ({
     setIsEditing(false)
   }
 
+  const handleApprove = (tagId: string) => {
+    startApproveTransition(async () => {
+      try {
+        await handleAction(
+          approveNoteTagFn({ data: { noteId: note.id, tagId } }),
+          {
+            showSuccessToast: false, // Visuelles Feedback durch Verschwinden reicht
+            showErrorToast: true,
+          },
+        )
+        router.invalidate()
+      } catch (e) {}
+    })
+  }
+
+  const handleReject = (tagId: string) => {
+    startRejectTransition(async () => {
+      try {
+        await handleAction(
+          rejectNoteTagFn({ data: { noteId: note.id, tagId } }),
+          {
+            showSuccessToast: false,
+            showErrorToast: true,
+          },
+        )
+        router.invalidate()
+      } catch (e) {}
+    })
+  }
+
   // Welcher Text soll aktuell als Markdown gerendert werden?
   const displayContent = showOriginal
     ? note.originalContent
@@ -138,7 +205,7 @@ const Note = ({
               {/* Toggle für Originalansicht (Nur wenn bearbeitet wurde) */}
               {isEdited && (
                 <Button
-                  variant="default" // {showOriginal ? 'secondary' : 'ghost'}
+                  variant="default"
                   size="icon"
                   className="h-7 w-7 cursor-pointer"
                   onClick={() => setShowOriginal(!showOriginal)}
@@ -174,7 +241,7 @@ const Note = ({
             </>
           ) : (
             <>
-              {/* ABBRECHEN: Jetzt in Destructive (Rot) */}
+              {/* ABBRECHEN */}
               <Button
                 variant="destructive"
                 size="icon"
@@ -186,7 +253,7 @@ const Note = ({
                 <X className="size-4" />
               </Button>
 
-              {/* SPEICHERN: Default (Lila) */}
+              {/* SPEICHERN */}
               <Button
                 variant="default"
                 size="icon"
@@ -195,7 +262,11 @@ const Note = ({
                 disabled={isPendingSave}
                 title="Speichern"
               >
-                <Save className="size-4" />
+                {isPendingSave ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
               </Button>
             </>
           )}
@@ -214,17 +285,63 @@ const Note = ({
       <CardDescription className="flex flex-col gap-y-0.5 px-2 py-1">
         <h2 className="text-xl font-semibold">{note.section}</h2>
         <h3 className="text-lg">{note.lecture}</h3>
-        {/* Tag-Anzeige */}
+
+        {/* Reguläre Tag-Anzeige */}
         <TagManager
           tags={displayTags}
           availableTags={availableTags}
           onAddTag={handleLink}
           onRemoveTag={handleDeleteTagAssociation}
           onCreateTag={handleCreateAndLink}
-          isPending={isPending}
+          isPending={isAnyTagActionPending}
           deletingTagId={deletingTagId}
           addIconVariant="purple"
         />
+
+        {/* KI-Vorschläge (SUGGESTIONS) */}
+        {suggestedTags.length > 0 && (
+          <div className="flex items-center flex-wrap gap-2 mt-2 pt-2 border-t border-dashed border-amber-200 dark:border-amber-900/50">
+            <div className="flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 mr-1">
+              <Sparkles className="size-3" />
+              KI-Vorschläge:
+            </div>
+
+            {suggestedTags.map(({ tag }) => (
+              <Badge
+                key={tag.id}
+                variant="outline"
+                className={cn(
+                  'border-dashed border-amber-400 bg-amber-50/50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 pr-1 py-0 h-6',
+                  isAnyTagActionPending && 'opacity-50 pointer-events-none',
+                )}
+              >
+                <span className="mr-1">{tag.name}</span>
+
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleApprove(tag.id)
+                  }}
+                  className="p-0.5 rounded-full hover:bg-green-500 hover:text-white transition-colors cursor-pointer"
+                  title="Tag annehmen"
+                >
+                  <Check className="size-3" />
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleReject(tag.id)
+                  }}
+                  className="p-0.5 rounded-full hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
+                  title="Tag verwerfen"
+                >
+                  <X className="size-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
       </CardDescription>
 
       <CardContent className="single-note bg-accent px-2 py-1">
