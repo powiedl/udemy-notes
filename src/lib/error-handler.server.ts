@@ -1,8 +1,18 @@
+import { isRedirect } from '@tanstack/react-router'
 import { ServerActionError } from '#/types/errors'
 import { SERVER_ERROR_SANITIZED_MESSAGE } from './constants'
 import { logToDb } from '#/lib/logging.server'
 
 export async function handleGlobalError(error: any): Promise<never> {
+  if (isRedirect(error)) {
+    throw error
+  }
+
+  // 2. Ist es ein nacktes Response-Objekt (z. B. 307 Redirect vom Server)? -> Durchwinken!
+  if (error instanceof Response && error.status >= 300 && error.status < 400) {
+    throw error
+  }
+
   const isSafeError = error instanceof ServerActionError
   const isZodError = error?.name === 'ZodError'
 
