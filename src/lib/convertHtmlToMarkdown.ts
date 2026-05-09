@@ -1,14 +1,6 @@
 import * as cheerio from 'cheerio'
-import {
-  DURATION_SELECTOR,
-  LECTURE_SELECTOR,
-  NOTE_BODY_SELECTOR,
-  NOTE_CODE_BLOCK_SELECTOR,
-  NOTE_SELECTOR,
-  NOTES_CONTAINER_SELECTOR,
-  SECTION_SELECTOR,
-} from './constants'
 import type { ImportCourse, ImportNote } from '#/types/course'
+import { UdemySelectors } from '#/types/api'
 
 interface ConvertResultSuccess {
   markdown: string
@@ -27,6 +19,7 @@ type CheerioSelection = cheerio.Cheerio<CheerioNode>
 
 export function prepareAndConvertHtmlToMarkdown(
   htmlContent: string,
+  selectors: UdemySelectors,
 ): ConvertResult {
   const $ = cheerio.load(htmlContent)
   const rawTitle = $('head > title').text() || 'Meine Kurs-Notizen'
@@ -34,7 +27,7 @@ export function prepareAndConvertHtmlToMarkdown(
     .replace(/^Course:\s*/, '')
     .replace(/\s*\|\s*Udemy$/, '')
 
-  const notesContainer = $(NOTES_CONTAINER_SELECTOR)
+  const notesContainer = $(selectors.notesContainerSelector)
 
   if (!notesContainer.length) {
     return {
@@ -45,11 +38,15 @@ export function prepareAndConvertHtmlToMarkdown(
 
   notesContainer.find('button').remove()
 
-  return convertToMarkdown($, title)
+  return convertToMarkdown($, title, selectors)
 }
 
-export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
-  const container = $(NOTES_CONTAINER_SELECTOR)
+export function convertToMarkdown(
+  $: CheerioAPI,
+  title: string,
+  selectors: UdemySelectors,
+): ConvertResult {
+  const container = $(selectors.notesContainerSelector)
 
   if (!container.length)
     return {
@@ -60,14 +57,17 @@ export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
   let markdown = `# ${title}\n\n`
   const course: ImportCourse = { title, notes: [] }
 
-  const notes = container.find(NOTE_SELECTOR)
+  const notes = container.find(selectors.noteSelector)
 
   notes.each((_, el: CheerioNode) => {
     const noteElement = $(el)
-    const duration = noteElement.find(DURATION_SELECTOR).text().trim() || '0:00'
-    const section = noteElement.find(SECTION_SELECTOR).text().trim() || ''
-    const lecture = noteElement.find(LECTURE_SELECTOR).text().trim() || ''
-    const bodyContainer = noteElement.find(NOTE_BODY_SELECTOR)
+    const duration =
+      noteElement.find(selectors.durationSelector).text().trim() || '0:00'
+    const section =
+      noteElement.find(selectors.sectionSelector).text().trim() || ''
+    const lecture =
+      noteElement.find(selectors.lectureSelector).text().trim() || ''
+    const bodyContainer = noteElement.find(selectors.noteBodySelector)
     const note: ImportNote = {
       timestamp: duration,
       section,
@@ -82,7 +82,7 @@ export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
 
     let noteMarkdown = ''
     if (bodyContainer.length) {
-      noteMarkdown += processNode(bodyContainer, $)
+      noteMarkdown += processNode(bodyContainer, $, selectors)
     }
 
     const finalNoteContent = cleanUpMarkdown(noteMarkdown)
@@ -97,7 +97,11 @@ export function convertToMarkdown($: CheerioAPI, title: string): ConvertResult {
   return { status: 'SUCCESS', markdown: cleanMarkdown, course }
 }
 
-function processNode(node: CheerioSelection, $: CheerioAPI): string {
+function processNode(
+  node: CheerioSelection,
+  $: CheerioAPI,
+  selectors: UdemySelectors,
+): string {
   let result = ''
 
   node.contents().each((_contentIndex, el: CheerioNode) => {
@@ -116,7 +120,7 @@ function processNode(node: CheerioSelection, $: CheerioAPI): string {
     const tagName = el.tagName.toUpperCase()
 
     if (
-      child.hasClass(NOTE_CODE_BLOCK_SELECTOR) ||
+      child.hasClass(selectors.noteCodeBlockSelector) ||
       tagName === 'PRE' ||
       tagName === 'CODE'
     ) {
@@ -141,7 +145,7 @@ function processNode(node: CheerioSelection, $: CheerioAPI): string {
       result += `${processInlineFormatting(child, $)}\n\n`
     } else if (tagName === 'BLOCKQUOTE') {
       // 1. Inhalt des Blockquotes rekursiv verarbeiten
-      const innerText = processNode(child, $)
+      const innerText = processNode(child, $, selectors)
 
       // 2. Überschüssige Newlines am Ende entfernen
       const trimmedInner = innerText.replace(/\n+$/, '')
@@ -173,7 +177,7 @@ function processNode(node: CheerioSelection, $: CheerioAPI): string {
     } else if (tagName === 'BR') {
       result += '__BR__'
     } else {
-      result += processNode(child, $)
+      result += processNode(child, $, selectors)
     }
   })
 

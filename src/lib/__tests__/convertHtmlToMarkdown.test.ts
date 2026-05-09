@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown'
-import * as CONSTANTS from '#/lib/constants'
+import { UDEMY_SELECTORS } from '#/lib/constants.server'
 
+// 1. Das Mock-Objekt f√ºr den Test bauen
 describe('prepareAndConvertHtmlToMarkdown', () => {
   // Hilfsfunktion: Wandelt CSS-Selektoren in HTML-Attribute um
   const toAttr = (selector: string): string => {
@@ -20,12 +21,12 @@ describe('prepareAndConvertHtmlToMarkdown', () => {
       <html>
         <head><title>Course: React Mastery | Udemy</title></head>
         <body>
-          <div ${toAttr(CONSTANTS.NOTES_CONTAINER_SELECTOR)}>
-            <div ${toAttr(CONSTANTS.NOTE_SELECTOR)}>
-              <span ${toAttr(CONSTANTS.DURATION_SELECTOR)}>1:23</span>
-              <div ${toAttr(CONSTANTS.SECTION_SELECTOR)}>Sektion 1</div>
-              <div ${toAttr(CONSTANTS.LECTURE_SELECTOR)}>Lektion 5</div>
-              <div ${toAttr(CONSTANTS.NOTE_BODY_SELECTOR)}>
+          <div ${toAttr(UDEMY_SELECTORS.notesContainerSelector)}>
+            <div ${toAttr(UDEMY_SELECTORS.noteSelector)}>
+              <span ${toAttr(UDEMY_SELECTORS.durationSelector)}>1:23</span>
+              <div ${toAttr(UDEMY_SELECTORS.sectionSelector)}>Sektion 1</div>
+              <div ${toAttr(UDEMY_SELECTORS.lectureSelector)}>Lektion 5</div>
+              <div ${toAttr(UDEMY_SELECTORS.noteBodySelector)}>
                 ${noteContentHtml}
               </div>
             </div>
@@ -37,7 +38,7 @@ describe('prepareAndConvertHtmlToMarkdown', () => {
 
   it('sollte einfachen Text und Titel korrekt extrahieren', () => {
     const html = createMockHtml('<p>Das ist eine einfache Notiz.</p>')
-    const result = prepareAndConvertHtmlToMarkdown(html)
+    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
     if (result.status === 'ERROR') {
       throw new Error(result.message)
@@ -52,12 +53,12 @@ describe('prepareAndConvertHtmlToMarkdown', () => {
     // Da kein Punkt davor steht, wird es als Tag oder Klasse behandelt.
     // Udemy nutzt hier oft verschachtelte <li>.
     const codeHtml = `
-      <div class="${CONSTANTS.NOTE_CODE_BLOCK_SELECTOR}">
+      <div class="${UDEMY_SELECTORS.noteCodeBlockSelector}">
         <li>conso-log("Hello World")</li>
       </div>
     `
     const html = createMockHtml(codeHtml)
-    const result = prepareAndConvertHtmlToMarkdown(html)
+    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
     if (result.status === 'ERROR') throw new Error(result.message)
 
@@ -69,7 +70,7 @@ describe('prepareAndConvertHtmlToMarkdown', () => {
     const html = createMockHtml(
       '<p>Innerhalb <strong><em>dieses</em></strong> HTML Elements (<em>oft</em> ein <em><strong>&lt;div&gt;</strong></em>) kann <strong>man</strong> dann</p>',
     )
-    const result = prepareAndConvertHtmlToMarkdown(html)
+    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
     if (result.status === 'ERROR') throw new Error(result.message)
 
@@ -82,7 +83,7 @@ describe('prepareAndConvertHtmlToMarkdown', () => {
     const html = createMockHtml(
       '<p>Wenn man mehrere Testgruppen und Tests<br>in einem File hat, <br>kann man einen einzelnen davon<br> ausf√ºhren, indem man dort <br> describe.only oder test.only schreibt&nbsp;(dann wird nur der .only Teil ausgef√ºhrt). Das kann manchmal hilfreich sein, weil es zu "Interferenzen"&nbsp;zwischen einzelnen Tests kommen kann. Auf diese Weise kann man recht schnell feststellen, ob der Test, der nicht wie erwartet funktioniert, falsch ist oder ob es vielleicht zu so einer Interferenz kommt.</p>',
     )
-    const result = prepareAndConvertHtmlToMarkdown(html)
+    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
     if (result.status === 'ERROR') throw new Error(result.message)
 
@@ -99,7 +100,7 @@ describe.only oder test.only schreibt\u00A0(dann wird nur der .only Teil ausgef√
     // WICHTIG: Der Code-Block und das P-Tag m√ºssen Geschwister sein.
     // Innerhalb des Code-Blocks nutzen wir die PRE/LI Struktur von Udemy.
     const complexHtml = `
-      <div class="${CONSTANTS.NOTE_CODE_BLOCK_SELECTOR}">
+      <div class="${UDEMY_SELECTORS.noteCodeBlockSelector}">
         <pre>
           <ol>
             <li>describe('test', () => {</li>
@@ -112,7 +113,7 @@ describe.only oder test.only schreibt\u00A0(dann wird nur der .only Teil ausgef√
     `
 
     const html = createMockHtml(complexHtml)
-    const result = prepareAndConvertHtmlToMarkdown(html)
+    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
     if (result.status === 'ERROR') throw new Error(result.message)
 
@@ -133,12 +134,12 @@ describe.only oder test.only schreibt\u00A0(dann wird nur der .only Teil ausgef√
 
   it('sollte HTML Entities im Code-Block korrekt als Text darstellen', () => {
     const codeWithEntities = `
-      <div class="${CONSTANTS.NOTE_CODE_BLOCK_SELECTOR}">
+      <div class="${UDEMY_SELECTORS.noteCodeBlockSelector}">
         <li>if (a &gt; b) { return "&lt;div&gt;"; }</li>
       </div>
     `
     const html = createMockHtml(codeWithEntities)
-    const result = prepareAndConvertHtmlToMarkdown(html)
+    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
     if (result.status === 'ERROR') throw new Error(result.message)
 
@@ -152,7 +153,7 @@ describe.only oder test.only schreibt\u00A0(dann wird nur der .only Teil ausgef√
     const html = createMockHtml(
       '<h4>Prozess von MSW&nbsp;Tests (Moken der Fetch Requests)</h4><ol><li><p>Erzeugen eines Testfiles</p></li><li><p>Verstehen der genauen URL, des HTTP&nbsp;Verbs, und der R√ºckgabe (inkl. welche Teile der R√ºckgabe man verwendet)</p></li><li><p>Erzeugen eines MSW&nbsp;Handlers, der die Requests abf√§ngt und die "vorgefertigten"&nbsp;Daten zur√ºckliefert</p></li><li><p>Anlegen der beforeAll, afterEach und afterAll hooks im Testfile</p></li><li><p>Im Test wird die Komponente gerendert und dann warten man darauf, dass das richtige Element sichtbar wird</p></li></ol><p>',
     )
-    const result = prepareAndConvertHtmlToMarkdown(html)
+    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
     if (result.status === 'ERROR') throw new Error(result.message)
 
@@ -169,7 +170,7 @@ describe.only oder test.only schreibt\u00A0(dann wird nur der .only Teil ausgef√
 
   it('sollte Einr√ºckungen in mehrzeiligen Codebl√∂cken exakt erhalten', () => {
     const html = createMockHtml(`
-      <div ${toAttr(CONSTANTS.NOTE_CODE_BLOCK_SELECTOR)}>
+      <div ${toAttr(UDEMY_SELECTORS.noteCodeBlockSelector)}>
         <pre>
           <ol>
             <li>const start = true;</li>
@@ -180,7 +181,7 @@ describe.only oder test.only schreibt\u00A0(dann wird nur der .only Teil ausgef√
         </pre>
       </div>
     `)
-    const result = prepareAndConvertHtmlToMarkdown(html)
+    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
     if (result.status === 'ERROR') throw new Error(result.message)
 
@@ -199,7 +200,7 @@ describe.only oder test.only schreibt\u00A0(dann wird nur der .only Teil ausgef√
       </blockquote>
       <p>normaler Text2</p>
     `)
-    const result = prepareAndConvertHtmlToMarkdown(html)
+    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
     if (result.status === 'ERROR') throw new Error(result.message)
 
