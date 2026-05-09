@@ -23,10 +23,8 @@ import type { ExportMdFileSchema } from '#/schemas/export-file'
 // --- NEU: Imports für AI Tagging Dialog und Save-Funktion ---
 import { autoTagCourseBatchFn, approveCourseTagsBatchFn } from '#/data/tag'
 import { handleAction } from '#/lib/client-utils'
-import {
-  AITagSuggestionForDialog,
-  ReviewCourseTagsDialog,
-} from './review-course-tags-dialog'
+import { ReviewCourseTagsDialog } from './review-course-tags-dialog'
+import type { AITagSuggestionForDialog } from './review-course-tags-dialog'
 import { toast } from 'sonner' // Für die Info, falls keine Tags gefunden wurden
 import { useServerFn } from '@tanstack/react-start'
 
@@ -124,10 +122,7 @@ const CourseHeader = ({
         router.invalidate()
 
         // Dialog öffnen, wenn Tags für den Kurs gefunden wurden
-        if (
-          result.courseTagsSuggested &&
-          result.courseTagsSuggested.length > 0
-        ) {
+        if (result.courseTagsSuggested.length > 0) {
           setReviewTags(result.courseTagsSuggested)
         } else {
           toast.info('Für den Kurs selbst wurden keine neuen Tags gefunden.')

@@ -1,4 +1,4 @@
-import { UdemySelectors } from '#/types/api'
+import type { UdemySelectors } from '#/types/api'
 
 export const validateMarkdown = (content: string): boolean => {
   if (!content || content.trim() === '') {

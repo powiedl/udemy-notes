@@ -1,4 +1,4 @@
-import { AITagSuggestion } from '#/schemas/ai'
+import type { AITagSuggestion } from '#/schemas/ai'
 
 export function sanitizeAITags(
   aiTags: AITagSuggestion[],

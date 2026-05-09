@@ -1,9 +1,10 @@
 // src/lib/ai.server.ts
 import { ServerActionError } from '#/types/errors'
-import { ChatResult } from '@openrouter/sdk/models'
+import type { ChatResult } from '@openrouter/sdk/models'
 import { sanitizeAITags } from './ai-sanitize'
 import { openrouter } from './openrouter-client.server'
-import { aiBatchTagResponseSchema, AIEntityTagResponse } from '#/schemas/ai'
+import { aiBatchTagResponseSchema } from '#/schemas/ai'
+import type { AIEntityTagResponse } from '#/schemas/ai'
 // import type { AITagSuggestion } from '#/schemas/ai'
 
 // --- 1. Zod Schemas für garantierte Typsicherheit ---
@@ -153,7 +154,6 @@ export async function suggestTagsWithAIBatch(
     if (Array.isArray(parsedJson)) {
       parsedJson = { results: parsedJson }
     }
-    //console.log('parsedJSON:', JSON.stringify(parsedJson))
 
     // Zod validiert jetzt nur noch, ob die STRUKTUR stimmt.
     // Wenn eine Entität 10 statt 5 Tags hat, geht das hier fehlerfrei durch!
@@ -161,8 +161,8 @@ export async function suggestTagsWithAIBatch(
     console.log(
       `zodSchema passed successful (${parsedJson === JSON.parse(debugJSON) ? 'debug content used' : `AI content used (model:${response.model}, object:${response.object})`})`,
     )
-    const existingGlobals = input.globalTags || []
-    const existingPrivates = input.privateUserTags || []
+    const existingGlobals = input.globalTags
+    const existingPrivates = input.privateUserTags
     const finalResults = validated.results.map((aiResult) => {
       const originalEntity = entitiesWithAllowance.find(
         (e) => e.entityId === aiResult.entityId,

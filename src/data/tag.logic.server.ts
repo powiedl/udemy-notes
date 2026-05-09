@@ -290,7 +290,7 @@ export async function autoTagCourseBatchLogic(
     entityType: 'course' as const,
     contentPayload: {
       title: course.title,
-      description: /*course.description || */ '',
+      description: /* course.description || */ '',
     },
     existingTags: course.tags.map((ct) => ct.tag.name),
     maxTotalTags: MAX_COURSE_TAGS,
@@ -317,7 +317,7 @@ export async function autoTagCourseBatchLogic(
     privateUserTags,
   })
 
-  if (!aiResults || aiResults.length === 0) {
+  if (aiResults.length === 0) {
     return { courseTagsSuggested: [], notesProcessed: 0 }
   }
 

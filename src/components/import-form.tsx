@@ -70,7 +70,7 @@ import { handleAction } from '#/lib/client-utils'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 import { prepareMdPayload, prepareHtmlPayload } from '#/lib/import-helpers'
-import { UdemySelectors } from '#/types/api'
+import type { UdemySelectors } from '#/types/api'
 
 const importFormSchema = z.object({
   file: z
