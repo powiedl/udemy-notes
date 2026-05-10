@@ -1,5 +1,5 @@
-import { cn } from '#/lib/utils'
-import { useState, useCallback } from 'react'
+import { cn, getNodeEnv } from '#/lib/utils'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { ZodSchema } from 'zod'
 
 interface FormDebuggerProps {
@@ -9,8 +9,9 @@ interface FormDebuggerProps {
 
 export const FormDebugger = ({ form, schema }: FormDebuggerProps) => {
   const [isBusy, setIsBusy] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  if (process.env.NODE_ENV === 'production') return null // hier ist process.env.NODE_ENV erlaubt - es wird vom vite build statisch durch das jeweilige Environment ersetzt
+  if (getNodeEnv('production')) return null
   if (!form) return null
 
   const handleForceValidation = useCallback(async () => {
@@ -22,9 +23,19 @@ export const FormDebugger = ({ form, schema }: FormDebuggerProps) => {
       form.setFieldMeta(name, (prev: any) => ({ ...prev, isTouched: true }))
     })
 
-    setTimeout(() => setIsBusy(false), 200)
+    timerRef.current = setTimeout(() => {
+      setIsBusy(false)
+      timerRef.current = null // Referenz nach Abschluss leeren
+    }, 200)
   }, [form])
 
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+    }
+  }, [])
   return (
     <div className="mt-8 rounded-md bg-slate-900 p-4 text-xs text-green-400 border border-slate-700 shadow-2xl">
       <form.Subscribe

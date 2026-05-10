@@ -24,6 +24,11 @@ export function isEmpty(val: unknown): boolean {
   return false
 }
 
+export function getNodeEnv(environment?: string): string | boolean {
+  if (environment) return process.env.NODE_ENV === environment
+  return process.env.NODE_ENV || 'unknown-environment'
+}
+
 /**
  * This function takes an object and returns a new object with the same values,
  * but with all keys sorted alphabetically. If a value is itself an object, it

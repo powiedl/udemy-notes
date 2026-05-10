@@ -5,6 +5,7 @@ import { sanitizeAITags } from './ai-sanitize'
 import { openrouter } from './openrouter-client.server'
 import { aiBatchTagResponseSchema } from '#/schemas/ai'
 import type { AIEntityTagResponse } from '#/schemas/ai'
+import { getNodeEnv } from './utils'
 // import type { AITagSuggestion } from '#/schemas/ai'
 
 // --- 1. Zod Schemas für garantierte Typsicherheit ---
@@ -113,6 +114,7 @@ export async function suggestTagsWithAIBatch(
         //   'inclusionai/ring-2.6-1t:free', // Context: 262K
         //   'minimax/minimax-m2.5:free', // Context: 197K
         //   'openai/gpt-oss-20b', // context: 131K
+        //   'baidu/cobuddy:free', // context: 131K
         //   'baidu/qianfan-ocr-fast:free', // Context: 66K
         //   'qwen/qwen-2.5-72b-instruct:free',
         //   'meta-llama/llama-3.3-70b-instruct:free', // Context: 66K
@@ -158,9 +160,10 @@ export async function suggestTagsWithAIBatch(
     // Zod validiert jetzt nur noch, ob die STRUKTUR stimmt.
     // Wenn eine Entität 10 statt 5 Tags hat, geht das hier fehlerfrei durch!
     const validated = aiBatchTagResponseSchema.parse(parsedJson)
-    console.log(
-      `zodSchema passed successful (${parsedJson === JSON.parse(debugJSON) ? 'debug content used' : `AI content used (model:${response.model}, object:${response.object})`})`,
-    )
+    getNodeEnv('development') &&
+      console.log(
+        `zodSchema passed successful (${parsedJson === JSON.parse(debugJSON) ? 'debug content used' : `AI content used (model:${response.model}, object:${response.object})`})`,
+      )
     const existingGlobals = input.globalTags
     const existingPrivates = input.privateUserTags
     const finalResults = validated.results.map((aiResult) => {
@@ -204,13 +207,15 @@ export async function suggestTagsWithAIBatch(
 
     return deduplicatedResults
   } catch (error: any) {
-    console.error('[AI Service] Batch tag generation failed:', error)
-    console.log('Used System prompt:', systemInstruction)
-    console.log('Used user content:', userContent)
-    if (response) {
-      console.log('raw response from openRouter:', response)
-    } else {
-      console.log('Call of "openrouter.chat.send(" failed')
+    if (getNodeEnv('development')) {
+      console.error('[AI Service] Batch tag generation failed:', error)
+      console.log('Used System prompt:', systemInstruction)
+      console.log('Used user content:', userContent)
+      if (response) {
+        console.log('raw response from openRouter:', response)
+      } else {
+        console.log('Call of "openrouter.chat.send(" failed')
+      }
     }
     if (
       error?.statusCode === 429 ||

@@ -17,6 +17,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    reporters: ['verbose'],
     server: {
       deps: {
         // Verhindert den "module is not defined" Fehler bei React 19
