@@ -11,7 +11,7 @@ export const FormDebugger = ({ form, schema }: FormDebuggerProps) => {
   const [isBusy, setIsBusy] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  if (getNodeEnv() === 'production') return null
+  if (getNodeEnv('production')) return null
   if (!form) return null
 
   const handleForceValidation = useCallback(async () => {

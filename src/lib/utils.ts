@@ -24,7 +24,8 @@ export function isEmpty(val: unknown): boolean {
   return false
 }
 
-export function getNodeEnv(): string {
+export function getNodeEnv(environment?: string): string | boolean {
+  if (environment) return process.env.NODE_ENV === environment
   return process.env.NODE_ENV || 'unknown-environment'
 }
 
