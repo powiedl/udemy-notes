@@ -3,15 +3,15 @@ import { prisma } from '#/lib/db.server'
 import { isEmpty } from '#/lib/utils'
 import { suggestTagsWithAIBatch } from '#/lib/ai.server'
 import { ServerActionError } from '#/types/errors'
-import type {
+import type { CreateAndLinkTagToTargetInput } from './tag'
+import {
+  AutoTagCourseBatchInput,
+  DeleteTagInput,
   GetAvailableTagsInput,
   GetTagsForSelectorInput,
-  DeleteTagInput,
-  CreateAndLinkTagToTargetInput,
-  RenameTagInput,
-  AutoTagCourseBatchInput,
   NoteTagActionInput,
-} from './tag'
+  RenameTagInput,
+} from '#/schemas/tag.schema'
 
 const defaultTags = [
   'typescript',
