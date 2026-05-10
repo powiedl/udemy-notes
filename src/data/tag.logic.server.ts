@@ -1,6 +1,6 @@
 // src/data/tag.logic.server.ts
 import { prisma } from '#/lib/db.server'
-import { getNodeEnv, isEmpty } from '#/lib/utils'
+import { isEmpty } from '#/lib/utils'
 import { suggestTagsWithAIBatch } from '#/lib/ai.server'
 import { ServerActionError } from '#/types/errors'
 import type {
@@ -70,12 +70,36 @@ export const getTagsForSelectorLogic = async (
   _data: GetTagsForSelectorInput,
   userId: string,
 ) => {
-  return await prisma.tag.findMany({
+  // 1. Alle potenziellen Tags aus der DB holen
+  const allTags = await prisma.tag.findMany({
     where: {
       OR: [{ userId: null }, { userId: userId }],
     },
     orderBy: { name: 'asc' },
   })
+
+  // 2. Deduplizierung mit "Private-Wins" Strategie
+  const uniqueTagsMap = new Map<string, (typeof allTags)[number]>()
+
+  for (const tag of allTags) {
+    const lowerName = tag.name.toLowerCase()
+    const existing = uniqueTagsMap.get(lowerName)
+
+    // Logik:
+    // - Wenn wir den Namen noch nicht haben: hinzufügen.
+    // - Wenn wir schon ein globales Tag (userId === null) haben,
+    //   aber das aktuelle Tag privat ist (userId !== null): ersetzen!
+    if (!existing || (existing.userId === null && tag.userId !== null)) {
+      uniqueTagsMap.set(lowerName, tag)
+    }
+  }
+
+  // 3. Zurück in ein Array verwandeln
+  // Wir sortieren am Ende noch einmal, da die Map-Reihenfolge durch das
+  // Ersetzen der privaten Tags durcheinandergekommen sein könnte.
+  return Array.from(uniqueTagsMap.values()).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  )
 }
 
 export const deleteTagLogic = async (data: DeleteTagInput, userId: string) => {
@@ -488,6 +512,7 @@ export async function approveCourseTagsBatchLogic(
 
   return { success: true, removedRedundantSuggestions }
 }
+
 export async function approveNoteTagLogic(
   data: NoteTagActionInput,
   userId: string,
