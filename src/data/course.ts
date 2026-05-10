@@ -1,6 +1,6 @@
 'use server'
 
-import z from 'zod'
+import { z } from 'zod'
 import { authFn, authGetFn } from '#/lib/rpc'
 import { withLogging } from '#/schemas/api-utils'
 import { courseSearchSchema } from '#/schemas/search-params'

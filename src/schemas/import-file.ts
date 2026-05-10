@@ -1,4 +1,4 @@
-import z from 'zod'
+import { z } from 'zod'
 import { withLogging } from './api-utils'
 
 export const importFileSchema = withLogging(

@@ -6,7 +6,7 @@ import {
   courseNotesSearchSchema,
   noteSearchSchema,
 } from '#/schemas/search-params'
-import z from 'zod'
+import { z } from 'zod'
 
 // Das Schema mit Logging-Metadaten anreichern
 export const getNotesSchema = withLogging(noteSearchSchema)

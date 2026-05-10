@@ -4,7 +4,7 @@ import {
   TAG_PAGINATION_DEFAULTS,
   tagPaginationSchema,
 } from '#/schemas/search-params'
-import z from 'zod'
+import { z } from 'zod'
 import { renameTagLogic } from './tag.logic.server'
 
 // #region validation schemas

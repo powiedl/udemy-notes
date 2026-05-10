@@ -1,4 +1,4 @@
-import z from 'zod'
+import { z } from 'zod'
 
 // Die Antwort der KI für eine Tagzuweisung (ein bestimmtes Tag auf eine bestimmte Entity)
 export const aiTagSuggestionSchema = z.object({
