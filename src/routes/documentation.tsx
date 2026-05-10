@@ -110,11 +110,6 @@ function RouteComponent() {
                 the tags for the course. The tags for the single notes are
                 stored as suggestions and you can accept or decline them later.
               </p>
-              <p>
-                <strong>ATTENTION!</strong> It is very likely that this feature
-                doesn't work, because the AI is too slow for my hosting service
-                (and that's why the hosting service kills the waiting call)
-              </p>
             </div>
           </div>
           <div className="flex gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/50">
