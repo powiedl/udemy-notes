@@ -10,7 +10,7 @@ import type {
   CreateAndLinkTagToCourseInput,
   CreateAndLinkTrainerToCourseInput,
   TrainerToCourseInput,
-} from './course'
+} from '#/schemas/course.schema'
 // import { mapNoteDisplayTags } from './note.logic.server'
 
 /**

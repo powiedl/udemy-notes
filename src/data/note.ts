@@ -1,30 +1,15 @@
 'use server'
 
 import { authGetFn, authFn } from '#/lib/rpc'
-import { withLogging } from '#/schemas/api-utils'
 import {
-  courseNotesSearchSchema,
-  noteSearchSchema,
-} from '#/schemas/search-params'
-import z from 'zod'
+  getNotesForCourseInputSchema,
+  getNotesSchema,
+  toggleNoteTagSchema,
+  updateNoteContentSchema,
+} from '#/schemas/note.schema'
+import { z } from 'zod'
 
 // Das Schema mit Logging-Metadaten anreichern
-export const getNotesSchema = withLogging(noteSearchSchema)
-export const toggleNoteTagSchema = withLogging(
-  z.object({
-    noteId: z.string(),
-    tagId: z.string(),
-    action: z.enum(['add', 'remove']),
-  }),
-)
-export const getNotesForCourseInputSchema = withLogging(
-  z.object({ courseId: z.string(), searchParams: courseNotesSearchSchema }),
-)
-
-export const updateNoteContentSchema = withLogging(
-  z.object({ noteId: z.string(), content: z.string() }),
-)
-
 export type UpdateNoteContentInput = z.infer<typeof updateNoteContentSchema>
 /**
  * RPC-Endpunkt zum Abrufen der globalen Notiz-Liste (paginiert, gefiltert, sortiert).
@@ -97,8 +82,6 @@ export const updateNoteContentFn = authFn
   })
 
 // --- Exportierte Typen für das Frontend ---
-
-// Typ-Helfer, damit das Frontend weiß, wie eine Notiz aus dieser Abfrage aussieht
 export type AwaitedReturnTypeGetNotes = Awaited<ReturnType<typeof getNotesFn>>
 
 // Typ der Liste extrahieren (falls `success: true`)
@@ -106,3 +89,5 @@ export type NoteListItem = Extract<
   AwaitedReturnTypeGetNotes,
   { success: true }
 >['data']['items'][number]
+
+// Typ-Helfer, damit das Frontend weiß, wie eine Notiz aus dieser Abfrage aussieht

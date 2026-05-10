@@ -1,4 +1,4 @@
-import z from 'zod'
+import { z } from 'zod'
 
 export const exportMdFileSchema = z.object({
   courseId: z.string(), // .max(10),

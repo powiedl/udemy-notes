@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { suggestTagsWithAIBatch } from '#/lib/ai.server'
 import type { BuildBatchTaggingPromptInput } from '#/lib/ai.server'
 import { ServerActionError } from '#/types/errors'
+import { prisma } from '#/lib/db.server'
 
 // -----------------------------------------------------------------------------
 // 1. MOCKS EINRICHTEN
@@ -19,11 +20,22 @@ vi.mock('#/lib/openrouter-client.server', () => ({
   },
 }))
 
+// Wir mocken Prisma für das Telemetrie-Logging
+vi.mock('#/lib/db.server', () => ({
+  prisma: {
+    aiUsageLog: {
+      create: vi.fn().mockResolvedValue({ id: 'log-1' }),
+    },
+  },
+}))
+
 // -----------------------------------------------------------------------------
 // 2. DIE TESTS
 // -----------------------------------------------------------------------------
 
 describe('Integration: suggestTagsWithAIBatch', () => {
+  const userId = 'user-123'
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -36,10 +48,11 @@ describe('Integration: suggestTagsWithAIBatch', () => {
       privateUserTags: [],
     }
 
-    const result = await suggestTagsWithAIBatch(input)
+    const result = await suggestTagsWithAIBatch(input, userId)
 
     expect(result).toEqual([])
     expect(mockOpenRouterSend).not.toHaveBeenCalled()
+    expect(prisma.aiUsageLog.create).not.toHaveBeenCalled() // Kein Log bei Short-Circuit
   })
 
   it('2. Truncation & Auto-Wrap: Repariert nackte Arrays und kappt auf Allowance ab', async () => {
@@ -58,7 +71,14 @@ describe('Integration: suggestTagsWithAIBatch', () => {
     }
 
     // BÖSE KI: Schickt direkt ein Array [ ... ] OHNE das "results" Objekt!
+    // Angereichert mit den exakten Telemetrie-Metadaten deines angepassten Codes
     mockOpenRouterSend.mockResolvedValue({
+      model: 'poolside/laguna-m.1',
+      usage: {
+        promptTokens: 100,
+        completionTokens: 50,
+        completionTokensDetails: { reasoning: 10 },
+      },
       choices: [
         {
           message: {
@@ -77,12 +97,28 @@ describe('Integration: suggestTagsWithAIBatch', () => {
       ],
     })
 
-    const result = await suggestTagsWithAIBatch(input)
+    const result = await suggestTagsWithAIBatch(input, userId)
 
     expect(mockOpenRouterSend).toHaveBeenCalledOnce()
     // Wenn wir hier ankommen, hat unser Auto-Wrapper funktioniert und Zod ausgetrickst!
     expect(result).toHaveLength(1)
     expect(result[0].tags.length).toBe(5)
+
+    // Prüfen, ob das ERFOLGS-Log mit korrekten Telemetrie-Daten geschrieben wurde
+    expect(prisma.aiUsageLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          isSuccess: true,
+          modelName: 'poolside/laguna-m.1',
+          promptTokens: 100,
+          completionTokens: 50,
+          userId: 'user-123',
+          metadata: JSON.stringify({
+            completionTokenDetails: { reasoning: 10 },
+          }),
+        }),
+      }),
+    )
   })
 
   it('3. Full Pipeline: Verarbeitet Markdown-Quatsch, korrigiert isNew und sortiert', async () => {
@@ -120,10 +156,15 @@ describe('Integration: suggestTagsWithAIBatch', () => {
     `
 
     mockOpenRouterSend.mockResolvedValue({
+      model: 'openrouter/free',
+      usage: {
+        promptTokens: 50,
+        completionTokens: 10,
+      },
       choices: [{ message: { content: dirtyAiResponse } }],
     })
 
-    const result = await suggestTagsWithAIBatch(input)
+    const result = await suggestTagsWithAIBatch(input, userId)
 
     expect(result).toHaveLength(1)
     const tags = result[0].tags
@@ -131,6 +172,9 @@ describe('Integration: suggestTagsWithAIBatch', () => {
     expect(tags.length).toBeGreaterThan(0)
     expect(tags[0].name).toBe('neu')
     expect(tags[0].isNew).toBe(true)
+
+    // Check, dass das Log geschrieben wurde
+    expect(prisma.aiUsageLog.create).toHaveBeenCalled()
   })
 
   it('4. Error Handling: Wirft einen sauberen ServerActionError bei 429', async () => {
@@ -140,8 +184,8 @@ describe('Integration: suggestTagsWithAIBatch', () => {
           entityId: 'note-1',
           entityType: 'note',
           contentPayload: { content: 'Test Note' },
-          existingTags: [], // <-- Gefixt!
-          maxTotalTags: 5, // <-- Gefixt!
+          existingTags: [],
+          maxTotalTags: 5,
         },
       ],
       globalTags: [],
@@ -152,9 +196,21 @@ describe('Integration: suggestTagsWithAIBatch', () => {
     rateLimitError.statusCode = 429
     mockOpenRouterSend.mockRejectedValue(rateLimitError)
 
-    await expect(suggestTagsWithAIBatch(input)).rejects.toThrow(
+    // Wir erwarten den Rate-Limit Fehler
+    await expect(suggestTagsWithAIBatch(input, userId)).rejects.toThrow(
       ServerActionError,
     )
-    await expect(suggestTagsWithAIBatch(input)).rejects.toThrow(/Rate-Limit/)
+
+    // Prüfen, ob das FEHLER-Log geschrieben wurde
+    expect(prisma.aiUsageLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          isSuccess: false,
+          errorCode: 429,
+          errorMessage: expect.stringContaining('Rate Limited'),
+          userId: 'user-123',
+        }),
+      }),
+    )
   })
 })

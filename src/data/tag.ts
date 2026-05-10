@@ -4,7 +4,7 @@ import {
   TAG_PAGINATION_DEFAULTS,
   tagPaginationSchema,
 } from '#/schemas/search-params'
-import z from 'zod'
+import { z } from 'zod'
 import { renameTagLogic } from './tag.logic.server'
 
 // #region validation schemas
@@ -52,17 +52,7 @@ export const noteTagActionSchema = withLogging(
 )
 // #endregion
 
-// Typen exportieren, damit die .server.ts Datei sie nutzen kann
-export type GetAvailableTagsInput = z.infer<typeof getAvailableTagsSchema>
-export type GetTagsForSelectorInput = z.infer<typeof getTagsForSelectorSchema>
-export type DeleteTagInput = z.infer<typeof deleteTagSchema>
-export type RenameTagInput = z.infer<typeof renameTagSchema>
 export type GetTagUsageCountInput = z.infer<typeof getTagUsageCountFn>
-export type AutoTagCourseBatchInput = z.infer<typeof autoTagCourseBatchSchema>
-export type ApproveCourseTagsBatchInput = z.infer<
-  typeof approveCourseTagsBatchSchema
->
-export type NoteTagActionInput = z.infer<typeof noteTagActionSchema>
 
 export const createDefaultTagsFn = authFn.handler(async ({ context }) => {
   const { wrapServerAction } = await import('#/lib/server-utils.server')
