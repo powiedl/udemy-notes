@@ -6,6 +6,7 @@ import { openrouter } from './openrouter-client.server'
 import { aiBatchTagResponseSchema } from '#/schemas/ai'
 import type { AIEntityTagResponse } from '#/schemas/ai'
 import { getNodeEnv } from './utils'
+import { prisma } from './db.server'
 // import type { AITagSuggestion } from '#/schemas/ai'
 
 // --- 1. Zod Schemas für garantierte Typsicherheit ---
@@ -89,53 +90,79 @@ RESPOND EXCLUSIVELY IN COMPACT JSON FORMAT. Example:
 
 // --- 4. Der eigentliche API-Aufruf ---
 
+// models: [
+//   'inclusionai/ring-2.6-1t:free', // Context: 262K
+//   'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', // Context: 256K (sehr schnell)
+//   'minimax/minimax-m2.5:free', // Context: 197K
+//   'openai/gpt-oss-20b', // context: 131K
+//   'baidu/cobuddy:free', // context: 131K
+//   'poolside/laguna-m.1:free', // context: 131K
+//   'baidu/qianfan-ocr-fast:free', // Context: 66K
+//   'qwen/qwen-2.5-72b-instruct:free',
+//   'meta-llama/llama-3.3-70b-instruct:free', // Context: 66K
+//   'mistralai/mistral-nemo:free',
+// ],
 export async function suggestTagsWithAIBatch(
   input: BuildBatchTaggingPromptInput,
+  userId?: string, // <-- NEU: Optionaler Parameter, um den User im Log zu speichern
 ): Promise<AIEntityTagResponse[]> {
   const { systemInstruction, userContent, entitiesWithAllowance } =
     buildBatchTaggingPrompt(input)
+
   const course = input.entities.find((e) => e.entityType === 'course')
   const courseId = course?.entityId || undefined
+  const entityCount = entitiesWithAllowance.length
+
   // Falls es gar keine Entitäten gibt, die noch Tags vertragen, direkt abbrechen
   if (entitiesWithAllowance.every((e) => e.allowedNewSuggestions <= 0)) {
     return []
   }
-  let response: ChatResult | undefined
+
+  let response: ChatResult
+
+  // --- TELEMETRIE STATE ---
+  const startTime = performance.now()
+  const requestedModel = 'openrouter/free'
+  let actualModel = requestedModel
+  let promptTokens: number | null = null
+  let completionTokens: number | null = null
+  let metadata = '{}'
+
   try {
+    // wenn das Promise von openrouter.chat.send rejected, wird ein Fehler geworfen und wir landen sofort im catch von dem try Block
     response = await openrouter.chat.send({
-      // Hier ist der entscheidende Wrapper für die neuen Typen!
       chatRequest: {
-        model: 'openrouter/free', // '~google/gemini-flash-latest',
+        model: requestedModel,
         messages: [
           { role: 'system', content: systemInstruction },
           { role: 'user', content: userContent },
         ],
-        // models: [
-        //   'inclusionai/ring-2.6-1t:free', // Context: 262K
-        //   'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', // Context: 256K (sehr schnell)
-        //   'minimax/minimax-m2.5:free', // Context: 197K
-        //   'openai/gpt-oss-20b', // context: 131K
-        //   'baidu/cobuddy:free', // context: 131K
-        //   'poolside/laguna-m.1:free', // context: 131K
-        //   'baidu/qianfan-ocr-fast:free', // Context: 66K
-        //   'qwen/qwen-2.5-72b-instruct:free',
-        //   'meta-llama/llama-3.3-70b-instruct:free', // Context: 66K
-        //   'mistralai/mistral-nemo:free',
-        // ],
-        // responseFormat: { type: 'json_object' },
       },
     })
+
+    const durationMs = Math.round(performance.now() - startTime)
+
+    // Telemetrie-Daten auslesen (OpenRouter packt diese oft in response.usage)
+    // Wenn das 'free' Modell umleitet, steht das echte Modell in response.model
+    actualModel = response.model || requestedModel
+    promptTokens = response.usage?.promptTokens || null
+    completionTokens = response.usage?.completionTokens || null
+    metadata = JSON.stringify({
+      completionTokenDetails: response.usage?.completionTokensDetails || {},
+    })
+
     const rawContent = response.choices[0]?.message?.content
+    if (!rawContent) throw new Error('KI hat keine Antwort geliefert')
+
     let sanitizedContent = rawContent.trim()
 
     // Versuch 1: Extrahiere alles, was innerhalb von ```json und ``` steht
-    // [\s\S]*? matcht alles inklusive Zeilenumbrüchen (non-greedy)
     const jsonBlockMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
 
     if (jsonBlockMatch && jsonBlockMatch[1]) {
       sanitizedContent = jsonBlockMatch[1].trim()
     } else {
-      // Versuch 2 (Fallback): Schneide alles vor der ersten { oder [ und nach der letzten } oder ] ab
+      // Versuch 2 (Fallback)
       const firstIndex = rawContent.search(/[{[]/)
       const lastIndex = Math.max(
         rawContent.lastIndexOf('}'),
@@ -148,26 +175,30 @@ export async function suggestTagsWithAIBatch(
           .trim()
       }
     }
+
     let parsedJson = { results: {} }
     if (courseId === debugCourseId) {
       parsedJson = JSON.parse(debugJSON)
     }
-    try {
-      parsedJson = JSON.parse(sanitizedContent)
-    } catch {}
+
+    // Wenn hier ein Fehler passiert, wirft JSON.parse einen SyntaxError,
+    // der vom catch-Block unten gefangen und als Fehler geloggt wird!
+    parsedJson = JSON.parse(sanitizedContent)
+
     if (Array.isArray(parsedJson)) {
       parsedJson = { results: parsedJson }
     }
 
-    // Zod validiert jetzt nur noch, ob die STRUKTUR stimmt.
-    // Wenn eine Entität 10 statt 5 Tags hat, geht das hier fehlerfrei durch!
     const validated = aiBatchTagResponseSchema.parse(parsedJson)
+
     getNodeEnv('development') &&
       console.log(
-        `zodSchema passed successful (${parsedJson === JSON.parse(debugJSON) ? 'debug content used' : `AI content used (model:${response.model}, object:${response.object})`})`,
+        `zodSchema passed successful (${parsedJson === JSON.parse(debugJSON) ? 'debug content used' : `AI content used (model:${response.model})`})`,
       )
+
     const existingGlobals = input.globalTags
     const existingPrivates = input.privateUserTags
+
     const finalResults = validated.results.map((aiResult) => {
       const originalEntity = entitiesWithAllowance.find(
         (e) => e.entityId === aiResult.entityId,
@@ -178,7 +209,6 @@ export async function suggestTagsWithAIBatch(
 
       return {
         entityId: aiResult.entityId,
-        // Parameterreihenfolge: aiTags, globalTags, privateTags, minRelevance, maxTags
         tags: sanitizeAITags(
           aiResult.tags,
           existingGlobals,
@@ -191,14 +221,8 @@ export async function suggestTagsWithAIBatch(
 
     const existingCourseTagNames = new Set(course?.existingTags || [])
 
-    // 2. Filtere diese Kurs-Tags aus allen Notizen heraus
     const deduplicatedResults = finalResults.map((result) => {
-      // Den Kurs selbst fassen wir natürlich nicht an!
-      if (result.entityId === courseId) {
-        return result
-      }
-
-      // Für alle Notizen: Wirf die Tags raus, die der Kurs ohnehin schon hat
+      if (result.entityId === courseId) return result
       return {
         ...result,
         tags: result.tags.filter(
@@ -207,39 +231,79 @@ export async function suggestTagsWithAIBatch(
       }
     })
 
+    // --- ERFOLGS-LOGGING ---
+    // Wir nutzen await, damit Vercel den Prozess nicht beendet, bevor die DB schreibt
+    await prisma.aiUsageLog
+      .create({
+        data: {
+          modelName: actualModel,
+          feature: 'BATCH_AUTO_TAG',
+          entityId: courseId,
+          entityCount,
+          userId,
+          durationMs,
+          promptTokens,
+          completionTokens,
+          metadata,
+          isSuccess: true,
+        },
+      })
+      .catch(
+        (e) =>
+          getNodeEnv('development') && console.error('[Telemetry Error]', e),
+      )
+
     return deduplicatedResults
   } catch (error: any) {
+    const durationMs = Math.round(performance.now() - startTime)
+
+    // Status Code ermitteln (Rate Limit 429 oder Payment Required 402 etc.)
+    const statusCode =
+      error?.statusCode ||
+      error?.response?.status ||
+      (error?.message?.includes('429') ? 429 : null)
+
+    // --- FEHLER-LOGGING ---
+    await prisma.aiUsageLog
+      .create({
+        data: {
+          modelName: actualModel,
+          feature: 'BATCH_AUTO_TAG',
+          entityId: courseId,
+          entityCount,
+          userId,
+          durationMs,
+          promptTokens, // Könnten vorhanden sein, wenn das HTTP Request klappte, aber Zod failte
+          completionTokens,
+          metadata,
+          isSuccess: false,
+          errorCode: statusCode,
+          errorMessage: error.message || 'Unknown error',
+        },
+      })
+      .catch(
+        (e) =>
+          getNodeEnv('development') && console.error('[Telemetry Error]', e),
+      )
+
     if (getNodeEnv('development')) {
       console.error('[AI Service] Batch tag generation failed:', error)
-      console.log('Used System prompt:', systemInstruction)
-      console.log('Used user content:', userContent)
-      if (response) {
-        console.log('raw response from openRouter:', response)
-      } else {
-        console.log('Call of "openrouter.chat.send(" failed')
-      }
     }
-    if (
-      error?.statusCode === 429 ||
-      error?.response?.status === 429 ||
-      error?.message?.includes('429')
-    ) {
+
+    if (statusCode === 429) {
       throw new ServerActionError(
         'Rate-Limit of the AI model reached, please try again in a few minutes...',
       )
     }
 
-    // JSON-Parse Fehler
-    if (error instanceof SyntaxError) {
+    if (error instanceof SyntaxError || error.name === 'ZodError') {
       throw new ServerActionError(
         'AI answered in an invalid format, please try again (only once more)',
       )
     }
 
-    // Alle anderen Fehler
     throw new ServerActionError(
       error.message || 'AI request failed for unknown reason.',
     )
   }
-  // return []
 }
