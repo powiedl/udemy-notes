@@ -116,6 +116,7 @@ export async function suggestTagsWithAIBatch(
         //   'minimax/minimax-m2.5:free', // Context: 197K
         //   'openai/gpt-oss-20b', // context: 131K
         //   'baidu/cobuddy:free', // context: 131K
+        //   'poolside/laguna-m.1:free', // context: 131K
         //   'baidu/qianfan-ocr-fast:free', // Context: 66K
         //   'qwen/qwen-2.5-72b-instruct:free',
         //   'meta-llama/llama-3.3-70b-instruct:free', // Context: 66K
