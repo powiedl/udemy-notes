@@ -116,25 +116,53 @@ describe('Tag Logik Funktionen', () => {
     })
   })
 
-  describe('getTagsForSelectorLogic', () => {
-    it('Liefert alle relevanten Tags ohne Paginierung für Dropdowns', async () => {
-      // GIVEN
-      const expectedTags = [globalTag, privateTag]
-      prismaMock.tag.findMany.mockResolvedValue(expectedTags)
+  describe('getTagsForSelectorLogic (Deduplizierung & Shadowing)', () => {
+    it('sollte private Tags gegenüber globalen Tags bei gleichem Namen bevorzugen', async () => {
+      const mockTags = [
+        { id: 'glob-1', name: 'React', userId: null },
+        { id: 'priv-1', name: 'React', userId: 'user-1' }, // Shadowing!
+        { id: 'glob-2', name: 'TypeScript', userId: null },
+      ]
 
-      // WHEN
+      vi.mocked(prisma.tag.findMany).mockResolvedValue(mockTags as any)
+
       const result = await getTagsForSelectorLogic({}, userId)
 
-      // THEN
-      expect(result).toEqual(expectedTags)
+      expect(result).toHaveLength(2)
+      // Das private React muss gewonnen haben
+      const reactTag = result.find((t) => t.name === 'React')
+      expect(reactTag?.id).toBe('priv-1')
+      expect(reactTag?.userId).toBe('user-1')
 
-      // Prüfen, ob keine Pagination-Parameter gesendet wurden und der OR-Filter stimmt
-      expect(prismaMock.tag.findMany).toHaveBeenCalledWith({
-        where: {
-          OR: [{ userId: null }, { userId: userId }],
-        },
-        orderBy: { name: 'asc' },
-      })
+      expect(result.map((t) => t.name)).toContain('TypeScript')
+    })
+
+    it('sollte Case-Insensitive deduplizieren', async () => {
+      const mockTags = [
+        { id: 'glob-1', name: 'react', userId: null },
+        { id: 'priv-1', name: 'REACT', userId: 'user-1' },
+      ]
+
+      vi.mocked(prisma.tag.findMany).mockResolvedValue(mockTags as any)
+
+      const result = await getTagsForSelectorLogic({}, userId)
+
+      expect(result).toHaveLength(1)
+      expect(result[0].name).toBe('REACT') // Das private gewinnt und behält sein Casing
+    })
+
+    it('sollte das Ergebnis alphabetisch sortieren', async () => {
+      const mockTags = [
+        { id: '1', name: 'Zebra', userId: null },
+        { id: '2', name: 'Affe', userId: null },
+      ]
+
+      vi.mocked(prisma.tag.findMany).mockResolvedValue(mockTags as any)
+
+      const result = await getTagsForSelectorLogic({}, userId)
+
+      expect(result[0].name).toBe('Affe')
+      expect(result[1].name).toBe('Zebra')
     })
   })
 

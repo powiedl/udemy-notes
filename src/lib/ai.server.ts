@@ -112,6 +112,7 @@ export async function suggestTagsWithAIBatch(
         ],
         // models: [
         //   'inclusionai/ring-2.6-1t:free', // Context: 262K
+        //   'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', // Context: 256K (sehr schnell)
         //   'minimax/minimax-m2.5:free', // Context: 197K
         //   'openai/gpt-oss-20b', // context: 131K
         //   'baidu/cobuddy:free', // context: 131K
