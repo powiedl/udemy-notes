@@ -6,13 +6,13 @@ import { prisma } from '#/lib/db.server'
 vi.mock('#/lib/db.server', () => ({
   prisma: {
     courseTag: {
-      deleteMany: vi.fn(),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
     },
     noteTag: {
-      deleteMany: vi.fn(),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
     tag: {
       findFirst: vi.fn(),
@@ -177,27 +177,28 @@ describe('approveCourseTagsBatchLogic (Der Redundanz-Killer)', () => {
     )
   })
 
-  // ZUSÄTZLICH SINNVOLLER TESTFALL:
-  it('Führt die Löschung für jedes Tag in einem Batch einzeln aus', async () => {
+  it('Führt die Löschung für jedes Tag in einem Batch einzeln aus und summiert korrekt', async () => {
     const tags = [
       { id: 't1', name: 'Node', userId: null },
       { id: 't2', name: 'Prisma', userId: null },
     ]
-
-    // Arrange
     vi.mocked(prisma.tag.findFirst)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(tags[0] as any)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(tags[1] as any)
 
-    // Act
-    await approveCourseTagsBatchLogic(
+    // Simuliere: 2 gelöschte für Node, 5 für Prisma
+    vi.mocked(prisma.noteTag.deleteMany)
+      .mockResolvedValueOnce({ count: 2 })
+      .mockResolvedValueOnce({ count: 5 })
+
+    const result = await approveCourseTagsBatchLogic(
       { courseId, tagNames: ['Node', 'Prisma'] },
       userId,
     )
 
-    // Assert: Muss 2-mal löschen rufen
     expect(prisma.noteTag.deleteMany).toHaveBeenCalledTimes(2)
+    expect(result.removedRedundantSuggestions).toBe(7) // 2 + 5
   })
 })
