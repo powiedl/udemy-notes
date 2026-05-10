@@ -452,7 +452,7 @@ export async function approveCourseTagsBatchLogic(
     // --- NEW: Redundancy killer for notes ---
     // If tag "A" is approved for the course, delete all "SUGGESTIONS" of "A"
     // on the notes of this course, because they now inherit it anyway.
-    const removedNoteSuggestions = (await prisma.noteTag.deleteMany({
+    const removedNoteSuggestions = await prisma.noteTag.deleteMany({
       where: {
         note: {
           courseId: data.courseId,
@@ -462,7 +462,7 @@ export async function approveCourseTagsBatchLogic(
         },
         status: 'SUGGESTION', // We only clean up AI suggestions, never user-approved tags
       },
-    })) || { count: 0 }
+    })
     removedRedundantSuggestions += removedNoteSuggestions.count
 
     // Link or update course tag
