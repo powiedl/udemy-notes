@@ -1,6 +1,6 @@
 // src/data/tag.logic.server.ts
 import { prisma } from '#/lib/db.server'
-import { isEmpty } from '#/lib/utils'
+import { getNodeEnv, isEmpty } from '#/lib/utils'
 import { suggestTagsWithAIBatch } from '#/lib/ai.server'
 import { ServerActionError } from '#/types/errors'
 import type {
@@ -431,6 +431,7 @@ export async function approveCourseTagsBatchLogic(
 ) {
   // 1. Ensure tags exist (Using the "1-2-3 Law")
   const dbTags = await ensureTagsExist(data.tagNames, userId)
+  let removedRedundantSuggestions = 0
 
   // 2. Link to course (APPROVED)
   for (const dbTag of dbTags) {
@@ -451,7 +452,7 @@ export async function approveCourseTagsBatchLogic(
     // --- NEW: Redundancy killer for notes ---
     // If tag "A" is approved for the course, delete all "SUGGESTIONS" of "A"
     // on the notes of this course, because they now inherit it anyway.
-    await prisma.noteTag.deleteMany({
+    const removedNoteSuggestions = (await prisma.noteTag.deleteMany({
       where: {
         note: {
           courseId: data.courseId,
@@ -461,7 +462,8 @@ export async function approveCourseTagsBatchLogic(
         },
         status: 'SUGGESTION', // We only clean up AI suggestions, never user-approved tags
       },
-    })
+    })) || { count: 0 }
+    removedRedundantSuggestions += removedNoteSuggestions.count
 
     // Link or update course tag
     const existing = await prisma.courseTag.findFirst({
@@ -484,7 +486,7 @@ export async function approveCourseTagsBatchLogic(
     }
   }
 
-  return { success: true }
+  return { success: true, removedRedundantSuggestions }
 }
 export async function approveNoteTagLogic(
   data: NoteTagActionInput,
