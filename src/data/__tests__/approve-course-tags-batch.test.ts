@@ -11,6 +11,9 @@ vi.mock('#/lib/db.server', () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    noteTag: {
+      deleteMany: vi.fn(),
+    },
     tag: {
       findFirst: vi.fn(),
       upsert: vi.fn(),
@@ -87,5 +90,114 @@ describe('approveCourseTagsBatchLogic (Der Shadowing-Staubsauger)', () => {
         status: 'APPROVED',
       },
     })
+  })
+})
+
+describe('approveCourseTagsBatchLogic (Der Redundanz-Killer)', () => {
+  const userId = 'user-123'
+  const courseId = 'course-1'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('Löscht note-level Vorschläge (SUGGESTION), egal ob das Kurs-Tag privat oder global ist', async () => {
+    const mockTag = { id: 'tag-1', name: 'React', userId: null } // Globales Tag
+
+    // Arrange
+    vi.mocked(prisma.tag.findFirst)
+      .mockResolvedValueOnce(null) // Suche Privat
+      .mockResolvedValueOnce(mockTag as any) // Suche Global
+    vi.mocked(prisma.courseTag.findFirst).mockResolvedValueOnce(null)
+
+    // Act
+    await approveCourseTagsBatchLogic({ courseId, tagNames: ['React'] }, userId)
+
+    // Assert: Der Redundanz-Killer muss mit den korrekten Filtern gerufen werden
+    expect(prisma.noteTag.deleteMany).toHaveBeenCalledWith({
+      where: {
+        note: { courseId: 'course-1' },
+        tag: {
+          name: { equals: 'React', mode: 'insensitive' },
+        },
+        status: 'SUGGESTION', // <--- KRITISCH: Darf nur Vorschläge löschen
+      },
+    })
+  })
+
+  it('Schützt bereits bestätigte (APPROVED) Notiz-Zuweisungen vor der Löschung', async () => {
+    const mockTag = { id: 'tag-1', name: 'TypeScript', userId: 'user-123' }
+
+    // Arrange
+    vi.mocked(prisma.tag.findFirst).mockResolvedValueOnce(mockTag as any)
+    vi.mocked(prisma.courseTag.findFirst).mockResolvedValueOnce(null)
+
+    // Act
+    await approveCourseTagsBatchLogic(
+      { courseId, tagNames: ['TypeScript'] },
+      userId,
+    )
+
+    // Assert
+    // Wir prüfen direkt das Argument des Aufrufs.
+    // expect.objectContaining stellt sicher, dass wir nur den Teil prüfen, der uns interessiert.
+    expect(prisma.noteTag.deleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          status: 'SUGGESTION',
+        }),
+      }),
+    )
+  })
+
+  it('Arbeitet Case-Insensitive, um Redundanzen auch bei Schreibweisen-Unterschieden zu finden', async () => {
+    // Wenn das Kurs-Tag "TAILWIND" heißt...
+    const mockTag = { id: 'tag-1', name: 'TAILWIND', userId: null }
+
+    vi.mocked(prisma.tag.findFirst)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(mockTag as any)
+    vi.mocked(prisma.courseTag.findFirst).mockResolvedValueOnce(null)
+
+    // Act
+    await approveCourseTagsBatchLogic(
+      { courseId, tagNames: ['TAILWIND'] },
+      userId,
+    )
+
+    // Assert: ...muss der Filter mode: 'insensitive' enthalten, damit auch "tailwind" auf Notizen gelöscht wird
+    expect(prisma.noteTag.deleteMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tag: {
+            name: { equals: 'TAILWIND', mode: 'insensitive' },
+          },
+        }),
+      }),
+    )
+  })
+
+  // ZUSÄTZLICH SINNVOLLER TESTFALL:
+  it('Führt die Löschung für jedes Tag in einem Batch einzeln aus', async () => {
+    const tags = [
+      { id: 't1', name: 'Node', userId: null },
+      { id: 't2', name: 'Prisma', userId: null },
+    ]
+
+    // Arrange
+    vi.mocked(prisma.tag.findFirst)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(tags[0] as any)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(tags[1] as any)
+
+    // Act
+    await approveCourseTagsBatchLogic(
+      { courseId, tagNames: ['Node', 'Prisma'] },
+      userId,
+    )
+
+    // Assert: Muss 2-mal löschen rufen
+    expect(prisma.noteTag.deleteMany).toHaveBeenCalledTimes(2)
   })
 })

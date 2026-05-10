@@ -429,12 +429,13 @@ export async function approveCourseTagsBatchLogic(
   data: { courseId: string; tagNames: string[] },
   userId: string,
 ) {
-  // 1. Tags sicherstellen (Nutzt jetzt zentral das 1-2-3 Gesetz!)
+  // 1. Ensure tags exist (Using the "1-2-3 Law")
   const dbTags = await ensureTagsExist(data.tagNames, userId)
 
-  // 2. Mit dem Kurs verknüpfen (APPROVED)
+  // 2. Link to course (APPROVED)
   for (const dbTag of dbTags) {
-    // --- NEU: Der globale Staubsauger für Kurse ---
+    // --- EXISTING: Global vacuum for courses ---
+    // If a private tag is approved, remove a global tag with the same name from the course
     if (dbTag.userId !== null) {
       await prisma.courseTag.deleteMany({
         where: {
@@ -447,7 +448,22 @@ export async function approveCourseTagsBatchLogic(
       })
     }
 
-    // Verknüpfen oder updaten
+    // --- NEW: Redundancy killer for notes ---
+    // If tag "A" is approved for the course, delete all "SUGGESTIONS" of "A"
+    // on the notes of this course, because they now inherit it anyway.
+    await prisma.noteTag.deleteMany({
+      where: {
+        note: {
+          courseId: data.courseId,
+        },
+        tag: {
+          name: { equals: dbTag.name, mode: 'insensitive' },
+        },
+        status: 'SUGGESTION', // We only clean up AI suggestions, never user-approved tags
+      },
+    })
+
+    // Link or update course tag
     const existing = await prisma.courseTag.findFirst({
       where: { courseId: data.courseId, tagId: dbTag.id },
     })
@@ -470,7 +486,6 @@ export async function approveCourseTagsBatchLogic(
 
   return { success: true }
 }
-
 export async function approveNoteTagLogic(
   data: NoteTagActionInput,
   userId: string,
