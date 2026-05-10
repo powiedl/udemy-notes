@@ -192,31 +192,30 @@ model AiUsageLog {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now()) @map("created_at")
 
-  // Welches Modell wurde genutzt? (z. B. "gemini-1.5-flash", "gpt-4o-mini")
-  modelName String @map("model_name")
+  modelName String @map("model_name") // z. B. "poolside/laguna-m.1"
+  feature   String // z. B. "COURSE_AUTO_TAG"
 
-  // Welches Feature wurde getriggert? (z. B. "COURSE_AUTO_TAG", "NOTE_AUTO_TAG")
-  feature String
+  entityId    String? @map("entity_id") // ID des Kurses
+  entityCount Int?    @map("entity_count") // Wie viele Notizen waren in diesem Batch?
+  userId      String? @map("user_id")
 
-  // Die ID des Kurses oder der Notiz, um später Stichproben zu machen
-  entityId String? @map("entity_id")
+  // --- Telemetrie ---
+  durationMs       Int? @map("duration_ms")
+  promptTokens     Int? @map("prompt_tokens")
+  completionTokens Int? @map("completion_tokens")
 
-  // Welcher User hat die Aktion ausgelöst?
-  userId String? @map("user_id")
-
-  // --- Telemetrie (Optional, aber extrem nützlich) ---
-  durationMs       Int? @map("duration_ms") // Wie lange hat der API-Call gedauert?
-  promptTokens     Int? @map("prompt_tokens") // Input-Kosten
-  completionTokens Int? @map("completion_tokens") // Output-Kosten
-
-  // War der Call erfolgreich? (Falls du später auch Fallbacks/Fehler loggen willst)
+  // --- Erfolg & Fallbacks ---
   isSuccess    Boolean @default(true) @map("is_success")
-  errorMessage String? @map("error_message") // Falls isSuccess false ist, z. B. "JSON Parse Error"
+  errorCode    Int?    @map("error_code") // WICHTIG: 429 (Rate Limit), 402 (Paid now), etc.
+  errorMessage String? @map("error_message")
 
-  // Indizes für schnelle Auswertungen später (z.B. im Admin-Dashboard)
+  // --- Der Zukunfts-Joker ---
+  metadata Json? // Für alles, was wir heute noch nicht wissen (z.B. Fallback-Kette)
+
   @@index([modelName])
   @@index([feature])
   @@index([userId])
+  @@index([createdAt]) // Wichtig für Auswertungen "Letzte 30 Tage"
   @@map("ai_usage_log")
 }
 

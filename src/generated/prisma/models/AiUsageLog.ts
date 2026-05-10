@@ -27,15 +27,19 @@ export type AggregateAiUsageLog = {
 }
 
 export type AiUsageLogAvgAggregateOutputType = {
+  entityCount: number | null
   durationMs: number | null
   promptTokens: number | null
   completionTokens: number | null
+  errorCode: number | null
 }
 
 export type AiUsageLogSumAggregateOutputType = {
+  entityCount: number | null
   durationMs: number | null
   promptTokens: number | null
   completionTokens: number | null
+  errorCode: number | null
 }
 
 export type AiUsageLogMinAggregateOutputType = {
@@ -44,11 +48,13 @@ export type AiUsageLogMinAggregateOutputType = {
   modelName: string | null
   feature: string | null
   entityId: string | null
+  entityCount: number | null
   userId: string | null
   durationMs: number | null
   promptTokens: number | null
   completionTokens: number | null
   isSuccess: boolean | null
+  errorCode: number | null
   errorMessage: string | null
 }
 
@@ -58,11 +64,13 @@ export type AiUsageLogMaxAggregateOutputType = {
   modelName: string | null
   feature: string | null
   entityId: string | null
+  entityCount: number | null
   userId: string | null
   durationMs: number | null
   promptTokens: number | null
   completionTokens: number | null
   isSuccess: boolean | null
+  errorCode: number | null
   errorMessage: string | null
 }
 
@@ -72,26 +80,33 @@ export type AiUsageLogCountAggregateOutputType = {
   modelName: number
   feature: number
   entityId: number
+  entityCount: number
   userId: number
   durationMs: number
   promptTokens: number
   completionTokens: number
   isSuccess: number
+  errorCode: number
   errorMessage: number
+  metadata: number
   _all: number
 }
 
 
 export type AiUsageLogAvgAggregateInputType = {
+  entityCount?: true
   durationMs?: true
   promptTokens?: true
   completionTokens?: true
+  errorCode?: true
 }
 
 export type AiUsageLogSumAggregateInputType = {
+  entityCount?: true
   durationMs?: true
   promptTokens?: true
   completionTokens?: true
+  errorCode?: true
 }
 
 export type AiUsageLogMinAggregateInputType = {
@@ -100,11 +115,13 @@ export type AiUsageLogMinAggregateInputType = {
   modelName?: true
   feature?: true
   entityId?: true
+  entityCount?: true
   userId?: true
   durationMs?: true
   promptTokens?: true
   completionTokens?: true
   isSuccess?: true
+  errorCode?: true
   errorMessage?: true
 }
 
@@ -114,11 +131,13 @@ export type AiUsageLogMaxAggregateInputType = {
   modelName?: true
   feature?: true
   entityId?: true
+  entityCount?: true
   userId?: true
   durationMs?: true
   promptTokens?: true
   completionTokens?: true
   isSuccess?: true
+  errorCode?: true
   errorMessage?: true
 }
 
@@ -128,12 +147,15 @@ export type AiUsageLogCountAggregateInputType = {
   modelName?: true
   feature?: true
   entityId?: true
+  entityCount?: true
   userId?: true
   durationMs?: true
   promptTokens?: true
   completionTokens?: true
   isSuccess?: true
+  errorCode?: true
   errorMessage?: true
+  metadata?: true
   _all?: true
 }
 
@@ -229,12 +251,15 @@ export type AiUsageLogGroupByOutputType = {
   modelName: string
   feature: string
   entityId: string | null
+  entityCount: number | null
   userId: string | null
   durationMs: number | null
   promptTokens: number | null
   completionTokens: number | null
   isSuccess: boolean
+  errorCode: number | null
   errorMessage: string | null
+  metadata: runtime.JsonValue | null
   _count: AiUsageLogCountAggregateOutputType | null
   _avg: AiUsageLogAvgAggregateOutputType | null
   _sum: AiUsageLogSumAggregateOutputType | null
@@ -266,12 +291,15 @@ export type AiUsageLogWhereInput = {
   modelName?: Prisma.StringFilter<"AiUsageLog"> | string
   feature?: Prisma.StringFilter<"AiUsageLog"> | string
   entityId?: Prisma.StringNullableFilter<"AiUsageLog"> | string | null
+  entityCount?: Prisma.IntNullableFilter<"AiUsageLog"> | number | null
   userId?: Prisma.StringNullableFilter<"AiUsageLog"> | string | null
   durationMs?: Prisma.IntNullableFilter<"AiUsageLog"> | number | null
   promptTokens?: Prisma.IntNullableFilter<"AiUsageLog"> | number | null
   completionTokens?: Prisma.IntNullableFilter<"AiUsageLog"> | number | null
   isSuccess?: Prisma.BoolFilter<"AiUsageLog"> | boolean
+  errorCode?: Prisma.IntNullableFilter<"AiUsageLog"> | number | null
   errorMessage?: Prisma.StringNullableFilter<"AiUsageLog"> | string | null
+  metadata?: Prisma.JsonNullableFilter<"AiUsageLog">
 }
 
 export type AiUsageLogOrderByWithRelationInput = {
@@ -280,12 +308,15 @@ export type AiUsageLogOrderByWithRelationInput = {
   modelName?: Prisma.SortOrder
   feature?: Prisma.SortOrder
   entityId?: Prisma.SortOrderInput | Prisma.SortOrder
+  entityCount?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
   durationMs?: Prisma.SortOrderInput | Prisma.SortOrder
   promptTokens?: Prisma.SortOrderInput | Prisma.SortOrder
   completionTokens?: Prisma.SortOrderInput | Prisma.SortOrder
   isSuccess?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrderInput | Prisma.SortOrder
   errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  metadata?: Prisma.SortOrderInput | Prisma.SortOrder
 }
 
 export type AiUsageLogWhereUniqueInput = Prisma.AtLeast<{
@@ -297,12 +328,15 @@ export type AiUsageLogWhereUniqueInput = Prisma.AtLeast<{
   modelName?: Prisma.StringFilter<"AiUsageLog"> | string
   feature?: Prisma.StringFilter<"AiUsageLog"> | string
   entityId?: Prisma.StringNullableFilter<"AiUsageLog"> | string | null
+  entityCount?: Prisma.IntNullableFilter<"AiUsageLog"> | number | null
   userId?: Prisma.StringNullableFilter<"AiUsageLog"> | string | null
   durationMs?: Prisma.IntNullableFilter<"AiUsageLog"> | number | null
   promptTokens?: Prisma.IntNullableFilter<"AiUsageLog"> | number | null
   completionTokens?: Prisma.IntNullableFilter<"AiUsageLog"> | number | null
   isSuccess?: Prisma.BoolFilter<"AiUsageLog"> | boolean
+  errorCode?: Prisma.IntNullableFilter<"AiUsageLog"> | number | null
   errorMessage?: Prisma.StringNullableFilter<"AiUsageLog"> | string | null
+  metadata?: Prisma.JsonNullableFilter<"AiUsageLog">
 }, "id">
 
 export type AiUsageLogOrderByWithAggregationInput = {
@@ -311,12 +345,15 @@ export type AiUsageLogOrderByWithAggregationInput = {
   modelName?: Prisma.SortOrder
   feature?: Prisma.SortOrder
   entityId?: Prisma.SortOrderInput | Prisma.SortOrder
+  entityCount?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
   durationMs?: Prisma.SortOrderInput | Prisma.SortOrder
   promptTokens?: Prisma.SortOrderInput | Prisma.SortOrder
   completionTokens?: Prisma.SortOrderInput | Prisma.SortOrder
   isSuccess?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrderInput | Prisma.SortOrder
   errorMessage?: Prisma.SortOrderInput | Prisma.SortOrder
+  metadata?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.AiUsageLogCountOrderByAggregateInput
   _avg?: Prisma.AiUsageLogAvgOrderByAggregateInput
   _max?: Prisma.AiUsageLogMaxOrderByAggregateInput
@@ -333,12 +370,15 @@ export type AiUsageLogScalarWhereWithAggregatesInput = {
   modelName?: Prisma.StringWithAggregatesFilter<"AiUsageLog"> | string
   feature?: Prisma.StringWithAggregatesFilter<"AiUsageLog"> | string
   entityId?: Prisma.StringNullableWithAggregatesFilter<"AiUsageLog"> | string | null
+  entityCount?: Prisma.IntNullableWithAggregatesFilter<"AiUsageLog"> | number | null
   userId?: Prisma.StringNullableWithAggregatesFilter<"AiUsageLog"> | string | null
   durationMs?: Prisma.IntNullableWithAggregatesFilter<"AiUsageLog"> | number | null
   promptTokens?: Prisma.IntNullableWithAggregatesFilter<"AiUsageLog"> | number | null
   completionTokens?: Prisma.IntNullableWithAggregatesFilter<"AiUsageLog"> | number | null
   isSuccess?: Prisma.BoolWithAggregatesFilter<"AiUsageLog"> | boolean
+  errorCode?: Prisma.IntNullableWithAggregatesFilter<"AiUsageLog"> | number | null
   errorMessage?: Prisma.StringNullableWithAggregatesFilter<"AiUsageLog"> | string | null
+  metadata?: Prisma.JsonNullableWithAggregatesFilter<"AiUsageLog">
 }
 
 export type AiUsageLogCreateInput = {
@@ -347,12 +387,15 @@ export type AiUsageLogCreateInput = {
   modelName: string
   feature: string
   entityId?: string | null
+  entityCount?: number | null
   userId?: string | null
   durationMs?: number | null
   promptTokens?: number | null
   completionTokens?: number | null
   isSuccess?: boolean
+  errorCode?: number | null
   errorMessage?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AiUsageLogUncheckedCreateInput = {
@@ -361,12 +404,15 @@ export type AiUsageLogUncheckedCreateInput = {
   modelName: string
   feature: string
   entityId?: string | null
+  entityCount?: number | null
   userId?: string | null
   durationMs?: number | null
   promptTokens?: number | null
   completionTokens?: number | null
   isSuccess?: boolean
+  errorCode?: number | null
   errorMessage?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AiUsageLogUpdateInput = {
@@ -375,12 +421,15 @@ export type AiUsageLogUpdateInput = {
   modelName?: Prisma.StringFieldUpdateOperationsInput | string
   feature?: Prisma.StringFieldUpdateOperationsInput | string
   entityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  entityCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   completionTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isSuccess?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  errorCode?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AiUsageLogUncheckedUpdateInput = {
@@ -389,12 +438,15 @@ export type AiUsageLogUncheckedUpdateInput = {
   modelName?: Prisma.StringFieldUpdateOperationsInput | string
   feature?: Prisma.StringFieldUpdateOperationsInput | string
   entityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  entityCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   completionTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isSuccess?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  errorCode?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AiUsageLogCreateManyInput = {
@@ -403,12 +455,15 @@ export type AiUsageLogCreateManyInput = {
   modelName: string
   feature: string
   entityId?: string | null
+  entityCount?: number | null
   userId?: string | null
   durationMs?: number | null
   promptTokens?: number | null
   completionTokens?: number | null
   isSuccess?: boolean
+  errorCode?: number | null
   errorMessage?: string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AiUsageLogUpdateManyMutationInput = {
@@ -417,12 +472,15 @@ export type AiUsageLogUpdateManyMutationInput = {
   modelName?: Prisma.StringFieldUpdateOperationsInput | string
   feature?: Prisma.StringFieldUpdateOperationsInput | string
   entityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  entityCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   completionTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isSuccess?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  errorCode?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AiUsageLogUncheckedUpdateManyInput = {
@@ -431,12 +489,15 @@ export type AiUsageLogUncheckedUpdateManyInput = {
   modelName?: Prisma.StringFieldUpdateOperationsInput | string
   feature?: Prisma.StringFieldUpdateOperationsInput | string
   entityId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  entityCount?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   completionTokens?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   isSuccess?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  errorCode?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   errorMessage?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type AiUsageLogCountOrderByAggregateInput = {
@@ -445,18 +506,23 @@ export type AiUsageLogCountOrderByAggregateInput = {
   modelName?: Prisma.SortOrder
   feature?: Prisma.SortOrder
   entityId?: Prisma.SortOrder
+  entityCount?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   promptTokens?: Prisma.SortOrder
   completionTokens?: Prisma.SortOrder
   isSuccess?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrder
+  metadata?: Prisma.SortOrder
 }
 
 export type AiUsageLogAvgOrderByAggregateInput = {
+  entityCount?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   promptTokens?: Prisma.SortOrder
   completionTokens?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
 }
 
 export type AiUsageLogMaxOrderByAggregateInput = {
@@ -465,11 +531,13 @@ export type AiUsageLogMaxOrderByAggregateInput = {
   modelName?: Prisma.SortOrder
   feature?: Prisma.SortOrder
   entityId?: Prisma.SortOrder
+  entityCount?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   promptTokens?: Prisma.SortOrder
   completionTokens?: Prisma.SortOrder
   isSuccess?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrder
 }
 
@@ -479,18 +547,22 @@ export type AiUsageLogMinOrderByAggregateInput = {
   modelName?: Prisma.SortOrder
   feature?: Prisma.SortOrder
   entityId?: Prisma.SortOrder
+  entityCount?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   promptTokens?: Prisma.SortOrder
   completionTokens?: Prisma.SortOrder
   isSuccess?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
   errorMessage?: Prisma.SortOrder
 }
 
 export type AiUsageLogSumOrderByAggregateInput = {
+  entityCount?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   promptTokens?: Prisma.SortOrder
   completionTokens?: Prisma.SortOrder
+  errorCode?: Prisma.SortOrder
 }
 
 export type NullableIntFieldUpdateOperationsInput = {
@@ -509,12 +581,15 @@ export type AiUsageLogSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   modelName?: boolean
   feature?: boolean
   entityId?: boolean
+  entityCount?: boolean
   userId?: boolean
   durationMs?: boolean
   promptTokens?: boolean
   completionTokens?: boolean
   isSuccess?: boolean
+  errorCode?: boolean
   errorMessage?: boolean
+  metadata?: boolean
 }, ExtArgs["result"]["aiUsageLog"]>
 
 export type AiUsageLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -523,12 +598,15 @@ export type AiUsageLogSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   modelName?: boolean
   feature?: boolean
   entityId?: boolean
+  entityCount?: boolean
   userId?: boolean
   durationMs?: boolean
   promptTokens?: boolean
   completionTokens?: boolean
   isSuccess?: boolean
+  errorCode?: boolean
   errorMessage?: boolean
+  metadata?: boolean
 }, ExtArgs["result"]["aiUsageLog"]>
 
 export type AiUsageLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -537,12 +615,15 @@ export type AiUsageLogSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   modelName?: boolean
   feature?: boolean
   entityId?: boolean
+  entityCount?: boolean
   userId?: boolean
   durationMs?: boolean
   promptTokens?: boolean
   completionTokens?: boolean
   isSuccess?: boolean
+  errorCode?: boolean
   errorMessage?: boolean
+  metadata?: boolean
 }, ExtArgs["result"]["aiUsageLog"]>
 
 export type AiUsageLogSelectScalar = {
@@ -551,15 +632,18 @@ export type AiUsageLogSelectScalar = {
   modelName?: boolean
   feature?: boolean
   entityId?: boolean
+  entityCount?: boolean
   userId?: boolean
   durationMs?: boolean
   promptTokens?: boolean
   completionTokens?: boolean
   isSuccess?: boolean
+  errorCode?: boolean
   errorMessage?: boolean
+  metadata?: boolean
 }
 
-export type AiUsageLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "createdAt" | "modelName" | "feature" | "entityId" | "userId" | "durationMs" | "promptTokens" | "completionTokens" | "isSuccess" | "errorMessage", ExtArgs["result"]["aiUsageLog"]>
+export type AiUsageLogOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "createdAt" | "modelName" | "feature" | "entityId" | "entityCount" | "userId" | "durationMs" | "promptTokens" | "completionTokens" | "isSuccess" | "errorCode" | "errorMessage" | "metadata", ExtArgs["result"]["aiUsageLog"]>
 
 export type $AiUsageLogPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "AiUsageLog"
@@ -570,12 +654,15 @@ export type $AiUsageLogPayload<ExtArgs extends runtime.Types.Extensions.Internal
     modelName: string
     feature: string
     entityId: string | null
+    entityCount: number | null
     userId: string | null
     durationMs: number | null
     promptTokens: number | null
     completionTokens: number | null
     isSuccess: boolean
+    errorCode: number | null
     errorMessage: string | null
+    metadata: runtime.JsonValue | null
   }, ExtArgs["result"]["aiUsageLog"]>
   composites: {}
 }
@@ -1004,12 +1091,15 @@ export interface AiUsageLogFieldRefs {
   readonly modelName: Prisma.FieldRef<"AiUsageLog", 'String'>
   readonly feature: Prisma.FieldRef<"AiUsageLog", 'String'>
   readonly entityId: Prisma.FieldRef<"AiUsageLog", 'String'>
+  readonly entityCount: Prisma.FieldRef<"AiUsageLog", 'Int'>
   readonly userId: Prisma.FieldRef<"AiUsageLog", 'String'>
   readonly durationMs: Prisma.FieldRef<"AiUsageLog", 'Int'>
   readonly promptTokens: Prisma.FieldRef<"AiUsageLog", 'Int'>
   readonly completionTokens: Prisma.FieldRef<"AiUsageLog", 'Int'>
   readonly isSuccess: Prisma.FieldRef<"AiUsageLog", 'Boolean'>
+  readonly errorCode: Prisma.FieldRef<"AiUsageLog", 'Int'>
   readonly errorMessage: Prisma.FieldRef<"AiUsageLog", 'String'>
+  readonly metadata: Prisma.FieldRef<"AiUsageLog", 'Json'>
 }
     
 
