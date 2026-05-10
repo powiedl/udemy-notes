@@ -108,6 +108,8 @@ export async function suggestTagsWithAIBatch(
 ): Promise<AIEntityTagResponse[]> {
   const { systemInstruction, userContent, entitiesWithAllowance } =
     buildBatchTaggingPrompt(input)
+  const systemInstructionLength = systemInstruction.length
+  const userContentLength = userContent.length
 
   const course = input.entities.find((e) => e.entityType === 'course')
   const courseId = course?.entityId || undefined
@@ -126,7 +128,10 @@ export async function suggestTagsWithAIBatch(
   let actualModel = requestedModel
   let promptTokens: number | null = null
   let completionTokens: number | null = null
-  let metadata = '{}'
+  let metadata = JSON.stringify({
+    systemInstructionLength,
+    userContentLength,
+  })
 
   try {
     // wenn das Promise von openrouter.chat.send rejected, wird ein Fehler geworfen und wir landen sofort im catch von dem try Block
@@ -149,6 +154,8 @@ export async function suggestTagsWithAIBatch(
     completionTokens = response.usage?.completionTokens || null
     metadata = JSON.stringify({
       completionTokenDetails: response.usage?.completionTokensDetails || {},
+      systemInstructionLength,
+      userContentLength,
     })
 
     const rawContent = response.choices[0]?.message?.content
