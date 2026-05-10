@@ -113,12 +113,22 @@ describe('Integration: suggestTagsWithAIBatch', () => {
           promptTokens: 100,
           completionTokens: 50,
           userId: 'user-123',
-          metadata: JSON.stringify({
-            completionTokenDetails: { reasoning: 10 },
-          }),
         }),
       }),
     )
+
+    const createCallArgs = vi.mocked(prisma.aiUsageLog.create).mock
+      .calls[0]?.[0]
+    expect(createCallArgs).toBeDefined()
+    expect(createCallArgs?.data?.metadata).toBeTypeOf('string')
+    const parsedMetadata = JSON.parse(createCallArgs!.data!.metadata as string)
+
+    // Jetzt prüfen wir das Objekt unabhängig von der Reihenfolge
+    expect(parsedMetadata).toMatchObject({
+      completionTokenDetails: { reasoning: 10 },
+      systemInstructionLength: expect.any(Number),
+      userContentLength: expect.any(Number),
+    })
   })
 
   it('3. Full Pipeline: Verarbeitet Markdown-Quatsch, korrigiert isNew und sortiert', async () => {
