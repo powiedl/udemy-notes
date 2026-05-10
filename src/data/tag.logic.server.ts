@@ -335,11 +335,14 @@ export async function autoTagCourseBatchLogic(
   })
 
   // 4. KI-Service aufrufen (Ein einziger mächtiger Request!)
-  const aiResults = await suggestTagsWithAIBatch({
-    entities,
-    globalTags,
-    privateUserTags,
-  })
+  const aiResults = await suggestTagsWithAIBatch(
+    {
+      entities,
+      globalTags,
+      privateUserTags,
+    },
+    userId,
+  )
 
   if (aiResults.length === 0) {
     return { courseTagsSuggested: [], notesProcessed: 0 }
