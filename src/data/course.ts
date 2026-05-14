@@ -6,6 +6,7 @@ import {
   courseIdSchema,
   createAndLinkTagToCourseSchema,
   createAndLinkTrainerToCourseSchema,
+  createShareLinkSchema,
   getCoursesSchema,
   getTrainerSuggestionsSchema,
   linkTagToCourseSchema,
@@ -153,5 +154,15 @@ export const createAndLinkTrainerToCourseFn = authFn
       context,
       data,
       () => createAndLinkTrainerToCourseLogic(data, context.session.user.id),
+    )
+  })
+
+export const createShareLinkFn = authFn
+  .inputValidator(createShareLinkSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { createShareLinkLogic } = await import('./course.logic.server')
+    return await wrapServerAction('createShareLinkFn', context, data, () =>
+      createShareLinkLogic(data, context.session.user.id),
     )
   })

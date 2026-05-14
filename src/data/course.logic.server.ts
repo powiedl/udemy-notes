@@ -10,7 +10,9 @@ import type {
   CreateAndLinkTagToCourseInput,
   CreateAndLinkTrainerToCourseInput,
   TrainerToCourseInput,
+  CreateShareLinkInput,
 } from '#/schemas/course.schema'
+import { env } from '#/lib/env.server'
 // import { mapNoteDisplayTags } from './note.logic.server'
 
 /**
@@ -329,4 +331,50 @@ export async function createAndLinkTrainerToCourseLogic(
     },
   })
   return { success: true }
+}
+
+export async function createShareLinkLogic(
+  data: CreateShareLinkInput,
+  userId: string,
+) {
+  let { expiresAt } = data
+  if (expiresAt < new Date(Date.now())) {
+    expiresAt = new Date(
+      Date.now() + env.DEFAULT_AGE_SHARE_LINK_IN_DAYS * 24 * 60 * 60 * 1000,
+    )
+  }
+  const course = await prisma.course.findUnique({
+    where: { id: data.courseId, userId },
+  })
+  if (!course) throw new ServerActionError('Course not found')
+  const existingToken = await prisma.courseShareToken.findFirst({
+    where: { courseId: data.courseId },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  let courseShareLink
+
+  // 3. Update oder Create (manueller "Upsert")
+  if (existingToken) {
+    courseShareLink = await prisma.courseShareToken.update({
+      where: { id: existingToken.id }, // Hier können wir sicher updaten, da 'id' @id ist
+      data: { expiresAt },
+    })
+  } else {
+    courseShareLink = await prisma.courseShareToken.create({
+      data: {
+        courseId: data.courseId,
+        expiresAt,
+      },
+    })
+  }
+
+  // 4. Ergebnis zurückgeben
+  // HINWEIS: Wir geben courseShareLink.id als Token zurück, da dein Prisma-Modell
+  // den CUID direkt im ID-Feld generiert.
+  return {
+    token: courseShareLink.id,
+    expiresAt: courseShareLink.expiresAt,
+    courseId: courseShareLink.courseId,
+  }
 }
