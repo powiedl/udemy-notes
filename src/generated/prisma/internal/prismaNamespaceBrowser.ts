@@ -59,6 +59,7 @@ export const ModelName = {
   Note: 'Note',
   Trainer: 'Trainer',
   CourseTrainer: 'CourseTrainer',
+  CourseShareToken: 'CourseShareToken',
   Tag: 'Tag',
   NoteTag: 'NoteTag',
   CourseTag: 'CourseTag',
@@ -190,6 +191,17 @@ export const CourseTrainerScalarFieldEnum = {
 } as const
 
 export type CourseTrainerScalarFieldEnum = (typeof CourseTrainerScalarFieldEnum)[keyof typeof CourseTrainerScalarFieldEnum]
+
+
+export const CourseShareTokenScalarFieldEnum = {
+  id: 'id',
+  courseId: 'courseId',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CourseShareTokenScalarFieldEnum = (typeof CourseShareTokenScalarFieldEnum)[keyof typeof CourseShareTokenScalarFieldEnum]
 
 
 export const TagScalarFieldEnum = {

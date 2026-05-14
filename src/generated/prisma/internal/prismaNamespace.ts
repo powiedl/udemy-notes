@@ -392,6 +392,7 @@ export const ModelName = {
   Note: 'Note',
   Trainer: 'Trainer',
   CourseTrainer: 'CourseTrainer',
+  CourseShareToken: 'CourseShareToken',
   Tag: 'Tag',
   NoteTag: 'NoteTag',
   CourseTag: 'CourseTag',
@@ -412,7 +413,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "course" | "note" | "trainer" | "courseTrainer" | "tag" | "noteTag" | "courseTag" | "aiUsageLog" | "log"
+    modelProps: "user" | "session" | "account" | "verification" | "course" | "note" | "trainer" | "courseTrainer" | "courseShareToken" | "tag" | "noteTag" | "courseTag" | "aiUsageLog" | "log"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1008,6 +1009,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CourseShareToken: {
+      payload: Prisma.$CourseShareTokenPayload<ExtArgs>
+      fields: Prisma.CourseShareTokenFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CourseShareTokenFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CourseShareTokenFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload>
+        }
+        findFirst: {
+          args: Prisma.CourseShareTokenFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CourseShareTokenFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload>
+        }
+        findMany: {
+          args: Prisma.CourseShareTokenFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload>[]
+        }
+        create: {
+          args: Prisma.CourseShareTokenCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload>
+        }
+        createMany: {
+          args: Prisma.CourseShareTokenCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CourseShareTokenCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload>[]
+        }
+        delete: {
+          args: Prisma.CourseShareTokenDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload>
+        }
+        update: {
+          args: Prisma.CourseShareTokenUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload>
+        }
+        deleteMany: {
+          args: Prisma.CourseShareTokenDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CourseShareTokenUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CourseShareTokenUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload>[]
+        }
+        upsert: {
+          args: Prisma.CourseShareTokenUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseShareTokenPayload>
+        }
+        aggregate: {
+          args: Prisma.CourseShareTokenAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCourseShareToken>
+        }
+        groupBy: {
+          args: Prisma.CourseShareTokenGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CourseShareTokenGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CourseShareTokenCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CourseShareTokenCountAggregateOutputType> | number
+        }
+      }
+    }
     Tag: {
       payload: Prisma.$TagPayload<ExtArgs>
       fields: Prisma.TagFieldRefs
@@ -1527,6 +1602,17 @@ export const CourseTrainerScalarFieldEnum = {
 export type CourseTrainerScalarFieldEnum = (typeof CourseTrainerScalarFieldEnum)[keyof typeof CourseTrainerScalarFieldEnum]
 
 
+export const CourseShareTokenScalarFieldEnum = {
+  id: 'id',
+  courseId: 'courseId',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CourseShareTokenScalarFieldEnum = (typeof CourseShareTokenScalarFieldEnum)[keyof typeof CourseShareTokenScalarFieldEnum]
+
+
 export const TagScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -1835,6 +1921,7 @@ export type GlobalOmitConfig = {
   note?: Prisma.NoteOmit
   trainer?: Prisma.TrainerOmit
   courseTrainer?: Prisma.CourseTrainerOmit
+  courseShareToken?: Prisma.CourseShareTokenOmit
   tag?: Prisma.TagOmit
   noteTag?: Prisma.NoteTagOmit
   courseTag?: Prisma.CourseTagOmit
