@@ -7,7 +7,14 @@ import {
 } from '#/components/ui/card'
 import { useRouter, Link } from '@tanstack/react-router'
 import { Button } from '../ui/button'
-import { Sparkles, Trash2, Download, Loader2 } from 'lucide-react'
+import {
+  Sparkles,
+  Trash2,
+  Download,
+  Loader2,
+  Share,
+  Share2,
+} from 'lucide-react'
 import { cn } from '#/lib/utils'
 import { useState, useTransition } from 'react'
 import type { CourseHeaderData } from '#/data/course'
@@ -27,6 +34,7 @@ import { ReviewCourseTagsDialog } from './review-course-tags-dialog'
 import type { AITagSuggestionForDialog } from './review-course-tags-dialog'
 import { toast } from 'sonner' // Für die Info, falls keine Tags gefunden wurden
 import { useServerFn } from '@tanstack/react-start'
+import { ActionIconButton } from '../ui/action-icon-button'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
@@ -35,6 +43,7 @@ interface CourseHeaderProps {
   singleCourse?: boolean
   onExport?: (data: ExportMdFileSchema) => void
   onDelete?: (id: string) => void
+  onShare?: (id: string) => void
   className?: string
   activeTagIds?: string[]
 }
@@ -46,6 +55,7 @@ const CourseHeader = ({
   singleCourse = true,
   onExport,
   onDelete,
+  onShare,
   className,
   activeTagIds = [],
 }: CourseHeaderProps) => {
@@ -68,11 +78,13 @@ const CourseHeader = ({
   const [isAITagging, startAITaggingTransition] = useTransition()
   // --- NEU: Transition für das Speichern der Tags aus dem Dialog ---
   const [isSavingTags, startSavingTagsTransition] = useTransition()
+  const [isSharing, startShareTransition] = useTransition()
   const autoTagCourseBatch = useServerFn(autoTagCourseBatchFn)
   const approveCourseTagsBatch = useServerFn(approveCourseTagsBatchFn)
 
   // KI-Tagging blockiert jetzt ebenfalls alle anderen Buttons
-  const isPending = isDeleting || isExporting || isTagPending || isAITagging
+  const isPending =
+    isDeleting || isExporting || isTagPending || isAITagging || isSharing
 
   const countNotes =
     'notes' in course
@@ -99,14 +111,13 @@ const CourseHeader = ({
   const trainerSize = singleCourse ? 'default' : 'sm'
 
   const handleExport = (data: ExportMdFileSchema) => {
-    const params = data
     if (!onExport) return
+    const params = data
     startExportTransition(async () => {
       await onExport(params)
     })
   }
 
-  // --- NEU: Die reparierte AI Tagging Handler-Funktion ---
   const handleAITagging = () => {
     startAITaggingTransition(async () => {
       try {
@@ -149,6 +160,12 @@ const CourseHeader = ({
       } catch (e) {}
     })
   }
+  const handleOnShare = () => {
+    if (!onShare) return
+    startShareTransition(async () => {
+      await onShare(course.id)
+    })
+  }
 
   if (variant === 'compact') {
     return (
@@ -158,14 +175,16 @@ const CourseHeader = ({
           className,
         )}
       >
-        <Link
-          to="/courses/$courseId"
-          params={{ courseId: course.id }}
-          search={PAGINATION_DEFAULTS}
-          className="text-lg font-semibold hover:underline"
-        >
-          {course.title}
-        </Link>
+        <div className="relative">
+          <Link
+            to="/courses/$courseId"
+            params={{ courseId: course.id }}
+            search={PAGINATION_DEFAULTS}
+            className="text-lg font-semibold hover:underline"
+          >
+            {course.title}
+          </Link>
+        </div>
         <TrainerManager
           trainers={trainersDisplay}
           courseId={course.id}
@@ -194,18 +213,38 @@ const CourseHeader = ({
         )}
       >
         <CardHeader className="min-w-0">
-          <CardTitle className="text-lg font-semibold">
-            {!singleCourse ? (
-              <Link
-                to="/courses/$courseId"
-                params={{ courseId: course.id }}
-                search={PAGINATION_DEFAULTS}
-                className="block line-clamp-3"
+          <CardTitle className="text-lg font-semibold flex items-start justify-between gap-4">
+            {/* Text-Container: Nimmt den restlichen Platz ein, min-w-0 erlaubt dem Text umzubrechen oder abgeschnitten zu werden */}
+            <div className="flex-1 min-w-0">
+              {!singleCourse ? (
+                <Link
+                  to="/courses/$courseId"
+                  params={{ courseId: course.id }}
+                  search={PAGINATION_DEFAULTS}
+                  className="block line-clamp-3"
+                >
+                  {course.title}
+                </Link>
+              ) : (
+                <h1 className="text-4xl font-semibold wrap-break-word">
+                  {course.title}
+                </h1>
+              )}
+            </div>
+            {onShare && (
+              <ActionIconButton
+                actionVariant="purple"
+                actionSize="md"
+                onClick={handleOnShare}
+                disabled={isPending}
+                title="Share Course"
               >
-                {course.title}
-              </Link>
-            ) : (
-              <h1 className="text-4xl font-semibold">{course.title}</h1>
+                {isSharing ? (
+                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <Share2 className="size-4" />
+                )}
+              </ActionIconButton>
             )}
           </CardTitle>
         </CardHeader>

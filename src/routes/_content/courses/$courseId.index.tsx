@@ -142,7 +142,7 @@ function Course({
 
 // === KURS INHALT (Header + Suchleiste + Notizen) ===
 function CourseContent({ course, notesPromise, searchParams, navigate }: any) {
-  const { handleExport, handleDelete } = useCourseActions()
+  const { handleExport, handleDelete, handleShare } = useCourseActions()
   const { user } = useLoaderData({ from: '/_content' })
   const isAdmin = hasRole(user, 'admin')
 
@@ -319,6 +319,7 @@ function CourseContent({ course, notesPromise, searchParams, navigate }: any) {
             isAdmin={isAdmin}
             onExport={(data) => handleExport(data)}
             onDelete={() => handleDelete(course.id)}
+            onShare={() => handleShare(course.id)}
           />
         </CardHeader>
         <CardContent>
