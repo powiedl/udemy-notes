@@ -30,6 +30,7 @@ import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useTrainerQuery } from '#/hooks/use-trainer-query'
 import { useQueryClient } from '@tanstack/react-query'
+import { ActionIconButton } from '../ui/action-icon-button'
 
 export interface TrainerDisplay {
   id: string
@@ -187,31 +188,22 @@ export function TrainerManager({
       {isEditable && (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button
-              type="button"
-              size="icon"
+            <ActionIconButton
+              actionVariant="purple"
+              actionSize="sm"
+              className={cn('ml-1', open && 'opacity-0 pointer-events-none')}
               disabled={isPending}
               title="add a trainer"
-              className={cn(
-                // Basis-Klassen (Form, Abstand, Transition)
-                'h-4 w-6 rounded-md transition-all duration-200 cursor-pointer ml-1',
-                open && 'opacity-0 pointer-events-none',
-              )}
             >
               {isPending ? (
                 <Loader2 className="h-2.5 w-2.5 animate-spin" />
               ) : (
-                // Hier ist der Trick für ein elegantes Hovern des Icons:
-                // Wir nutzen 'group' auf dem Button nicht zwingend,
-                // aber wir animieren die Opacity des Pluszeichens selbst.
                 <Plus
-                  className={cn(
-                    'h-3 w-3 transition-opacity duration-200',
-                    // Im Purple-Modus machen wir das Plus beim Hovern zu 100% sichtbar (leuchtend), sonst 70%
-                  )}
+                  className="h-3 w-3 opacity-80 hover:opacity-100 transition-opacity duration-200"
+                  strokeWidth={2.5}
                 />
               )}
-            </Button>
+            </ActionIconButton>
           </PopoverTrigger>
           <PopoverContent
             className="w-64 p-0"
