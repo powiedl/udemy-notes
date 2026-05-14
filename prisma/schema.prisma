@@ -81,15 +81,16 @@ model Verification {
 // #region Udemy Notes
 
 model Course {
-  id        String          @id @default(uuid())
+  id        String             @id @default(uuid())
   title     String
   trainers  CourseTrainer[]
-  userId    String          @map("user_id")
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String             @map("user_id")
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes     Note[]
   tags      CourseTag[]
-  createdAt DateTime        @default(now()) @map("created_at")
-  updatedAt DateTime        @updatedAt @map("updated_at")
+  shares    CourseShareToken[]
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
 
   @@map("course")
 }
@@ -148,6 +149,17 @@ model CourseTrainer {
 
   @@id([courseId, trainerId])
   @@map("course_to_trainer")
+}
+
+model CourseShareToken {
+  id        String    @id @default(cuid())
+  courseId  String    @map("course_id")
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("course_share_token")
 }
 
 model Tag {
