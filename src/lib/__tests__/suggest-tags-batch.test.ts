@@ -120,8 +120,8 @@ describe('Integration: suggestTagsWithAIBatch', () => {
     const createCallArgs = vi.mocked(prisma.aiUsageLog.create).mock
       .calls[0]?.[0]
     expect(createCallArgs).toBeDefined()
-    expect(createCallArgs?.data?.metadata).toBeTypeOf('string')
-    const parsedMetadata = JSON.parse(createCallArgs!.data!.metadata as string)
+    expect(createCallArgs.data.metadata).toBeTypeOf('string')
+    const parsedMetadata = JSON.parse(createCallArgs.data.metadata as string)
 
     // Jetzt prüfen wir das Objekt unabhängig von der Reihenfolge
     expect(parsedMetadata).toMatchObject({

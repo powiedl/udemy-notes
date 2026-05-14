@@ -1,5 +1,6 @@
 // src/lib/env.ts
 import { z } from 'zod'
+
 export const SCRIPT_DEFAULT_AGE_SHARE_LINK_IN_DAYS = 7
 const envSchema = z.object({
   // Environment

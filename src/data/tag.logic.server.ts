@@ -4,7 +4,7 @@ import { isEmpty } from '#/lib/utils'
 import { suggestTagsWithAIBatch } from '#/lib/ai.server'
 import { ServerActionError } from '#/types/errors'
 import type { CreateAndLinkTagToTargetInput } from './tag'
-import {
+import type {
   AutoTagCourseBatchInput,
   DeleteTagInput,
   GetAvailableTagsInput,

@@ -35,7 +35,7 @@ export function useCourseActions() {
     }
   }
   const handleShare = async (id: string) => {
-    //console.log('handleShare,courseId:', id)
+    // console.log('handleShare,courseId:', id)
     try {
       const result = await handleAction(
         shareFn({
@@ -49,13 +49,11 @@ export function useCourseActions() {
         }),
         { successToast: 'Link to this course saved in the clipboard' },
       )
-      if (result && result.token) {
-        // window.location.origin holt sich dynamisch das Protokoll und die Domain (z.B. http://localhost:3000)
-        const absoluteLink = `${window.location.origin}/share-public/${result.token}`
+      // window.location.origin holt sich dynamisch das Protokoll und die Domain (z.B. http://localhost:3000)
+      const absoluteLink = `${window.location.origin}/share-public/${result.token}`
 
-        await navigator.clipboard.writeText(absoluteLink)
-        //console.log('Share Link:', absoluteLink)
-      }
+      await navigator.clipboard.writeText(absoluteLink)
+      // console.log('Share Link:', absoluteLink)
     } catch (e: any) {}
   }
   const handleExport = async (data: ExportMdFileSchema) => {

@@ -7,7 +7,7 @@ import {
   toggleNoteTagSchema,
   updateNoteContentSchema,
 } from '#/schemas/note.schema'
-import { z } from 'zod'
+import type { z } from 'zod'
 
 // Das Schema mit Logging-Metadaten anreichern
 export type UpdateNoteContentInput = z.infer<typeof updateNoteContentSchema>
