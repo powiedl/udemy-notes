@@ -7,14 +7,7 @@ import {
 } from '#/components/ui/card'
 import { useRouter, Link } from '@tanstack/react-router'
 import { Button } from '../ui/button'
-import {
-  Sparkles,
-  Trash2,
-  Download,
-  Loader2,
-  Share,
-  Share2,
-} from 'lucide-react'
+import { Sparkles, Trash2, Download, Loader2, Share2 } from 'lucide-react'
 import { cn } from '#/lib/utils'
 import { useState, useTransition } from 'react'
 import type { CourseHeaderData } from '#/data/course'
@@ -38,6 +31,7 @@ import { ActionIconButton } from '../ui/action-icon-button'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
+  readOnly?: boolean
   isAdmin?: boolean
   variant?: 'default' | 'compact'
   singleCourse?: boolean
@@ -50,6 +44,7 @@ interface CourseHeaderProps {
 
 const CourseHeader = ({
   course,
+  readOnly = false,
   isAdmin,
   variant = 'default',
   singleCourse = true,
