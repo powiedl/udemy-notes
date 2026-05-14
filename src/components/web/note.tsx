@@ -58,12 +58,14 @@ interface NoteProps {
   }
   activeTagIds?: string[]
   showCourseLink?: boolean
+  readOnly?: boolean
 }
 
 const Note = ({
   note,
   showCourseLink = true,
   activeTagIds = [],
+  readOnly = false,
 }: NoteProps) => {
   const router = useRouter()
 
@@ -74,7 +76,7 @@ const Note = ({
     handleLink,
     handleDeleteTagAssociation,
     handleCreateAndLink,
-  } = useTagManagement(note.id, 'note', 'NoteCard')
+  } = useTagManagement(note.id, 'note', 'NoteCard', readOnly)
 
   const updateNoteContent = useServerFn(updateNoteContentFn)
 

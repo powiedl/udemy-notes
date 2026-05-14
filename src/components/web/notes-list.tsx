@@ -79,6 +79,7 @@ const NotesList = ({
                   variant="compact"
                   activeTagIds={activeTagIds}
                   singleCourse={false}
+                  readOnly={readOnly}
                 />
               </div>
             )}
@@ -87,6 +88,7 @@ const NotesList = ({
               key={note.id}
               showCourseLink={from === 'notes'}
               activeTagIds={activeTagIds}
+              readOnly={readOnly}
             />
           </Fragment>
         )

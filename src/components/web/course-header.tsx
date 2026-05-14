@@ -63,7 +63,7 @@ const CourseHeader = ({
     handleLink,
     handleCreateAndLink,
     handleDeleteTagAssociation,
-  } = useTagManagement(course.id, 'course', 'CourseHeader')
+  } = useTagManagement(course.id, 'course', 'CourseHeader', readOnly)
 
   const [reviewTags, setReviewTags] = useState<
     AITagSuggestionForDialog[] | null
@@ -100,12 +100,13 @@ const CourseHeader = ({
     (t): TrainerDisplay => ({
       name: t.trainer.name,
       id: t.trainer.id,
-      isDeletable: variant === 'default',
+      isDeletable: !readOnly && variant === 'default',
     }),
   )
   const trainerSize = singleCourse ? 'default' : 'sm'
 
   const handleExport = (data: ExportMdFileSchema) => {
+    if (readOnly) return
     if (!onExport) return
     const params = data
     startExportTransition(async () => {
@@ -114,6 +115,7 @@ const CourseHeader = ({
   }
 
   const handleAITagging = () => {
+    if (readOnly) return
     startAITaggingTransition(async () => {
       try {
         const result = await handleAction(
@@ -141,6 +143,7 @@ const CourseHeader = ({
 
   // --- NEU: Handler für den Save-Button im Dialog ---
   const handleSaveReviewTags = (selectedTagNames: string[]) => {
+    if (readOnly) return
     startSavingTagsTransition(async () => {
       try {
         await handleAction(
@@ -156,6 +159,7 @@ const CourseHeader = ({
     })
   }
   const handleOnShare = () => {
+    if (readOnly) return
     if (!onShare) return
     startShareTransition(async () => {
       await onShare(course.id)
@@ -226,7 +230,7 @@ const CourseHeader = ({
                 </h1>
               )}
             </div>
-            {onShare && (
+            {!readOnly && onShare && (
               <ActionIconButton
                 actionVariant="purple"
                 actionSize="md"
@@ -250,6 +254,7 @@ const CourseHeader = ({
               courseId={course.id}
               trainers={trainersDisplay}
               size={trainerSize}
+              isEditable={!readOnly}
             />
             <div className="ml-auto whitespace-nowrap text-sm text-muted-foreground">
               {countNotes} note{countNotes === 1 ? '' : 's'}
@@ -258,9 +263,9 @@ const CourseHeader = ({
           <TagManager
             tags={displayTags}
             availableTags={availableTags}
-            onAddTag={handleLink}
-            onRemoveTag={handleDeleteTagAssociation}
-            onCreateTag={handleCreateAndLink}
+            onAddTag={!readOnly ? handleLink : undefined}
+            onRemoveTag={!readOnly ? handleDeleteTagAssociation : undefined}
+            onCreateTag={!readOnly ? handleCreateAndLink : undefined}
             isPending={isTagPending}
             deletingTagId={deletingTagId?.split('-').pop()}
             addIconVariant="purple"
@@ -268,83 +273,97 @@ const CourseHeader = ({
         </CardContent>
 
         <CardFooter className="flex flex-row gap-4">
-          <Button
-            type="button"
-            // variant="secondary"
-            onClick={handleAITagging}
-            disabled={isPending}
-            className="hover:cursor-pointer"
-          >
-            {isAITagging ? (
-              <Loader2 className="size-4 mr-1 animate-spin" />
-            ) : (
-              <Sparkles className="size-4 mr-1" />
-            )}
-            <span
-              className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
+          {!readOnly && (
+            <Button
+              type="button"
+              // variant="secondary"
+              onClick={handleAITagging}
+              disabled={isPending}
+              className="hover:cursor-pointer"
             >
-              {isAITagging ? 'Tagging...' : 'Auto-Tag'}
-            </span>
-          </Button>
-
-          <ExportCourseDialog
-            isAdmin={isAdmin}
-            courseId={course.id}
-            onExportSubmit={handleExport}
-            disabled={isPending}
-            className="cursor-pointer"
-          >
-            <>
-              {isExporting ? (
+              {isAITagging ? (
                 <Loader2 className="size-4 mr-1 animate-spin" />
               ) : (
-                <Download className="size-4 mr-1" />
-              )}{' '}
+                <Sparkles className="size-4 mr-1" />
+              )}
               <span
                 className={cn(
                   'hidden',
                   singleCourse ? 'sm:inline' : 'md:inline',
                 )}
               >
-                Export
+                {isAITagging ? 'Tagging...' : 'Auto-Tag'}
               </span>
-            </>
-          </ExportCourseDialog>
+            </Button>
+          )}
 
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => {
-              if (!onDelete) return
-              startDeleteTransition(async () => {
-                await onDelete(course.id)
-              })
-            }}
-            disabled={isPending}
-            className="hover:cursor-pointer"
-          >
-            {isDeleting ? (
-              <Loader2 className={cn('size-4 animate-spin mr-1 inline')} />
-            ) : (
-              <Trash2 className="size-4 mr-1" />
-            )}
-            <span
-              className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
+          {!readOnly && (
+            <ExportCourseDialog
+              isAdmin={isAdmin}
+              courseId={course.id}
+              onExportSubmit={handleExport}
+              disabled={isPending}
+              className="cursor-pointer"
             >
-              {isDeleting ? 'Deleting' : 'Delete'}
-            </span>
-          </Button>
+              <>
+                {isExporting ? (
+                  <Loader2 className="size-4 mr-1 animate-spin" />
+                ) : (
+                  <Download className="size-4 mr-1" />
+                )}{' '}
+                <span
+                  className={cn(
+                    'hidden',
+                    singleCourse ? 'sm:inline' : 'md:inline',
+                  )}
+                >
+                  Export
+                </span>
+              </>
+            </ExportCourseDialog>
+          )}
+
+          {!readOnly && (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                if (!onDelete) return
+                startDeleteTransition(async () => {
+                  await onDelete(course.id)
+                })
+              }}
+              disabled={isPending}
+              className="hover:cursor-pointer"
+            >
+              {isDeleting ? (
+                <Loader2 className={cn('size-4 animate-spin mr-1 inline')} />
+              ) : (
+                <Trash2 className="size-4 mr-1" />
+              )}
+              <span
+                className={cn(
+                  'hidden',
+                  singleCourse ? 'sm:inline' : 'md:inline',
+                )}
+              >
+                {isDeleting ? 'Deleting' : 'Delete'}
+              </span>
+            </Button>
+          )}
         </CardFooter>
       </Card>
 
       {/* --- NEU: Der Dialog für die Course-Tags wird hier eingebunden --- */}
-      <ReviewCourseTagsDialog
-        tags={reviewTags}
-        isOpen={reviewTags !== null}
-        onOpenChange={(open) => !open && setReviewTags(null)}
-        onSave={handleSaveReviewTags}
-        isSaving={isSavingTags}
-      />
+      {!readOnly && (
+        <ReviewCourseTagsDialog
+          tags={reviewTags}
+          isOpen={reviewTags !== null}
+          onOpenChange={(open) => !open && setReviewTags(null)}
+          onSave={handleSaveReviewTags}
+          isSaving={isSavingTags}
+        />
+      )}
     </>
   )
 }

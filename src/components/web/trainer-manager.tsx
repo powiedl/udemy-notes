@@ -84,6 +84,7 @@ export function TrainerManager({
   )
 
   const handleRemoveTrainer = async (trainerId: string) => {
+    if (!isEditable) return
     try {
       await handleAction(
         removeTrainerFromCourse({
@@ -106,6 +107,7 @@ export function TrainerManager({
     }
   }
   const handleAddTrainer = async (trainerId: string) => {
+    if (!isEditable) return
     try {
       await handleAction(
         addTrainerToCourse({
@@ -128,6 +130,7 @@ export function TrainerManager({
     }
   }
   const handleCreateTrainer = async (trainerName: string) => {
+    if (!isEditable) return
     if (isQueryInTrainers(trainerName, trainers)) {
       // console.log('Trainer already assigned to this course')
       toast.info(`Trainer '${trainerName}' already assigned to this course`)
