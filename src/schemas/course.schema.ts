@@ -57,5 +57,5 @@ export type TrainerToCourseInput = z.infer<typeof trainerToCourseSchema>
 export type CreateAndLinkTrainerToCourseInput = z.infer<
   typeof createAndLinkTrainerToCourseSchema
 >
-export type CreateShareLink = z.infer<typeof createShareLink>
+export type CreateShareLinkInput = z.infer<typeof createShareLink>
 // #endregion
