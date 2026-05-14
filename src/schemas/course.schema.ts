@@ -25,7 +25,7 @@ export const trainerToCourseSchema = withLogging(
 export const createAndLinkTrainerToCourseSchema = withLogging(
   z.object({ courseId: z.string(), trainerName: z.string() }),
 )
-export const createShareLink = withLogging(
+export const createShareLinkSchema = withLogging(
   z.object({
     courseId: z.string(),
     expiresAt: z
@@ -57,5 +57,5 @@ export type TrainerToCourseInput = z.infer<typeof trainerToCourseSchema>
 export type CreateAndLinkTrainerToCourseInput = z.infer<
   typeof createAndLinkTrainerToCourseSchema
 >
-export type CreateShareLinkInput = z.infer<typeof createShareLink>
+export type CreateShareLinkInput = z.infer<typeof createShareLinkSchema>
 // #endregion
