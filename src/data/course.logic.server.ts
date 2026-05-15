@@ -108,7 +108,9 @@ export async function getCourseByIdLogic(data: CourseIdInput, userId: string) {
 
   // Keine Notiz-Mappings mehr hier. Wir geben den reinen Kurs zurück.
   return course
-} /**
+}
+
+/**
  * Löscht einen Kurs.
  */
 export async function deleteCourseByIdLogic(
