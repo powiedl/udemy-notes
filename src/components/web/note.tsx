@@ -116,6 +116,7 @@ const Note = ({
   })
 
   const handleSave = async () => {
+    if (readOnly) return
     startTransition(async () => {
       await handleAction(
         updateNoteContent({
@@ -138,11 +139,13 @@ const Note = ({
   }
 
   const handleCancel = () => {
+    if (readOnly) return
     setEditContent(note.editedContent || note.originalContent)
     setIsEditing(false)
   }
 
   const handleApprove = (tagId: string) => {
+    if (readOnly) return
     setApprovingTagId(tagId) // Haken wird zum Spinner
     startApproveTransition(async () => {
       try {
@@ -203,20 +206,22 @@ const Note = ({
                   )}
                 </Button>
               )}
-              <Button
-                variant="default"
-                size="icon"
-                className="h-7 w-7 rounded-xl cursor-pointer"
-                onClick={() => setIsEditing(true)}
-                disabled={showOriginal}
-                title={
-                  showOriginal
-                    ? 'disabled (because you view the original version of the note)'
-                    : 'edit'
-                }
-              >
-                <Edit2 className="size-4" />
-              </Button>
+              {!readOnly && (
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="h-7 w-7 rounded-xl cursor-pointer"
+                  onClick={() => setIsEditing(true)}
+                  disabled={showOriginal}
+                  title={
+                    showOriginal
+                      ? 'disabled (because you view the original version of the note)'
+                      : 'edit'
+                  }
+                >
+                  <Edit2 className="size-4" />
+                </Button>
+              )}
             </>
           ) : (
             <>
