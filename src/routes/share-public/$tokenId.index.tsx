@@ -115,7 +115,7 @@ function Course({
       notesPromise={notesPromise}
       searchParams={searchParams}
       navigate={navigate}
-      readOnly={true} // Wir sind hier in der internen Route, also volle Rechte!
+      readOnly={true}
       isAdmin={false}
       availableTags={[]}
     />
