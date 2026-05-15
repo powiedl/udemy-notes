@@ -42,6 +42,12 @@ export const notesSearchSchema = paginationSchema.extend({
   courseId: z.string().optional(),
 })
 
+// Spezifisch für Notizen in der Shared Course View
+export const notesByTokenIdSearchSchema = paginationSchema.extend({
+  tagIds: z.array(z.string()).optional(),
+  tokenId: z.string().optional(),
+})
+
 export type PaginationParams = z.infer<typeof paginationSchema>
 // #endregion
 
