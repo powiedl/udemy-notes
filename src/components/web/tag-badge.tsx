@@ -73,6 +73,7 @@ const TagBadge = ({
 
     // Suggestion-Styling überschreibt normales Styling
     isSuggestion && 'border-dashed',
+    isSuggestion && !onApprove && 'border-[3px]',
     isPrivate
       ? cn(
           'border-blue-200 dark:border-blue-800',
