@@ -2,6 +2,7 @@ import { CourseView } from '#/components/web/course-view'
 import { getCourseByTokenIdFn, getNotesByTokenIdFn } from '#/data/course-public'
 import { cn } from '#/lib/utils'
 import { courseNotesSearchSchema } from '#/schemas/search-params'
+import type { CourseNotesSearchInput } from '#/schemas/search-params'
 import { createFileRoute, useRouterState } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { Suspense, use, useDeferredValue, useEffect, useState } from 'react'
@@ -93,7 +94,7 @@ function Course({
 }: {
   coursePromise: ReturnType<typeof getCourseByTokenIdFn>
   notesPromise: ReturnType<typeof getNotesByTokenIdFn>
-  searchParams: any
+  searchParams: CourseNotesSearchInput
   navigate: any
 }) {
   const result = use(coursePromise)
@@ -107,7 +108,7 @@ function Course({
       </div>
     )
 
-  const course = result.data
+  const course = result.data.course
 
   return (
     <CourseView
@@ -117,7 +118,7 @@ function Course({
       navigate={navigate}
       readOnly={true}
       isAdmin={false}
-      availableTags={[]}
+      availableTags={result.data.availableTags}
     />
   )
 }

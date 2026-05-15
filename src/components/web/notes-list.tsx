@@ -45,7 +45,7 @@ export type FlexibleNote = Omit<CourseNote, 'tags'> & {
 
 interface NotesListProps {
   notes: FlexibleNote[]
-  readOnly: boolean
+  readOnly?: boolean
   from: 'courses' | 'notes'
   sortBy?: string
   emptyListMessage?: string

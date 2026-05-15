@@ -1,6 +1,7 @@
-import { Prisma, prisma } from '#/lib/db.server'
-import { TokenIdInput } from '#/schemas/course-public.schema'
-import { CourseNotesSearchInput } from '#/schemas/search-params'
+import { prisma } from '#/lib/db.server'
+import type { Prisma } from '#/lib/db.server'
+import type { TokenIdInput } from '#/schemas/course-public.schema'
+import type { CourseNotesSearchInput } from '#/schemas/search-params'
 import { ServerActionError } from '#/types/errors'
 import { mapNoteDisplayTags } from './note.logic.server'
 
@@ -25,32 +26,56 @@ export async function getCourseByTokenIdLogic(data: TokenIdInput) {
   const { id: tokenId } = data
   const courseId = await getCourseIdFromTokenId(tokenId)
 
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    include: {
-      // WICHTIG: Die notes-Relation ist hier komplett verschwunden!
-      tags: {
-        select: {
-          tag: { select: { id: true, name: true, userId: true } },
+  // Promise.all lässt beide Datenbankabfragen gleichzeitig laufen
+  const [course, allUsedTags] = await Promise.all([
+    // 1. Die normale Kurs-Abfrage
+    prisma.course.findUnique({
+      where: { id: courseId },
+      include: {
+        tags: {
+          select: {
+            tag: { select: { id: true, name: true, userId: true } },
+          },
+          orderBy: { tag: { name: 'asc' } },
         },
-        orderBy: { tag: { name: 'asc' } },
-      },
-      trainers: {
-        include: {
-          trainer: true,
+        trainers: {
+          include: {
+            trainer: true,
+          },
+        },
+        _count: {
+          select: { notes: true },
         },
       },
-      _count: {
-        select: { notes: true },
+    }),
+
+    // 2. NEU: Alle Tags des Kurses und seiner Notizen
+    prisma.tag.findMany({
+      where: {
+        OR: [
+          // A: Tags, die direkt am Kurs hängen (über die Join-Tabelle CourseTag)
+          { courses: { some: { courseId: courseId } } },
+
+          // B: Tags, die an einer Notiz hängen, die wiederum zu diesem Kurs gehört
+          { notes: { some: { note: { courseId: courseId } } } },
+        ],
       },
-    },
-  })
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+      },
+      orderBy: { name: 'asc' },
+    }),
+  ])
 
   if (!course) throw new ServerActionError('Course not found')
-  // console.log('getCourseByTokenIdLogic,token=', tokenId, 'Course Data:', course)
 
-  // Keine Notiz-Mappings mehr hier. Wir geben den reinen Kurs zurück.
-  return course
+  // Wir geben nun ein Objekt mit dem Kurs und den gesammelten Tags zurück
+  return {
+    course,
+    availableTags: allUsedTags,
+  }
 }
 // #endregion
 

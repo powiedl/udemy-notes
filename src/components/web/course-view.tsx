@@ -24,12 +24,13 @@ import { Suspense, use, useState } from 'react'
 import { cn } from '#/lib/utils'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
 import type { getNotesForCourseFn } from '#/data/note'
+import type { CourseNotesSearchInput } from '#/schemas/search-params'
 
 // Wir definieren strikt, was die Komponente von der Route braucht
 export interface CourseViewProps {
   course: any
   notesPromise: ReturnType<typeof getNotesForCourseFn>
-  searchParams: any
+  searchParams: CourseNotesSearchInput
   navigate: any
   readOnly?: boolean
 
@@ -52,13 +53,7 @@ export function CourseView({
   onDelete,
   onShare,
 }: CourseViewProps) {
-  const courseTagIds = course.tags?.map((t: any) => t.tag.id) || []
-
-  // Im ReadOnly-Modus zeigen wir im Filter nur die Tags an, die der Kurs ohnehin hat.
-  // Im internen Modus zeigen wir alle an, die der Kurs noch NICHT hat.
-  const filterableTags = readOnly
-    ? course.tags?.map((t: any) => t.tag) || []
-    : availableTags.filter((tag: any) => !courseTagIds.includes(tag.id))
+  const filterableTags = availableTags
 
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const tagIds = searchParams.tagIds || []
@@ -84,13 +79,10 @@ export function CourseView({
       ? `${course.title} | Udemy Notes`
       : 'Course Details | Udemy-Notes'
 
-  // WICHTIG: Wenn wir readOnly sind, holen wir die Tag-Namen der aktiven Filter
-  // direkt aus dem Kurs, da wir "availableTags" (die globale Liste) nicht haben.
   const getTagForBadge = (id: string) => {
-    if (readOnly) return course.tags?.find((t: any) => t.tag.id === id)?.tag
+    // if (readOnly) return course.tags?.find((t: any) => t.tag.id === id)?.tag
     return availableTags.find((t: any) => t.id === id)
   }
-
   return (
     <>
       <title>{title}</title>
