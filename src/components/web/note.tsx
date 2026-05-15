@@ -58,12 +58,14 @@ interface NoteProps {
   }
   activeTagIds?: string[]
   showCourseLink?: boolean
+  readOnly?: boolean
 }
 
 const Note = ({
   note,
   showCourseLink = true,
   activeTagIds = [],
+  readOnly = false,
 }: NoteProps) => {
   const router = useRouter()
 
@@ -74,7 +76,7 @@ const Note = ({
     handleLink,
     handleDeleteTagAssociation,
     handleCreateAndLink,
-  } = useTagManagement(note.id, 'note', 'NoteCard')
+  } = useTagManagement(note.id, 'note', 'NoteCard', readOnly)
 
   const updateNoteContent = useServerFn(updateNoteContentFn)
 
@@ -114,6 +116,7 @@ const Note = ({
   })
 
   const handleSave = async () => {
+    if (readOnly) return
     startTransition(async () => {
       await handleAction(
         updateNoteContent({
@@ -136,11 +139,13 @@ const Note = ({
   }
 
   const handleCancel = () => {
+    if (readOnly) return
     setEditContent(note.editedContent || note.originalContent)
     setIsEditing(false)
   }
 
   const handleApprove = (tagId: string) => {
+    if (readOnly) return
     setApprovingTagId(tagId) // Haken wird zum Spinner
     startApproveTransition(async () => {
       try {
@@ -201,20 +206,22 @@ const Note = ({
                   )}
                 </Button>
               )}
-              <Button
-                variant="default"
-                size="icon"
-                className="h-7 w-7 rounded-xl cursor-pointer"
-                onClick={() => setIsEditing(true)}
-                disabled={showOriginal}
-                title={
-                  showOriginal
-                    ? 'disabled (because you view the original version of the note)'
-                    : 'edit'
-                }
-              >
-                <Edit2 className="size-4" />
-              </Button>
+              {!readOnly && (
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="h-7 w-7 rounded-xl cursor-pointer"
+                  onClick={() => setIsEditing(true)}
+                  disabled={showOriginal}
+                  title={
+                    showOriginal
+                      ? 'disabled (because you view the original version of the note)'
+                      : 'edit'
+                  }
+                >
+                  <Edit2 className="size-4" />
+                </Button>
+              )}
             </>
           ) : (
             <>
@@ -266,7 +273,7 @@ const Note = ({
           onAddTag={handleLink}
           onRemoveTag={handleDeleteTagAssociation} // Löscht Tags (und dient als "Reject" für Suggestions)
           onCreateTag={handleCreateAndLink}
-          onApproveTag={handleApprove} // <-- Reicht den Approve-Handler weiter
+          onApproveTag={!readOnly ? handleApprove : undefined} // kommt nicht aus dem Hook, daher muss hier extra auf readOnly getestet werden
           approvingTagId={approvingTagId} // <-- Steuert den Haken-Spinner
           isPending={isAnyTagActionPending}
           deletingTagId={deletingTagId}

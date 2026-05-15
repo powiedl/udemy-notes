@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { withLogging } from './api-utils'
 import { courseSearchSchema } from './search-params'
+import { env } from '#/lib/env.server'
 
 // #region validation schemas
 export const courseIdSchema = withLogging(z.object({ id: z.string() }))
@@ -24,6 +25,21 @@ export const trainerToCourseSchema = withLogging(
 export const createAndLinkTrainerToCourseSchema = withLogging(
   z.object({ courseId: z.string(), trainerName: z.string() }),
 )
+export const createShareLinkSchema = withLogging(
+  z.object({
+    courseId: z.string(),
+    expiresAt: z
+      .date()
+      .optional()
+      .default(
+        () =>
+          new Date(
+            Date.now() +
+              env.DEFAULT_AGE_SHARE_LINK_IN_DAYS * 24 * 60 * 60 * 1000,
+          ),
+      ), // default in 7 days (but when is it calculated?)
+  }),
+)
 // #endregion
 
 // #region types (u.a. für die logic dateien)
@@ -41,4 +57,5 @@ export type TrainerToCourseInput = z.infer<typeof trainerToCourseSchema>
 export type CreateAndLinkTrainerToCourseInput = z.infer<
   typeof createAndLinkTrainerToCourseSchema
 >
+export type CreateShareLinkInput = z.infer<typeof createShareLinkSchema>
 // #endregion

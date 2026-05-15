@@ -1,6 +1,6 @@
 import { useServerFn } from '@tanstack/react-start'
 import { exportMdFile } from '#/data/import-export'
-import { deleteCourseByIdFn } from '#/data/course'
+import { createShareLinkFn, deleteCourseByIdFn } from '#/data/course'
 import { handleAction } from '#/lib/client-utils'
 import { useRouter } from '@tanstack/react-router'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
@@ -10,6 +10,7 @@ export function useCourseActions() {
   // Wir sagen dem Hook explizit, welches Schema die Funktion hat
   const exportFn = useServerFn<typeof exportMdFile>(exportMdFile)
   const deleteFn = useServerFn<typeof deleteCourseByIdFn>(deleteCourseByIdFn)
+  const shareFn = useServerFn<typeof createShareLinkFn>(createShareLinkFn)
 
   const handleDelete = async (id: string) => {
     try {
@@ -32,6 +33,28 @@ export function useCourseActions() {
       // Hier fangen wir ihn nur ab, damit der Hook nicht abstürzt.
       // console.error('Löschvorgang abgebrochen:', error)
     }
+  }
+  const handleShare = async (id: string) => {
+    // console.log('handleShare,courseId:', id)
+    try {
+      const result = await handleAction(
+        shareFn({
+          data: {
+            courseId: id,
+            loggingMetadata: {
+              component: 'CourseHeader',
+              actionSource: 'ShareButton',
+            },
+          },
+        }),
+        { successToast: 'Link to this course saved in the clipboard' },
+      )
+      // window.location.origin holt sich dynamisch das Protokoll und die Domain (z.B. http://localhost:3000)
+      const absoluteLink = `${window.location.origin}/share-public/${result.token}`
+
+      await navigator.clipboard.writeText(absoluteLink)
+      // console.log('Share Link:', absoluteLink)
+    } catch (e: any) {}
   }
   const handleExport = async (data: ExportMdFileSchema) => {
     try {
@@ -87,5 +110,5 @@ export function useCourseActions() {
     }
   }
 
-  return { handleExport, handleDelete }
+  return { handleExport, handleDelete, handleShare }
 }

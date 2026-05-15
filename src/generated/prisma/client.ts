@@ -82,6 +82,11 @@ export type Trainer = Prisma.TrainerModel
  */
 export type CourseTrainer = Prisma.CourseTrainerModel
 /**
+ * Model CourseShareToken
+ * 
+ */
+export type CourseShareToken = Prisma.CourseShareTokenModel
+/**
  * Model Tag
  * 
  */

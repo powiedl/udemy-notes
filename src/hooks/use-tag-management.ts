@@ -13,10 +13,14 @@ export function useTagManagement(
   targetId: string,
   targetType: 'course' | 'note',
   componentName: string,
+  readOnly: boolean = false,
 ) {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const { data: availableTags = [] } = useQuery(tagsQueryOptions)
+  const { data: availableTags = [] } = useQuery({
+    ...tagsQueryOptions,
+    enabled: !readOnly,
+  })
 
   // STATES
   const [isAdding, setIsAdding] = useState(false)
@@ -39,23 +43,8 @@ export function useTagManagement(
     actionSource: 'TagManagement Hook',
   }
 
-  // // --- 1. INITIAL LOAD ---
-  // const fetchTags = useCallback(async () => {
-  //   const result = await handleAction(
-  //     getTagsForSelector({
-  //       data: { loggingMetadata },
-  //     }),
-  //   )
-  //   if (result) {
-  //     setAvailableTags(result)
-  //   }
-  // }, [componentName, getTagsForSelector])
-
-  // useEffect(() => {
-  //   fetchTags()
-  // }, [fetchTags])
-
   const handleLink = async (tagId: string) => {
+    if (readOnly) return
     startTransition(async () => {
       if (targetType === 'course') {
         await handleAction(
@@ -82,6 +71,7 @@ export function useTagManagement(
 
   // handleRemove, handleCreateAndLink analog...
   const handleCreateAndLink = async (tagName: string) => {
+    if (readOnly) return
     if (!tagName.trim()) return
 
     startTransition(async () => {
@@ -107,6 +97,7 @@ export function useTagManagement(
   }
 
   const handleDeleteTagAssociation = async (tagId: string) => {
+    if (readOnly) return
     setDeletingTagId(tagId)
     startTransition(async () => {
       try {
@@ -149,8 +140,10 @@ export function useTagManagement(
     setTagQuery,
     isPending,
     deletingTagId,
-    handleLink,
-    handleCreateAndLink,
-    handleDeleteTagAssociation,
+    handleLink: !readOnly ? handleLink : undefined,
+    handleCreateAndLink: !readOnly ? handleCreateAndLink : undefined,
+    handleDeleteTagAssociation: !readOnly
+      ? handleDeleteTagAssociation
+      : undefined,
   }
 }

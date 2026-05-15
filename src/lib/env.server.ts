@@ -1,6 +1,7 @@
 // src/lib/env.ts
 import { z } from 'zod'
 
+export const SCRIPT_DEFAULT_AGE_SHARE_LINK_IN_DAYS = 7
 const envSchema = z.object({
   // Environment
   NODE_ENV: z
@@ -39,6 +40,14 @@ const envSchema = z.object({
   VERCEL_ENV: z.enum(['production', 'preview', 'development']).optional(),
   VERCEL_URL: z.string().optional(),
   VERCEL_BRANCH_URL: z.string().optional(),
+
+  // App Settings
+  DEFAULT_AGE_SHARE_LINK_IN_DAYS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .catch(SCRIPT_DEFAULT_AGE_SHARE_LINK_IN_DAYS)
+    .default(SCRIPT_DEFAULT_AGE_SHARE_LINK_IN_DAYS),
 })
 
 // process.env wird geparst. Wenn etwas nicht stimmt, crasht die App hier sofort mit einer klaren Meldung.

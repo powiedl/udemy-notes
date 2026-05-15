@@ -91,7 +91,7 @@ function CoursesList({
   }
 
   const { items: courses, totalCount } = result.data
-  const { handleExport, handleDelete } = useCourseActions()
+  const { handleExport, handleDelete, handleShare } = useCourseActions()
   const searchParams = Route.useSearch() // searchParams für DataTablePagination
 
   if (totalCount === 0) {
@@ -124,6 +124,7 @@ function CoursesList({
             onDelete={() => handleDelete(course.id)}
             className="min-w-0"
             activeTagIds={searchParams.tagIds}
+            onShare={() => handleShare(course.id)}
           />
         ))}
       </div>

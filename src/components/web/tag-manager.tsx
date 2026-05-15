@@ -1,6 +1,5 @@
 import { Plus, Loader2, Check, Link2, CornerDownLeft } from 'lucide-react'
 import { cn } from '#/lib/utils'
-import { Button } from '../ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import {
   Command,
@@ -12,6 +11,7 @@ import {
 } from '../ui/command'
 import TagBadge from './tag-badge'
 import { useState } from 'react'
+import { ActionIconButton } from '../ui/action-icon-button'
 
 export interface TagDisplay {
   id: string
@@ -92,7 +92,7 @@ export function TagManager({
       {(onAddTag || onRemoveTag || onCreateTag) && (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button
+            {/* <Button
               type="button"
               // Wir steuern die Basis-Farben über den Variant,
               // aber wir zwingen unseren EIGENEN Hover-Effekt auf.
@@ -130,7 +130,28 @@ export function TagManager({
                   strokeWidth={addIconVariant === 'purple' ? 2.5 : 2} // Purple darf ruhig etwas kräftiger sein
                 />
               )}
-            </Button>
+            </Button> */}
+            <ActionIconButton
+              actionVariant={addIconVariant === 'purple' ? 'purple' : 'outline'}
+              actionSize="sm"
+              className="ml-1" // Den Abstand fügen wir spezifisch hier hinzu
+              disabled={isPending}
+              title="add a tag"
+            >
+              {isPending ? (
+                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              ) : (
+                <Plus
+                  className={cn(
+                    'h-3 w-3 transition-opacity duration-200',
+                    addIconVariant === 'purple'
+                      ? 'opacity-80 hover:opacity-100'
+                      : 'opacity-60 hover:opacity-100',
+                  )}
+                  strokeWidth={addIconVariant === 'purple' ? 2.5 : 2}
+                />
+              )}
+            </ActionIconButton>
           </PopoverTrigger>
           <PopoverContent className="w-64 p-0" align="start">
             <Command

@@ -2,19 +2,19 @@
 // ^^^ WICHTIG: Diese erste Zeile sagt Vitest, dass hier ein Browser simuliert werden muss!
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-// import React from 'react'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest' // Schaltet Befehle wie .toBeInTheDocument() frei
 
-// import TagBadge from '../tag-badge'
 import TagBadge from '../tag-badge' // <-- Pfad zu deiner Komponente anpassen!
 import { Link2 } from 'lucide-react'
 
 afterEach(() => {
   cleanup()
 })
+
 describe('TagBadge', () => {
   const baseTag = { id: 'tag-1', name: 'React', userId: 'user-1' }
+
   it('rendert den Namen des Tags korrekt', () => {
     render(<TagBadge tag={baseTag} />)
     expect(screen.getByText('React')).toBeInTheDocument()
@@ -26,8 +26,8 @@ describe('TagBadge', () => {
 
     render(<TagBadge tag={baseTag} onDelete={mockDelete} />)
 
-    // Sucht nach dem HTML-Button-Element
-    const deleteBtn = screen.getByRole('button')
+    // Sucht nach dem Button über sein title-Attribut (sicherer als getByRole bei mehreren Buttons)
+    const deleteBtn = screen.getByTitle('remove tag')
     expect(deleteBtn).toBeInTheDocument()
 
     // Simuliert einen Klick auf den Button
@@ -57,9 +57,9 @@ describe('TagBadge', () => {
     cleanup()
     render(<TagBadge tag={baseTag} onDelete={undefined} />)
 
-    // queryByTestId gibt null zurück, wenn es nicht da ist.
+    // queryByTitle gibt null zurück, wenn es nicht da ist.
     // Das ist der sicherste Test in der React Testing Library.
-    const deleteBtn = screen.queryByTestId('tag-delete-button')
+    const deleteBtn = screen.queryByTitle('remove tag')
     expect(deleteBtn).not.toBeInTheDocument()
   })
 
@@ -91,8 +91,31 @@ describe('TagBadge', () => {
     expect(className).toMatch(/bg-slate|text-slate|bg-gray|bg-white\/10/)
   })
 
+  // ==========================================
+  // NEU: AI Suggestions & Read-Only
+  // ==========================================
+  describe('AI Suggestions (SUGGESTION)', () => {
+    const suggestionTag = { ...baseTag, status: 'SUGGESTION' as const }
+
+    it('zeigt ACCEPT und REJECT Buttons, wenn Handler übergeben werden (Edit Mode)', () => {
+      render(
+        <TagBadge tag={suggestionTag} onApprove={vi.fn()} onDelete={vi.fn()} />,
+      )
+      // Der klickbare Haken muss da sein
+      expect(screen.getByTitle('accept tag')).toBeInTheDocument()
+      // Das Ablehnen-X (reject) muss da sein
+      expect(screen.getByTitle('reject suggestion')).toBeInTheDocument()
+      // Das Read-Only Sparkle-Icon darf NICHT da sein
+      expect(screen.queryByTitle('AI suggestion')).not.toBeInTheDocument()
+    })
+  })
+
+  // ==========================================
+  // Inline-Editing (Rename) Feature
+  // ==========================================
   describe('Inline-Editing (Rename) Feature', () => {
     const privateTag = { id: 'tag-1', name: 'React', userId: 'user-1' }
+
     it('feuert onStartEdit, wenn ein privates Tag geklickt wird', () => {
       const mockStartEdit = vi.fn()
       // onRename muss übergeben werden, da wir im Code prüfen: isPrivate && onRename && !isEditing
