@@ -140,8 +140,10 @@ export function useTagManagement(
     setTagQuery,
     isPending,
     deletingTagId,
-    handleLink,
-    handleCreateAndLink,
-    handleDeleteTagAssociation,
+    handleLink: !readOnly ? handleLink : undefined,
+    handleCreateAndLink: !readOnly ? handleCreateAndLink : undefined,
+    handleDeleteTagAssociation: !readOnly
+      ? handleDeleteTagAssociation
+      : undefined,
   }
 }
