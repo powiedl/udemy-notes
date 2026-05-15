@@ -13,6 +13,7 @@ import { Route as DocumentationRouteImport } from './routes/documentation'
 import { Route as ContentRouteRouteImport } from './routes/_content/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as SharePublicTokenIdIndexRouteImport } from './routes/share-public/$tokenId.index'
 import { Route as ContentTagsIndexRouteImport } from './routes/_content/tags/index'
 import { Route as ContentNotesIndexRouteImport } from './routes/_content/notes/index'
 import { Route as ContentCoursesIndexRouteImport } from './routes/_content/courses/index'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/dashboard/',
   path: '/dashboard/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SharePublicTokenIdIndexRoute = SharePublicTokenIdIndexRouteImport.update({
+  id: '/share-public/$tokenId/',
+  path: '/share-public/$tokenId/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContentTagsIndexRoute = ContentTagsIndexRouteImport.update({
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/courses/': typeof ContentCoursesIndexRoute
   '/notes/': typeof ContentNotesIndexRoute
   '/tags/': typeof ContentTagsIndexRoute
+  '/share-public/$tokenId/': typeof SharePublicTokenIdIndexRoute
   '/courses/$courseId/': typeof ContentCoursesCourseIdIndexRoute
   '/courses/import/': typeof ContentCoursesImportIndexRoute
 }
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/courses': typeof ContentCoursesIndexRoute
   '/notes': typeof ContentNotesIndexRoute
   '/tags': typeof ContentTagsIndexRoute
+  '/share-public/$tokenId': typeof SharePublicTokenIdIndexRoute
   '/courses/$courseId': typeof ContentCoursesCourseIdIndexRoute
   '/courses/import': typeof ContentCoursesImportIndexRoute
 }
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_content/courses/': typeof ContentCoursesIndexRoute
   '/_content/notes/': typeof ContentNotesIndexRoute
   '/_content/tags/': typeof ContentTagsIndexRoute
+  '/share-public/$tokenId/': typeof SharePublicTokenIdIndexRoute
   '/_content/courses/$courseId/': typeof ContentCoursesCourseIdIndexRoute
   '/_content/courses/import/': typeof ContentCoursesImportIndexRoute
 }
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/courses/'
     | '/notes/'
     | '/tags/'
+    | '/share-public/$tokenId/'
     | '/courses/$courseId/'
     | '/courses/import/'
   fileRoutesByTo: FileRoutesByTo
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/notes'
     | '/tags'
+    | '/share-public/$tokenId'
     | '/courses/$courseId'
     | '/courses/import'
   id:
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/_content/courses/'
     | '/_content/notes/'
     | '/_content/tags/'
+    | '/share-public/$tokenId/'
     | '/_content/courses/$courseId/'
     | '/_content/courses/import/'
   fileRoutesById: FileRoutesById
@@ -176,6 +188,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   AuthLoginIndexRoute: typeof AuthLoginIndexRoute
   AuthSignupIndexRoute: typeof AuthSignupIndexRoute
+  SharePublicTokenIdIndexRoute: typeof SharePublicTokenIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share-public/$tokenId/': {
+      id: '/share-public/$tokenId/'
+      path: '/share-public/$tokenId'
+      fullPath: '/share-public/$tokenId/'
+      preLoaderRoute: typeof SharePublicTokenIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_content/tags/': {
@@ -295,6 +315,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   AuthLoginIndexRoute: AuthLoginIndexRoute,
   AuthSignupIndexRoute: AuthSignupIndexRoute,
+  SharePublicTokenIdIndexRoute: SharePublicTokenIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
