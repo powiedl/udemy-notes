@@ -23,6 +23,7 @@ import {
   List,
   Code,
   Sparkles,
+  Share2,
 } from 'lucide-react'
 
 export const Route = createFileRoute('/documentation')({
@@ -58,10 +59,10 @@ function RouteComponent() {
           ensure a correct re-import)
         </p>
         <p className="text-base leading-8 text-(--sea-ink-soft) mb-4">
-          The HTML file is preprocessed on your computer (only the title and the
-          notes itself get passed to the server). This is done to keep your mail
-          address (which is stored in the Udemy HTML file) at your computer and
-          to reduce network traffic.
+          The HTML file is preprocessed on your computer (only the title, the
+          meta tags and the notes itself get passed to the server). This is done
+          to keep your mail address (which is stored in the Udemy HTML file) at
+          your computer and to reduce network traffic.
         </p>
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/50">
           <ul className="list-disc ml-5 space-y-2 text-sm text-blue-900 dark:text-blue-100">
@@ -133,6 +134,19 @@ function RouteComponent() {
               <p className="text-xs text-blue-800/80 dark:text-blue-200/80 leading-relaxed">
                 Permanently removes the course and all associated notes from
                 your account.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-100 dark:border-blue-800/50">
+            <Share2 className="w-5 h-5 text-blue-300 dark:text-blue-700 shrink-0" />
+            <div>
+              <p className="font-bold text-sm text-blue-900 dark:text-blue-100">
+                Share a Course Public
+              </p>
+              <p className="text-xs text-blue-800/80 dark:text-blue-200/80 leading-relaxed">
+                You can create a link, which is public available, to share a
+                course (with all it's notes) with a friend. The generated link
+                will be stored in the clipboard, so you can send it per mail.
               </p>
             </div>
           </div>
