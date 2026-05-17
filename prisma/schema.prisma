@@ -89,6 +89,7 @@ model Course {
   description String?
   imageUrl    String?            @map("image_url")
   courseUrl   String?            @map("course_url")
+  trainerUrl  String?            @map("trainer_url")
   notes       Note[]
   tags        CourseTag[]
   shares      CourseShareToken[]
@@ -131,7 +132,7 @@ model Note {
 
 model Trainer {
   id         String          @id @default(cuid())
-  name       String // Damit "Maximilian Müller" nur einmal existiert
+  name       String          @unique // Damit "Maximilian Müller" nur einmal existiert
   profileUrl String?         @unique @map("profile_url")
   courses    CourseTrainer[]
 

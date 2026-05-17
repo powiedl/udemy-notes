@@ -9,11 +9,16 @@ import {
   FileText,
   X,
   Loader2,
+  Link as LinkIcon,
+  Image as ImageIcon,
   User,
   Tag as TagIcon,
   Check,
   ChevronsUpDown,
   Plus,
+  //  ArrowLeft,
+  CheckCircle2,
+  Info,
 } from 'lucide-react'
 import { z } from 'zod'
 import { toast } from 'sonner'
@@ -34,6 +39,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
@@ -58,11 +64,11 @@ import {
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 
-// checkImportFile importiert
 import {
   importHtmlFile,
   importMdFile,
   checkImportFile,
+  analyzeHtmlPayloadFn, // NEU importiert
 } from '#/data/import-export'
 import { getTrainerSuggestionsFn } from '#/data/course'
 import { getTagsForSelectorFn } from '#/data/tag'
@@ -71,6 +77,9 @@ import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 import { prepareMdPayload, prepareHtmlPayload } from '#/lib/import-helpers'
 import type { UdemySelectors } from '#/types/api'
+import type { AnalysisResult } from '#/types/import-export.types'
+
+// --- TYPEN ---
 
 const importFormSchema = z.object({
   file: z
@@ -98,12 +107,26 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
   const navigate = useNavigate()
   const [isPending, startTransition] = useTransition()
 
+  // Server Functions
   const uploadHtmlFile = useServerFn(importHtmlFile)
   const uploadMdFile = useServerFn(importMdFile)
   const checkFile = useServerFn(checkImportFile)
+  const analyzeHtmlPayload = useServerFn(analyzeHtmlPayloadFn) // NEU
   const getTrainerSuggestions = useServerFn(getTrainerSuggestionsFn)
   const getTagsForSelector = useServerFn(getTagsForSelectorFn)
 
+  // --- STATES ---
+  // Workflow States
+  const [step, setStep] = useState<'input' | 'preview'>('input')
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
+    null,
+  )
+  const [htmlImportCache, setHtmlImportCache] = useState<{
+    content: string
+    value: any
+  } | null>(null)
+
+  // Form & UI States
   const [suggestions, setSuggestions] = useState<{
     suggestions: string[]
     hasMore: boolean
@@ -117,7 +140,7 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Neue States für den Sicherheits-Workflow
+  // Security Workflow States (Markdown)
   const [showWarningModal, setShowWarningModal] = useState(false)
   const [pendingImportData, setPendingImportData] = useState<{
     content: string
@@ -125,7 +148,7 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
     isMarkdown: boolean
   } | null>(null)
 
-  // Ausgelagerte Funktion für den finalen Import (wird nach Check oder nach Modal-Bestätigung gerufen)
+  // --- FUNKTIONEN ---
   const executeFinalImport = async (
     content: string,
     value: any,
@@ -134,22 +157,36 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
   ) => {
     startTransition(async () => {
       try {
-        // console.log('ImportForm,selectors', selectors)
-        const basePayload = isMarkdown
-          ? prepareMdPayload(value.file, content, value)
-          : prepareHtmlPayload(value.file, content, value, selectors)
+        let actionPromise
 
-        // Hängt das neue forceReplace Flag an den Payload an
-        const payload = { ...basePayload, forceReplace }
+        if (isMarkdown) {
+          // Markdown Flow bleibt gleich
+          const basePayload = prepareMdPayload(value.file, content, value)
+          actionPromise = uploadMdFile({
+            data: { ...basePayload, forceReplace },
+          })
+        } else {
+          if (!analysisResult) return
 
-        const actionPromise = isMarkdown
-          ? uploadMdFile({ data: payload })
-          : uploadHtmlFile({ data: payload })
+          // Wir bauen den Payload EXTREM explizit zusammen
+          const htmlPayload = {
+            parsedCourse: analysisResult.parsedCourse,
+            fileName: value.file?.name || 'imported-course.html',
+            // HIER: Wir stellen sicher, dass die Namen aus dem Formular-Value
+            // mitgeschickt werden!
+            trainers: value.trainers || [],
+            tagIds: value.tagIds || [],
+            newPrivateTags: value.newPrivateTags || [],
+            forceReplace,
+            loggingMetadata: { component: 'ImportForm' },
+          }
+
+          actionPromise = uploadHtmlFile({ data: htmlPayload })
+        }
 
         const result = await handleAction<{ courseId: string }>(actionPromise, {
-          successToast: 'Course notes processed successfully',
+          successToast: 'Course notes imported successfully',
         })
-
         if (result.courseId) {
           await navigate({
             to: '/courses/$courseId',
@@ -159,12 +196,11 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
         }
       } catch (error) {
         console.error('Submit Error:', error)
-        const errorMessage =
+        toast.error(
           error instanceof Error
             ? error.message
-            : 'Ein unerwarteter Fehler ist aufgetreten.'
-
-        toast.error(errorMessage)
+            : 'An unexpected error occurred.',
+        )
       } finally {
         setShowWarningModal(false)
         setPendingImportData(null)
@@ -183,7 +219,9 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
       onChange: importFormSchema,
     },
     onSubmit: async ({ value }) => {
-      const file = value.file
+      // 🚨 FIX: Wir greifen direkt auf den Store zu, um sicherzugehen
+      const currentValues = form.state.values
+      const file = currentValues.file
       if (!file) return
 
       startTransition(async () => {
@@ -191,33 +229,44 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
           const fileContent = await file.text()
           const isMarkdown = file.name.toLowerCase().endsWith('.md')
 
-          // HTML Dateien haben keine Signatur, direkter Import
           if (!isMarkdown) {
-            await executeFinalImport(fileContent, value, isMarkdown, false)
+            // Wir nutzen hier explizit currentValues statt value
+            const payload = prepareHtmlPayload(
+              file,
+              fileContent,
+              currentValues,
+              selectors,
+            )
+
+            const analysis = await handleAction<AnalysisResult>(
+              analyzeHtmlPayload({ data: payload }),
+              { showSuccessToast: false, showErrorToast: true },
+            )
+
+            setAnalysisResult(analysis)
+            // Wir cachen die absolut frischen Daten
+            setHtmlImportCache({ content: fileContent, value: currentValues })
+            setStep('preview')
+
             return
           }
-
-          // Voranalyse der Markdown-Datei
+          // --- BESTEHENDER MARKDOWN FLOW ---
           const checkResult = await handleAction(
             checkFile({ data: { fileContent } }),
             { showSuccessToast: false, showErrorToast: true },
           )
 
           if (checkResult.status === 'INTEGRITY_MISMATCH') {
-            // Manipulation! Wir speichern die Daten für den Fall, dass der User bestätigt
             setPendingImportData({ content: fileContent, value, isMarkdown })
             setShowWarningModal(true)
           } else {
-            // Alles ok (INTEGRITY_OK oder NO_METADATA), ganz normal importieren
             await executeFinalImport(fileContent, value, isMarkdown, false)
           }
         } catch (error) {
-          console.error('Check Error:', error)
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : 'Ein unerwarteter Fehler ist beim Prüfen aufgetreten.'
-          toast.error(errorMessage)
+          console.error('Check/Analyze Error:', error)
+          toast.error(
+            error instanceof Error ? error.message : 'Error processing file.',
+          )
         }
       })
     },
@@ -250,7 +299,159 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
     }
     loadTags()
   }, [])
+  // analysisResult && console.log('analysisResult:', analysisResult)
 
+  // --- RENDER PREVIEW STEP ---
+  if (step === 'preview' && analysisResult && htmlImportCache) {
+    const { parsedCourse, trainerMatch } = analysisResult
+    // Alle Trainernamen aus dem Cache holen
+    const trainersToShow = htmlImportCache.value.trainers
+
+    return (
+      <Card className="max-w-md w-full mx-auto shadow-lg">
+        <CardHeader>
+          <CardTitle>{parsedCourse.courseTitle}</CardTitle>
+          {parsedCourse.courseDescription && (
+            <CardDescription className="line-clamp-2 italic">
+              {parsedCourse.courseDescription}
+            </CardDescription>
+          )}
+
+          {/* URL Status Badges */}
+          <div className="flex gap-2 mt-3">
+            {parsedCourse.courseUrl ? (
+              <Badge
+                title={parsedCourse.courseUrl}
+                className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100"
+              >
+                <LinkIcon className="h-3 w-3 mr-1" /> Course URL detected
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="text-muted-foreground opacity-50"
+              >
+                No Course URL
+              </Badge>
+            )}
+            {parsedCourse.imageUrl ? (
+              <Badge
+                title={parsedCourse.imageUrl}
+                className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100"
+              >
+                <ImageIcon className="h-3 w-3 mr-1" /> Thumbnail detected
+              </Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className="text-muted-foreground opacity-50"
+              >
+                No Image
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              Trainer Mapping
+            </h4>
+
+            {/* Beginn des Ternary-Operators – gibt ENTWEDER den Single-Block ODER den Multi-Block zurück */}
+            {htmlImportCache.value.trainers.length === 1 ? (
+              <div
+                className={cn(
+                  'p-3 rounded-md border text-sm',
+                  trainerMatch.isKnown
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-blue-50 border-blue-200',
+                )}
+              >
+                {trainerMatch.isKnown ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-green-700 font-bold">
+                      <CheckCircle2 className="h-4 w-4" />
+                      <span>Profile Match Found!</span>
+                    </div>
+                    <p className="text-xs text-green-600">
+                      The profile belongs to{' '}
+                      <strong>
+                        {trainerMatch.nameInDb || 'Existing Trainer'}
+                      </strong>
+                      . Your input "{htmlImportCache.value.trainers[0]}" will be
+                      updated to match the database record.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-blue-700 font-bold">
+                      <Info className="h-4 w-4" />
+                      <span>New Profile detected</span>
+                    </div>
+                    <p className="text-xs text-blue-600">
+                      Trainer{' '}
+                      <strong>{htmlImportCache.value.trainers[0]}</strong> will
+                      be created and linked to the detected profile URL.
+                    </p>
+                  </div>
+                )}
+                {trainerMatch.url && (
+                  <p className="text-[10px] mt-2 text-muted-foreground truncate border-t pt-1 border-current/10">
+                    Source URL: {trainerMatch.url}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="p-3 rounded-md border text-sm bg-yellow-50 border-yellow-200">
+                <div className="flex items-center gap-2 text-yellow-800 font-bold mb-2">
+                  <Info className="h-4 w-4" />
+                  <span>Multiple Trainers Detected</span>
+                </div>
+                <p className="text-xs text-yellow-700 leading-relaxed">
+                  You entered <strong>{trainersToShow.length}</strong> trainers.
+                  To prevent accidental profile mismatches, the trainer's URL
+                  from the course HTML will <strong>not</strong> be linked to
+                  any of these profiles automatically.
+                </p>
+                <ul className="list-disc list-inside text-xs text-yellow-700 mt-2 font-medium opacity-80">
+                  {trainersToShow.map((t: string) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {/* Ende des Ternary-Operators */}
+          </div>
+        </CardContent>
+
+        <CardFooter className="flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => setStep('input')}
+          >
+            Back
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={() =>
+              executeFinalImport(
+                htmlImportCache.content,
+                htmlImportCache.value,
+                false,
+              )
+            }
+          >
+            Final Import
+          </Button>
+        </CardFooter>
+      </Card>
+    )
+  }
+
+  // --- RENDER INPUT STEP (Default) ---
   return (
     <>
       <Card className="max-w-md w-full mx-auto">
@@ -296,7 +497,6 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
                       Trainer (Optional)
                     </FieldLabel>
 
-                    {/* Ausgewählte Trainer als Badges anzeigen */}
                     {selectedTrainers.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2 mb-2 min-h-6">
                         {selectedTrainers.map((t) => (
@@ -379,7 +579,7 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
 
             {/* Tags Sektion */}
             <div className="space-y-2">
-              <FieldLabel>Kurs-Tags</FieldLabel>
+              <FieldLabel>Course Tags</FieldLabel>
               <div className="flex flex-wrap gap-2 min-h-6">
                 {tagIds.map((id: string) => {
                   const tag = availableTags.find((t) => t.id === id)
@@ -411,7 +611,7 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
                     className="pl-2 pr-1 py-0.5 gap-1 border-primary/50 bg-primary/5"
                   >
                     {name}{' '}
-                    <span className="text-[10px] text-primary/70">(Neu)</span>
+                    <span className="text-[10px] text-primary/70">(New)</span>
                     <button
                       type="button"
                       onClick={() =>
@@ -445,7 +645,7 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
                 >
                   <Command>
                     <CommandInput
-                      placeholder="Suchen..."
+                      placeholder="Search..."
                       value={tagQuery}
                       onValueChange={setTagQuery}
                     />
@@ -502,7 +702,7 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
                               {tag.name}
                               {tag.userId && (
                                 <span className="ml-auto text-[10px] text-muted-foreground uppercase">
-                                  Privat
+                                  Private
                                 </span>
                               )}
                             </CommandItem>
@@ -562,7 +762,7 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
                                   {field.state.value.name}
                                 </p>
                                 <p className="text-xs text-slate-500 mt-1">
-                                  Ready for import.
+                                  Ready for processing.
                                 </p>
                               </>
                             ) : (
@@ -577,7 +777,7 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
                                   </span>
                                 </p>
                                 <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">
-                                  HTML only
+                                  HTML or Markdown
                                 </p>
                               </>
                             )}
@@ -628,10 +828,10 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
                   {isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />{' '}
-                      Importing...
+                      Processing...
                     </>
                   ) : (
-                    'Import course'
+                    'Analyze & Import'
                   )}
                 </Button>
               </div>
@@ -640,7 +840,7 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
         </CardContent>
       </Card>
 
-      {/* Warn-Modal bei erkannten Manipulationen */}
+      {/* Warn-Modal bei erkannten Manipulationen (Markdown) */}
       <AlertDialog open={showWarningModal} onOpenChange={setShowWarningModal}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -659,9 +859,7 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>
-              Abbrechen
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()

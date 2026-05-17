@@ -125,8 +125,16 @@ describe('Public Course Logic', () => {
         validTokenRecord,
       )
       vi.mocked(prisma.note.findMany).mockResolvedValueOnce([
-        { id: 'note1' },
-        { id: 'note2' },
+        {
+          id: 'note1',
+          tags: [],
+          course: { tags: [] },
+        },
+        {
+          id: 'note2',
+          tags: [],
+          course: { tags: [] },
+        },
       ] as any)
       vi.mocked(prisma.note.count).mockResolvedValueOnce(25)
 
@@ -135,7 +143,8 @@ describe('Public Course Logic', () => {
 
       // Prüfungen
       expect(result.items).toHaveLength(2)
-      expect(result.items[0]).toHaveProperty('isMapped', true) // Check ob Mapper gerufen wurde
+      expect(result.items[0]).toHaveProperty('displayTags')
+      expect(Array.isArray(result.items[0].displayTags)).toBe(true)
       expect(result.totalCount).toBe(25)
 
       // Wir prüfen den exakten Prisma-Aufruf für findMany!

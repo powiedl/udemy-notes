@@ -9,10 +9,16 @@ import {
 import { ServerActionError } from '#/types/errors'
 import { generateSignature, processNoteForMarkdown } from '#/lib/export-helper'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
-import type { ImportFileSchema } from '#/schemas/import-file'
+import type {
+  AnalyzeHtmlPayloadSchema,
+  ImportFileSchema,
+  SaveParsedCourseSchema,
+} from '#/schemas/import-file'
 import { orderInfo } from '#/lib/udemy'
 import { resolveTagIds } from '#/lib/tag-helpers.server'
 import { UDEMY_SELECTORS } from '#/lib/constants.server'
+import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown'
+import type { AnalysisResult } from '#/types/import-export.types'
 
 // #region allgemeines
 export type IntegrityStatus =
@@ -42,6 +48,10 @@ type ExportCoursePayload = Prisma.CourseGetPayload<{
 export type ParsedCourseData = {
   title: string
   courseId?: string
+  description?: string
+  courseUrl?: string
+  imageUrl?: string
+  trainerUrl?: string
   courseTags: string[]
   courseTrainers: string[]
   notes: {
@@ -215,6 +225,79 @@ export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
   return { status, totalNotes: noteBlocks.length, courseTitle }
 }
 
+export const analyzeHtmlPayloadLogic = async (
+  data: AnalyzeHtmlPayloadSchema,
+  userId: string,
+): Promise<AnalysisResult> => {
+  const conversionResult = prepareAndConvertHtmlToMarkdown(
+    data.content,
+    UDEMY_SELECTORS,
+  )
+
+  if (conversionResult.status === 'ERROR') {
+    throw new ServerActionError(
+      conversionResult.message || 'Error parsing HTML',
+    )
+  }
+
+  const { course } = conversionResult
+
+  let knownTrainer = false
+  let relatedCoursesCount = 0
+  let matchedTrainerName: string | undefined = undefined
+
+  if (data.parsedTrainerUrl) {
+    // 1. Zuerst prüfen: Existiert die URL global in der Trainer-Tabelle?
+    const existingTrainer = await prisma.trainer.findUnique({
+      where: { profileUrl: data.parsedTrainerUrl },
+      select: { name: true },
+    })
+
+    if (existingTrainer) {
+      // Trainer existiert global! Wir merken uns den Namen für das GUI.
+      knownTrainer = true
+      matchedTrainerName = existingTrainer.name
+
+      // 2. Dann prüfen: Wie viele Kurse hat DIESER User schon mit diesem Trainer? (Für die UI-Info)
+      relatedCoursesCount = await prisma.course.count({
+        where: {
+          userId: userId,
+          trainers: {
+            some: {
+              trainer: {
+                profileUrl: data.parsedTrainerUrl,
+              },
+            },
+          },
+        },
+      })
+    }
+  }
+
+  return {
+    parsedCourse: {
+      courseTitle: course.title,
+      courseDescription: course.description,
+      courseUrl: course.courseUrl,
+      imageUrl: course.imageUrl,
+      trainerUrl: course.trainerUrl,
+      notes: course.notes.map((note: any) => ({
+        section: note.section,
+        lecture: note.lecture,
+        timestamp: note.timestamp,
+        content: note.content,
+      })),
+      notesCount: course.notes.length,
+    },
+    trainerMatch: {
+      url: data.parsedTrainerUrl,
+      isKnown: knownTrainer,
+      existingCoursesCount: relatedCoursesCount,
+      nameInDb: matchedTrainerName,
+    },
+  }
+}
+
 export const syncCourseToDatabase = async (
   parsedData: ParsedCourseData & { courseId?: string },
   data: ImportFileSchema,
@@ -226,9 +309,30 @@ export const syncCourseToDatabase = async (
     .map((t) => t.trim())
     .filter((t) => t.length > 0)
 
-  const allTrainerNames = Array.from(
+  let allTrainerNames = Array.from(
     new Set([...formTrainers, ...parsedData.courseTrainers]),
   )
+
+  // --- SICHERHEITS-CHECK FÜR DIE URL ---
+  const isSingleTrainer = allTrainerNames.length === 1
+  let finalTrainerUrl: string | undefined = undefined
+
+  if (isSingleTrainer && parsedData.trainerUrl) {
+    const existingTrainerByUrl = await prisma.trainer.findUnique({
+      where: { profileUrl: parsedData.trainerUrl },
+      select: { name: true },
+    })
+
+    if (existingTrainerByUrl) {
+      // Die URL gehört bereits einem Trainer in der DB.
+      // Wir verwerfen die aktuelle Eingabe und nutzen den korrekten DB-Namen.
+      allTrainerNames = [existingTrainerByUrl.name]
+    } else {
+      // Die URL ist uns noch unbekannt, wir können sie sicher anlegen.
+      finalTrainerUrl = parsedData.trainerUrl
+    }
+  }
+  // ---------------------------------------
 
   // 2. Kurs laden (Der "Eiserne DNA-Check")
   let existingCourse = null
@@ -305,12 +409,19 @@ export const syncCourseToDatabase = async (
         // Wir schreiben den Titel aus parsedData (der dank unseres strengen Parsers
         // nun immer der "echte" signierte Titel ist, niemals der gefälschte H1-Titel)
         title: parsedData.title,
+        description: parsedData.description,
+        courseUrl: parsedData.courseUrl,
+        imageUrl: parsedData.imageUrl,
+        trainerUrl: parsedData.trainerUrl,
         trainers: {
           create: trainersToCreate.map((trainerName) => ({
             trainer: {
               connectOrCreate: {
                 where: { name: trainerName },
-                create: { name: trainerName },
+                create: {
+                  name: trainerName,
+                  profileUrl: finalTrainerUrl, // Hier greift unsere bereinigte Variable
+                },
               },
             },
           })),
@@ -325,13 +436,20 @@ export const syncCourseToDatabase = async (
     finishedCourse = await prisma.course.create({
       data: {
         title: parsedData.title, // Auch hier: Das ist der vertrauenswürdige DNA-Titel
+        description: parsedData.description,
+        courseUrl: parsedData.courseUrl,
+        imageUrl: parsedData.imageUrl,
+        trainerUrl: parsedData.trainerUrl,
         userId,
         trainers: {
           create: allTrainerNames.map((trainerName) => ({
             trainer: {
               connectOrCreate: {
                 where: { name: trainerName },
-                create: { name: trainerName },
+                create: {
+                  name: trainerName,
+                  profileUrl: finalTrainerUrl, // Und auch hier
+                },
               },
             },
           })),
@@ -429,69 +547,43 @@ export const syncCourseToDatabase = async (
 }
 
 // #region HTML
-/**
- * Kern-Logik für den Import einer Udemy-HTML-Datei.
- *
- * @param data - Die validierten Input-Daten (HTML-String, Metadaten, Tags).
- * @param userId - ID des aktuell angemeldeten Benutzers.
- */
 export const importHtmlFileLogic = async (
-  data: ImportFileSchema,
+  payload: SaveParsedCourseSchema, // Der bestätigte State aus dem Frontend
   userId: string,
 ) => {
-  const { prepareAndConvertHtmlToMarkdown } =
-    await import('#/lib/convertHtmlToMarkdown')
-
-  // --- 1. Validierung ---
-  if (data.fileSize > MAX_FILE_SIZE_UPLOAD) {
-    throw new ServerActionError('File too large. Maximum size exceeded.')
-  }
-  if (!data.content.trim().toLowerCase().startsWith('<')) {
-    throw new ServerActionError('Only HTML files are allowed.')
-  }
-
-  // --- 2. HTML parsen ---
-  const conversionResult = prepareAndConvertHtmlToMarkdown(
-    data.content,
-    UDEMY_SELECTORS,
-  )
-  if (conversionResult.status === 'ERROR') {
-    throw new ServerActionError(conversionResult.message)
-  }
-  const { course, markdown } = conversionResult
-
-  // --- 3. Auf das gemeinsame Format mappen ---
-  const parsedData: ParsedCourseData = {
-    title: course.title,
-    courseTags: [],
-    courseTrainers: [],
-    notes: course.notes.map((note) => ({
+  // 1. Mappe den Payload aus dem Client-State zurück in das Format für syncCourseToDatabase
+  const parsedData: ParsedCourseData & { courseId?: string } = {
+    courseId: payload.parsedCourse.courseId,
+    title: payload.parsedCourse.courseTitle,
+    description: payload.parsedCourse.courseDescription,
+    courseUrl: payload.parsedCourse.courseUrl,
+    imageUrl: payload.parsedCourse.imageUrl,
+    trainerUrl: payload.parsedCourse.trainerUrl,
+    courseTags: [], // Werden über die Meta-Daten unten verknüpft
+    courseTrainers: [], // Werden über die Meta-Daten unten verknüpft
+    notes: payload.parsedCourse.notes.map((note) => ({
       section: note.section,
       lecture: note.lecture,
       timestamp: note.timestamp,
-      // Bei HTML ist das, was rauskommt, IMMER das Original von Udemy
       parsedContent: note.content,
-      parsedOriginalContent: null, // HTML hat nie bereits editierten Text
-      noteTags: [], // Udemy HTML hat keine Notizen-Tags
+      parsedOriginalContent: null, // HTML hat keine vor-editierten Notizen
+      noteTags: [],
     })),
   }
 
-  // --- 4. Synchronisation ---
-  const { courseId, numberOfConflicts } = await syncCourseToDatabase(
-    parsedData,
-    data,
-    userId,
-  )
-
-  // --- 5. Rückgabe ---
-  return {
-    originalFileName: data.fileName,
-    size: data.fileSize,
-    timestamp: Date.now(),
-    markdownContent: markdown,
-    numberOfConflicts,
-    courseId,
+  // 2. Erstelle das Meta-Daten-Objekt für den Sync-Prozess
+  const importMetadata: ImportFileSchema = {
+    content: '', // Inhalt wurde in Schritt 1 geparst, hier nicht mehr relevant
+    fileName: payload.fileName,
+    fileSize: 0,
+    trainers: payload.trainers.filter((t): t is string => !!t),
+    tagIds: payload.tagIds,
+    newPrivateTags: payload.newPrivateTags,
+    forceReplace: payload.forceReplace,
   }
+
+  // 3. Aufruf der bestehenden, massiv getesteten Workhorse-Funktion
+  return await syncCourseToDatabase(parsedData, importMetadata, userId)
 }
 // #endregion
 

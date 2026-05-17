@@ -1,3 +1,4 @@
+import type { AnalyzeHtmlPayloadSchema } from '#/schemas/import-file'
 import type { UdemySelectors } from '#/types/api'
 
 export const validateMarkdown = (content: string): boolean => {
@@ -53,7 +54,7 @@ export const prepareHtmlPayload = (
   fileContent: string,
   values: ImportValues,
   selectors: UdemySelectors,
-) => {
+): AnalyzeHtmlPayloadSchema => {
   const parser = new DOMParser()
   const doc = parser.parseFromString(fileContent, 'text/html')
   const title = doc.title || 'Udemy Course'
@@ -64,16 +65,26 @@ export const prepareHtmlPayload = (
       'No notes found. Are you sure the file is a Udemy HTML file (from the browsers Dev Tools)?',
     )
   }
+  const trainerUrlMeta = doc.querySelector(selectors.trainerUrlSelector)
+  const parsedTrainerUrl = trainerUrlMeta
+    ? trainerUrlMeta.getAttribute('content') || undefined
+    : undefined
+
+  const metaTags = Array.from(doc.querySelectorAll('meta'))
+    .map((meta) => meta.outerHTML)
+    .join('\n        ')
 
   const strippedHtml = `
-    <!DOCTYPE html>
-    <html>
-      <head><title>${title}</title></head>
-      <body>
-        ${notesContainer.outerHTML}
-      </body>
-    </html>
-  `.trim()
+  <!DOCTYPE html>
+  <html>
+   <head>
+    <title>${title}</title>
+    ${metaTags}
+   </head>
+   <body>
+    ${notesContainer.outerHTML}
+   </body>
+  </html>`.trim()
 
   return {
     content: strippedHtml,
@@ -82,6 +93,7 @@ export const prepareHtmlPayload = (
     trainers: values.trainers,
     tagIds: values.tagIds,
     newPrivateTags: values.newPrivateTags,
+    parsedTrainerUrl,
     loggingMetadata: { component: 'ImportForm' },
   }
 }

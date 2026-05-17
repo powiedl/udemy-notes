@@ -196,15 +196,15 @@ export type TrainerOrderByWithRelationInput = {
 
 export type TrainerWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  name?: string
   profileUrl?: string
   AND?: Prisma.TrainerWhereInput | Prisma.TrainerWhereInput[]
   OR?: Prisma.TrainerWhereInput[]
   NOT?: Prisma.TrainerWhereInput | Prisma.TrainerWhereInput[]
-  name?: Prisma.StringFilter<"Trainer"> | string
   createdAt?: Prisma.DateTimeFilter<"Trainer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Trainer"> | Date | string
   courses?: Prisma.CourseTrainerListRelationFilter
-}, "id" | "profileUrl">
+}, "id" | "name" | "profileUrl">
 
 export type TrainerOrderByWithAggregationInput = {
   id?: Prisma.SortOrder

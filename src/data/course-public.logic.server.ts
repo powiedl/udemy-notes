@@ -128,6 +128,10 @@ export async function getNotesByTokenIdLogic(
             id: true,
             title: true,
             userId: true,
+            description: true,
+            imageUrl: true,
+            courseUrl: true,
+            trainerUrl: true,
             trainers: { include: { trainer: true } },
             tags: {
               select: {
