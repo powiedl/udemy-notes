@@ -1,6 +1,6 @@
 import { isRedirect } from '@tanstack/react-router'
 import { ServerActionError } from '#/types/errors'
-import { SERVER_ERROR_SANITIZED_MESSAGE } from './constants'
+import { SERVER_ERROR_SANITIZED_MESSAGE } from './constants.server'
 import { logToDb } from '#/lib/logging.server'
 
 export async function handleGlobalError(error: any): Promise<never> {

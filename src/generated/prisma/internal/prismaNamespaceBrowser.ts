@@ -146,6 +146,10 @@ export const CourseScalarFieldEnum = {
   id: 'id',
   title: 'title',
   userId: 'userId',
+  description: 'description',
+  imageUrl: 'imageUrl',
+  courseUrl: 'courseUrl',
+  trainerUrl: 'trainerUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -176,6 +180,7 @@ export type NoteScalarFieldEnum = (typeof NoteScalarFieldEnum)[keyof typeof Note
 export const TrainerScalarFieldEnum = {
   id: 'id',
   name: 'name',
+  profileUrl: 'profileUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

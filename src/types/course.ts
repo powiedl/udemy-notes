@@ -7,5 +7,9 @@ export interface ImportNote {
 
 export interface ImportCourse {
   title: string
+  description?: string
+  imageUrl?: string
+  courseUrl?: string
+  trainerUrl?: string
   notes: ImportNote[]
 }

@@ -14,6 +14,10 @@ interface ConvertResultError {
 export type ConvertResult = ConvertResultSuccess | ConvertResultError
 
 type CheerioAPI = cheerio.CheerioAPI
+// Reason: Cheerio's .contents().each() yields an AnyNode union type.
+// TypeScript's control flow analysis cannot narrow these types (e.g., via `el.type === 'text'`)
+// within the callback without extensive type assertions like `(el as Element)`.
+// We use `any` here specifically to keep the parser logic readable and maintainable.
 type CheerioNode = any
 type CheerioSelection = cheerio.Cheerio<CheerioNode>
 
@@ -22,10 +26,26 @@ export function prepareAndConvertHtmlToMarkdown(
   selectors: UdemySelectors,
 ): ConvertResult {
   const $ = cheerio.load(htmlContent)
-  const rawTitle = $('head > title').text() || 'Meine Kurs-Notizen'
+  const rawTitle =
+    $(selectors.headTitleSelector).text() ||
+    $(selectors.metaTitleSelector).attr('content') ||
+    $(selectors.ogTitleSelector).attr('content') ||
+    'Meine Kurs-Notizen' // aus head title oder dem einen oder anderen meta property oder ein Default
   const title = rawTitle
     .replace(/^Course:\s*/, '')
     .replace(/\s*\|\s*Udemy$/, '')
+  const description: string | undefined =
+    $(selectors.metaDescriptionSelector).attr('content') ||
+    $(selectors.ogDescriptionSelector).attr('content')
+  const imageUrl: string | undefined = $(selectors.imageUrlSelector).attr(
+    'content',
+  )
+  const courseUrl: string | undefined = $(selectors.courseUrlSelector).attr(
+    'content',
+  )
+  const trainerUrl: string | undefined = $(selectors.trainerUrlSelector).attr(
+    'content',
+  )
 
   const notesContainer = $(selectors.notesContainerSelector)
 
@@ -38,12 +58,16 @@ export function prepareAndConvertHtmlToMarkdown(
 
   notesContainer.find('button').remove()
 
-  return convertToMarkdown($, title, selectors)
+  return convertToMarkdown(
+    $,
+    { title, description, imageUrl, courseUrl, trainerUrl },
+    selectors,
+  )
 }
 
 export function convertToMarkdown(
   $: CheerioAPI,
-  title: string,
+  courseMetaData: string | Omit<ImportCourse, 'notes'>,
   selectors: UdemySelectors,
 ): ConvertResult {
   const container = $(selectors.notesContainerSelector)
@@ -54,8 +78,12 @@ export function convertToMarkdown(
       message: "Fehler: 'bookmarks-container' nicht gefunden.",
     }
 
-  let markdown = `# ${title}\n\n`
-  const course: ImportCourse = { title, notes: [] }
+  let resultCourseMetadata: Omit<ImportCourse, 'notes'> = { title: '' }
+  if (!(typeof courseMetaData === 'object')) {
+    resultCourseMetadata.title = courseMetaData
+  } else resultCourseMetadata = courseMetaData
+  let markdown = `# ${resultCourseMetadata.title}\n\n`
+  const course: ImportCourse = { ...resultCourseMetadata, notes: [] }
 
   const notes = container.find(selectors.noteSelector)
 

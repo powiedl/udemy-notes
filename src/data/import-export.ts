@@ -1,7 +1,12 @@
 import { exportMdFileSchema } from '#/schemas/export-file'
 import { authFn } from '#/lib/rpc'
 import { withLogging } from '#/schemas/api-utils'
-import { checkImportFileSchema, importFileSchema } from '#/schemas/import-file'
+import {
+  analyzeHtmlPayloadSchema,
+  checkImportFileSchema,
+  importFileSchema,
+  saveParsedCourseSchema,
+} from '#/schemas/import-file'
 import {
   exportMdFileLogic,
   importHtmlFileLogic,
@@ -45,13 +50,36 @@ export const checkImportFile = authFn
  * delegiert die Verarbeitung an `importHtmlFileLogic`.
  */
 export const importHtmlFile = authFn
-  .inputValidator(importFileValidationSchema)
+  .inputValidator(saveParsedCourseSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.server')
     return await wrapServerAction('importHtmlFile', context, data, async () => {
-      const result = importHtmlFileLogic(data, context.session.user.id)
+      const result = await importHtmlFileLogic(data, context.session.user.id)
       return result
     })
+  })
+
+export const analyzeHtmlPayloadFn = authFn
+  .inputValidator(analyzeHtmlPayloadSchema)
+  .handler(async ({ data, context }) => {
+    const { wrapServerAction } = await import('#/lib/server-utils.server')
+
+    // Wir übergeben ein leeres loggingMetadata Objekt, falls wir später Metadaten ergänzen wollen,
+    // ansonsten fängt das Sicherheitsnetz im wrapServerAction dies sauber ab.
+    return await wrapServerAction(
+      'analyzeHtmlPayloadFn',
+      context,
+      { loggingMetadata: { component: 'AnalyzeHtml' } },
+      async () => {
+        const { analyzeHtmlPayloadLogic } =
+          await import('./import-export.logic.server')
+        const result = await analyzeHtmlPayloadLogic(
+          data,
+          context.session.user.id,
+        )
+        return result
+      },
+    )
   })
 
 export const importMdFile = authFn

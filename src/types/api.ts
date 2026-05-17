@@ -37,4 +37,12 @@ export interface UdemySelectors {
   lectureSelector: string
   noteBodySelector: string
   noteCodeBlockSelector: string
+  headTitleSelector: string
+  ogTitleSelector: string
+  metaTitleSelector: string
+  metaDescriptionSelector: string
+  ogDescriptionSelector: string
+  imageUrlSelector: string
+  courseUrlSelector: string
+  trainerUrlSelector: string
 }

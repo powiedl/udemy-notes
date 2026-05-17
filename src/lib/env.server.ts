@@ -1,5 +1,23 @@
 // src/lib/env.ts
 import { z } from 'zod'
+import {
+  DEFAULT_NOTES_CONTAINER_SELECTOR,
+  DEFAULT_NOTE_SELECTOR,
+  DEFAULT_DURATION_SELECTOR,
+  DEFAULT_SECTION_SELECTOR,
+  DEFAULT_LECTURE_SELECTOR,
+  DEFAULT_NOTE_BODY_SELECTOR,
+  DEFAULT_NOTE_CODE_BLOCK_SELECTOR,
+  DEFAULT_COURSE_HEAD_TITLE_SELECTOR,
+  DEFAULT_COURSE_OG_TITLE_SELECTOR,
+  DEFAULT_COURSE_META_TITLE_SELECTOR,
+  DEFAULT_COURSE_META_DESCRIPTION_SELECTOR,
+  DEFAULT_COURSE_OG_DESCRIPTION_SELECTOR,
+  DEFAULT_COURSE_IMAGE_URL_SELECTOR,
+  DEFAULT_COURSE_URL_SELECTOR,
+  DEFAULT_TRAINER_URL_SELECTOR,
+  DEFAULT_SERVER_ERROR_SANITIZED_MESSAGE,
+} from './defaults'
 
 export const SCRIPT_DEFAULT_AGE_SHARE_LINK_IN_DAYS = 7
 const envSchema = z.object({
@@ -25,18 +43,35 @@ const envSchema = z.object({
   // Udemy HTML Selectors (mit Fallbacks, falls sie nicht in der .env stehen)
   NOTES_CONTAINER_SELECTOR: z
     .string()
-    .default('[data-purpose="bookmarks-container"]'),
-  NOTE_SELECTOR: z.string().default('.lecture-bookmark-v2--row--kw-1I'),
-  DURATION_SELECTOR: z
-    .string()
-    .default('.lecture-bookmark-v2--duration--itqnB'),
-  SECTION_SELECTOR: z.string().default('.lecture-bookmark-v2--section--j0ti8'),
-  LECTURE_SELECTOR: z.string().default('.ud-text-sm'),
-  NOTE_BODY_SELECTOR: z.string().default('[data-purpose="bookmark-body"]'),
+    .default(DEFAULT_NOTES_CONTAINER_SELECTOR),
+  NOTE_SELECTOR: z.string().default(DEFAULT_NOTE_SELECTOR),
+  DURATION_SELECTOR: z.string().default(DEFAULT_DURATION_SELECTOR),
+  SECTION_SELECTOR: z.string().default(DEFAULT_SECTION_SELECTOR),
+  LECTURE_SELECTOR: z.string().default(DEFAULT_LECTURE_SELECTOR),
+  NOTE_BODY_SELECTOR: z.string().default(DEFAULT_NOTE_BODY_SELECTOR),
   NOTE_CODE_BLOCK_SELECTOR: z
     .string()
-    .default('ud-component--base-components--code-block'),
-
+    .default(DEFAULT_NOTE_CODE_BLOCK_SELECTOR),
+  COURSE_HEAD_TITLE_SELECTOR: z
+    .string()
+    .default(DEFAULT_COURSE_HEAD_TITLE_SELECTOR),
+  COURSE_OG_TITLE_SELECTOR: z
+    .string()
+    .default(DEFAULT_COURSE_OG_TITLE_SELECTOR),
+  COURSE_META_TITLE_SELECTOR: z
+    .string()
+    .default(DEFAULT_COURSE_META_TITLE_SELECTOR),
+  COURSE_META_DESCRIPTION_SELECTOR: z
+    .string()
+    .default(DEFAULT_COURSE_META_DESCRIPTION_SELECTOR),
+  COURSE_OG_DESCRIPTION_SELECTOR: z
+    .string()
+    .default(DEFAULT_COURSE_OG_DESCRIPTION_SELECTOR),
+  COURSE_IMAGE_URL_SELECTOR: z
+    .string()
+    .default(DEFAULT_COURSE_IMAGE_URL_SELECTOR),
+  COURSE_URL_SELECTOR: z.string().default(DEFAULT_COURSE_URL_SELECTOR),
+  TRAINER_URL_SELECTOR: z.string().default(DEFAULT_TRAINER_URL_SELECTOR),
   VERCEL_ENV: z.enum(['production', 'preview', 'development']).optional(),
   VERCEL_URL: z.string().optional(),
   VERCEL_BRANCH_URL: z.string().optional(),
@@ -48,6 +83,9 @@ const envSchema = z.object({
     .min(1)
     .catch(SCRIPT_DEFAULT_AGE_SHARE_LINK_IN_DAYS)
     .default(SCRIPT_DEFAULT_AGE_SHARE_LINK_IN_DAYS),
+  SERVER_ERROR_SANITIZED_MESSAGE: z
+    .string()
+    .default(DEFAULT_SERVER_ERROR_SANITIZED_MESSAGE),
 })
 
 // process.env wird geparst. Wenn etwas nicht stimmt, crasht die App hier sofort mit einer klaren Meldung.

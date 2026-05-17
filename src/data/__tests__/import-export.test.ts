@@ -2,17 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mockDeep, mockReset } from 'vitest-mock-extended'
 import type { DeepMockProxy } from 'vitest-mock-extended'
 import type { PrismaClient } from '#/generated/prisma/client'
-import {
-  MAX_FILE_SIZE_UPLOAD,
-  HTML_COMMENT_START,
-  HTML_COMMENT_END,
-} from '#/lib/constants'
+import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants'
 import { prisma } from '#/lib/db.server'
 import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown'
 import {
+  analyzeHtmlPayloadLogic,
   importHtmlFileLogic,
   exportMdFileLogic,
-  importMdFileLogic, // NEU hinzugefügt
+  importMdFileLogic,
 } from '../import-export.logic.server'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
 
@@ -37,6 +34,240 @@ vi.mock('#/lib/export-helper', () => ({
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>
 const convertMock = prepareAndConvertHtmlToMarkdown as any
 
+describe('analyzeHtmlPayloadLogic', () => {
+  const defaultUserId = 'user_123'
+  const defaultInput = {
+    content: '<html><body>Udemy Notes</body></html>',
+    parsedTrainerUrl: 'https://udemy.com/user/max-mustermann/',
+    // ... eventuelle weitere Felder aus AnalyzeHtmlPayloadSchema
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockReset(prismaMock) // Wichtig für saubere DB-Mocks pro Test
+  })
+
+  describe('Validierung & Fehler', () => {
+    it('Wirft ServerActionError, wenn die Konvertierung fehlschlägt', async () => {
+      // --- GIVEN ---
+      convertMock.mockReturnValue({
+        status: 'ERROR',
+        message: 'Custom Error parsing HTML',
+      })
+
+      // --- WHEN & THEN ---
+      // Wir übergeben input UND userId
+      await expect(
+        analyzeHtmlPayloadLogic(defaultInput as any, defaultUserId),
+      ).rejects.toThrow('Custom Error parsing HTML')
+    })
+  })
+
+  describe('Happy Path', () => {
+    it('Parst HTML erfolgreich und erkennt einen UNBEKANNTEN Trainer', async () => {
+      // --- GIVEN ---
+      const mockCourse = {
+        title: 'React Course',
+        description: 'A great course',
+        courseUrl: 'https://udemy.com/react',
+        imageUrl: 'image.png',
+        trainerUrl: 'https://udemy.com/user/max-mustermann/',
+        notes: [
+          {
+            section: 'S1',
+            lecture: 'L1',
+            timestamp: '1:00',
+            content: 'Note 1',
+          },
+        ],
+      }
+
+      convertMock.mockReturnValue({
+        status: 'SUCCESS',
+        course: mockCourse,
+      })
+
+      // NEU: Die URL ist global noch unbekannt
+      prismaMock.trainer.findUnique.mockResolvedValue(null)
+
+      // --- WHEN ---
+      const result = await analyzeHtmlPayloadLogic(
+        defaultInput as any,
+        defaultUserId,
+      )
+
+      // --- THEN ---
+      expect(convertMock).toHaveBeenCalledWith(
+        defaultInput.content,
+        expect.anything(),
+      )
+
+      // Prüfen, ob die Trainer-Abfrage abgesetzt wurde
+      expect(prismaMock.trainer.findUnique).toHaveBeenCalledWith({
+        where: { profileUrl: defaultInput.parsedTrainerUrl },
+        select: { name: true },
+      })
+
+      // KORREKTUR: Die Course-Count-Abfrage darf jetzt gar nicht mehr aufgerufen werden!
+      expect(prismaMock.course.count).not.toHaveBeenCalled()
+
+      expect(result.parsedCourse.courseTitle).toBe('React Course')
+      expect(result.trainerMatch.isKnown).toBe(false)
+      expect(result.trainerMatch.existingCoursesCount).toBe(0)
+      expect(result.trainerMatch.nameInDb).toBeUndefined()
+    })
+
+    it('Parst HTML erfolgreich und erkennt einen BEKANNTEN Trainer', async () => {
+      // --- GIVEN ---
+      convertMock.mockReturnValue({
+        status: 'SUCCESS',
+        course: { title: 'Vue Course', notes: [] },
+      })
+
+      // NEU: Der Trainer existiert global in der DB
+      prismaMock.trainer.findUnique.mockResolvedValue({
+        name: 'Max Mustermann',
+      } as any)
+
+      // Der Trainer hat bereits 3 Kurse bei diesem User
+      prismaMock.course.count.mockResolvedValue(3)
+
+      // --- WHEN ---
+      const result = await analyzeHtmlPayloadLogic(
+        defaultInput as any,
+        defaultUserId,
+      )
+
+      // --- THEN ---
+      expect(result.trainerMatch.isKnown).toBe(true)
+      expect(result.trainerMatch.existingCoursesCount).toBe(3)
+      expect(result.trainerMatch.nameInDb).toBe('Max Mustermann')
+    })
+  })
+})
+
+describe('importHtmlFileLogic', () => {
+  const userId = 'user_123'
+
+  // 1. NEU: Das Input-Objekt entspricht jetzt exakt dem Payload,
+  // den der Client (unsere neue Import-Form) sendet!
+  const defaultInput = {
+    parsedCourse: {
+      courseTitle: 'React Course',
+      notes: [
+        {
+          timestamp: '1:00',
+          section: 'S1',
+          lecture: 'L1',
+          content: 'Note 1',
+        },
+      ],
+    },
+    fileName: 'test.html',
+    trainers: ['Maximilian Schwarzmüller'],
+    tagIds: ['tag_1'],
+    newPrivateTags: [],
+    forceReplace: false,
+  }
+
+  beforeEach(() => {
+    mockReset(prismaMock)
+    vi.clearAllMocks()
+  })
+
+  // HINWEIS: Die alten Validierungs-Tests wurden entfernt, da diese
+  // Logik jetzt in der Analyse-Funktion (Schritt 1) stattfindet.
+
+  describe('Happy Path', () => {
+    it('Erstellt einen neuen Kurs und neue Notizen erfolgreich', async () => {
+      // --- GIVEN ---
+      prismaMock.course.findFirst.mockResolvedValue(null) // Kurs existiert noch nicht
+      prismaMock.course.create.mockResolvedValue({ id: 'new_course_id' } as any)
+
+      // --- WHEN ---
+      const result = await importHtmlFileLogic(defaultInput, userId)
+
+      // --- THEN ---
+      expect(result.courseId).toBe('new_course_id')
+      expect(result.numberOfConflicts).toBe(0)
+      expect(prismaMock.course.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ title: 'React Course', userId }),
+        }),
+      )
+      expect(prismaMock.note.create).toHaveBeenCalledTimes(1)
+    })
+
+    it('Behandelt neue private Tags korrekt', async () => {
+      // --- GIVEN ---
+      prismaMock.tag.create.mockResolvedValue({ id: 'new_tag_id' } as any)
+      prismaMock.course.create.mockResolvedValue({ id: 'c1' } as any)
+
+      // --- WHEN ---
+      await importHtmlFileLogic(
+        { ...defaultInput, newPrivateTags: ['NewTag'] },
+        userId,
+      )
+
+      // --- THEN ---
+      expect(prismaMock.tag.create).toHaveBeenCalledWith({
+        data: { name: 'NewTag', userId },
+        select: { id: true },
+      })
+    })
+
+    it('Erkennt Konflikte bei bestehenden Notizen', async () => {
+      // --- GIVEN ---
+      // Wir überschreiben den Default-Input, um den "neuen" bearbeiteten Text zu simulieren
+      const conflictInput = {
+        ...defaultInput,
+        parsedCourse: {
+          ...defaultInput.parsedCourse,
+          notes: [
+            {
+              timestamp: '1:00',
+              section: 'S1',
+              lecture: 'L1',
+              content: 'Changed Content', // Der geänderte Import-Text
+            },
+          ],
+        },
+      }
+
+      // Bestehender Kurs
+      prismaMock.course.findFirst.mockResolvedValue({
+        id: 'existing_id',
+        tags: [],
+        trainers: [],
+      } as any)
+      prismaMock.course.update.mockResolvedValue({ id: 'existing_id' } as any)
+
+      // Bestehende Notiz mit manuellem Edit in der Datenbank
+      prismaMock.note.findMany.mockResolvedValue([
+        {
+          id: 'n1',
+          timestamp: '1:00',
+          section: 'S1',
+          lecture: 'L1',
+          originalContent: 'Old Content',
+          editedContent: 'User manual edit',
+        },
+      ] as any)
+
+      // --- WHEN ---
+      const result = await importHtmlFileLogic(conflictInput, userId)
+
+      // --- THEN ---
+      expect(result.numberOfConflicts).toBe(1)
+      expect(prismaMock.note.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'n1' },
+          data: expect.objectContaining({ hasConflict: true }),
+        }),
+      )
+    })
+  })
+})
 // --- NEUER BLOCK: Tabula Rasa & Markdown Import Sicherheit ---
 describe('importMdFileLogic (Tabula Rasa & Sicherheit)', () => {
   const userId = 'user_123'
@@ -119,164 +350,6 @@ describe('importMdFileLogic (Tabula Rasa & Sicherheit)', () => {
 
     // Stattdessen wird der Kurs einfach als komplett neuer Kurs für diesen User angelegt.
     expect(prismaMock.course.create).toHaveBeenCalled()
-  })
-})
-
-describe('importHtmlFileLogic', () => {
-  const userId = 'user_123'
-  const defaultInput = {
-    content: '<html><body>Notes</body></html>',
-    fileName: 'test.html',
-    fileSize: 1000,
-    trainers: ['Maximilian Schwarzmüller'],
-    tagIds: ['tag_1'],
-    newPrivateTags: [],
-  }
-
-  beforeEach(() => {
-    mockReset(prismaMock)
-    vi.clearAllMocks()
-  })
-
-  describe('Validierung & Fehler', () => {
-    it('Wirft Fehler, wenn die Datei zu groß ist', async () => {
-      await expect(
-        importHtmlFileLogic(
-          { ...defaultInput, fileSize: MAX_FILE_SIZE_UPLOAD + 1 },
-          userId,
-        ),
-      ).rejects.toThrow('File too large')
-    })
-
-    it('Wirft Fehler, wenn der Inhalt kein HTML ist', async () => {
-      await expect(
-        importHtmlFileLogic({ ...defaultInput, content: 'not html' }, userId),
-      ).rejects.toThrow('Only HTML files are allowed')
-    })
-
-    it('Wirft Fehler, wenn die Konvertierung fehlschlägt', async () => {
-      convertMock.mockReturnValue({
-        status: 'ERROR',
-        message: 'Conversion failed',
-      })
-
-      await expect(importHtmlFileLogic(defaultInput, userId)).rejects.toThrow(
-        'Conversion failed',
-      )
-    })
-  })
-
-  describe('Happy Path', () => {
-    it('Erstellt einen neuen Kurs und neue Notizen erfolgreich', async () => {
-      // --- GIVEN ---
-      const mockCourse = {
-        title: 'React Course',
-        notes: [
-          {
-            timestamp: '1:00',
-            section: 'S1',
-            lecture: 'L1',
-            content: 'Note 1',
-          },
-        ],
-      }
-      convertMock.mockReturnValue({
-        status: 'SUCCESS',
-        course: mockCourse,
-        markdown: '# MD',
-      })
-
-      prismaMock.course.findFirst.mockResolvedValue(null) // Kurs existiert noch nicht
-      prismaMock.course.create.mockResolvedValue({ id: 'new_course_id' } as any)
-
-      // --- WHEN ---
-      const result = await importHtmlFileLogic(defaultInput, userId)
-
-      // --- THEN ---
-      expect(result.courseId).toBe('new_course_id')
-      expect(result.numberOfConflicts).toBe(0)
-      expect(prismaMock.course.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ title: 'React Course', userId }),
-        }),
-      )
-      expect(prismaMock.note.create).toHaveBeenCalledTimes(1)
-    })
-
-    it('Behandelt neue private Tags korrekt', async () => {
-      // --- GIVEN ---
-      convertMock.mockReturnValue({
-        status: 'SUCCESS',
-        course: { title: 'T', notes: [] },
-        markdown: '',
-      })
-      prismaMock.tag.create.mockResolvedValue({ id: 'new_tag_id' } as any)
-      prismaMock.course.create.mockResolvedValue({ id: 'c1' } as any)
-
-      // --- WHEN ---
-      await importHtmlFileLogic(
-        { ...defaultInput, newPrivateTags: ['NewTag'] },
-        userId,
-      )
-
-      // --- THEN ---
-      expect(prismaMock.tag.create).toHaveBeenCalledWith({
-        data: { name: 'NewTag', userId },
-        select: { id: true },
-      })
-    })
-
-    it('Erkennt Konflikte bei bestehenden Notizen', async () => {
-      // --- GIVEN ---
-      const mockCourse = {
-        title: 'React Course',
-        notes: [
-          {
-            timestamp: '1:00',
-            section: 'S1',
-            lecture: 'L1',
-            content: 'Changed Content',
-          },
-        ],
-      }
-      convertMock.mockReturnValue({
-        status: 'SUCCESS',
-        course: mockCourse,
-        markdown: '',
-      })
-
-      // Bestehender Kurs
-      prismaMock.course.findFirst.mockResolvedValue({
-        id: 'existing_id',
-        tags: [],
-        trainers: [],
-      } as any)
-      prismaMock.course.update.mockResolvedValue({ id: 'existing_id' } as any)
-
-      // Bestehende Notiz mit manuellem Edit
-      prismaMock.note.findMany.mockResolvedValue([
-        {
-          id: 'n1',
-          timestamp: '1:00',
-          section: 'S1',
-          lecture: 'L1',
-          originalContent: 'Old Content',
-          editedContent: 'User manual edit',
-        },
-      ] as any)
-
-      // --- WHEN ---
-      const result = await importHtmlFileLogic(defaultInput, userId)
-
-      // --- THEN ---
-      expect(result.numberOfConflicts).toBe(1)
-      expect(prismaMock.note.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'n1' },
-          data: expect.objectContaining({ hasConflict: true }),
-        }),
-      )
-    })
   })
 })
 

@@ -28,6 +28,10 @@ export type CourseMinAggregateOutputType = {
   id: string | null
   title: string | null
   userId: string | null
+  description: string | null
+  imageUrl: string | null
+  courseUrl: string | null
+  trainerUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -36,6 +40,10 @@ export type CourseMaxAggregateOutputType = {
   id: string | null
   title: string | null
   userId: string | null
+  description: string | null
+  imageUrl: string | null
+  courseUrl: string | null
+  trainerUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -44,6 +52,10 @@ export type CourseCountAggregateOutputType = {
   id: number
   title: number
   userId: number
+  description: number
+  imageUrl: number
+  courseUrl: number
+  trainerUrl: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -54,6 +66,10 @@ export type CourseMinAggregateInputType = {
   id?: true
   title?: true
   userId?: true
+  description?: true
+  imageUrl?: true
+  courseUrl?: true
+  trainerUrl?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -62,6 +78,10 @@ export type CourseMaxAggregateInputType = {
   id?: true
   title?: true
   userId?: true
+  description?: true
+  imageUrl?: true
+  courseUrl?: true
+  trainerUrl?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -70,6 +90,10 @@ export type CourseCountAggregateInputType = {
   id?: true
   title?: true
   userId?: true
+  description?: true
+  imageUrl?: true
+  courseUrl?: true
+  trainerUrl?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -151,6 +175,10 @@ export type CourseGroupByOutputType = {
   id: string
   title: string
   userId: string
+  description: string | null
+  imageUrl: string | null
+  courseUrl: string | null
+  trainerUrl: string | null
   createdAt: Date
   updatedAt: Date
   _count: CourseCountAggregateOutputType | null
@@ -180,6 +208,10 @@ export type CourseWhereInput = {
   id?: Prisma.StringFilter<"Course"> | string
   title?: Prisma.StringFilter<"Course"> | string
   userId?: Prisma.StringFilter<"Course"> | string
+  description?: Prisma.StringNullableFilter<"Course"> | string | null
+  imageUrl?: Prisma.StringNullableFilter<"Course"> | string | null
+  courseUrl?: Prisma.StringNullableFilter<"Course"> | string | null
+  trainerUrl?: Prisma.StringNullableFilter<"Course"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Course"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Course"> | Date | string
   trainers?: Prisma.CourseTrainerListRelationFilter
@@ -193,6 +225,10 @@ export type CourseOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  courseUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  trainerUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   trainers?: Prisma.CourseTrainerOrderByRelationAggregateInput
@@ -209,6 +245,10 @@ export type CourseWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CourseWhereInput | Prisma.CourseWhereInput[]
   title?: Prisma.StringFilter<"Course"> | string
   userId?: Prisma.StringFilter<"Course"> | string
+  description?: Prisma.StringNullableFilter<"Course"> | string | null
+  imageUrl?: Prisma.StringNullableFilter<"Course"> | string | null
+  courseUrl?: Prisma.StringNullableFilter<"Course"> | string | null
+  trainerUrl?: Prisma.StringNullableFilter<"Course"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Course"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Course"> | Date | string
   trainers?: Prisma.CourseTrainerListRelationFilter
@@ -222,6 +262,10 @@ export type CourseOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  description?: Prisma.SortOrderInput | Prisma.SortOrder
+  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  courseUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  trainerUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CourseCountOrderByAggregateInput
@@ -236,6 +280,10 @@ export type CourseScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Course"> | string
   title?: Prisma.StringWithAggregatesFilter<"Course"> | string
   userId?: Prisma.StringWithAggregatesFilter<"Course"> | string
+  description?: Prisma.StringNullableWithAggregatesFilter<"Course"> | string | null
+  imageUrl?: Prisma.StringNullableWithAggregatesFilter<"Course"> | string | null
+  courseUrl?: Prisma.StringNullableWithAggregatesFilter<"Course"> | string | null
+  trainerUrl?: Prisma.StringNullableWithAggregatesFilter<"Course"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Course"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Course"> | Date | string
 }
@@ -243,6 +291,10 @@ export type CourseScalarWhereWithAggregatesInput = {
 export type CourseCreateInput = {
   id?: string
   title: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trainers?: Prisma.CourseTrainerCreateNestedManyWithoutCourseInput
@@ -256,6 +308,10 @@ export type CourseUncheckedCreateInput = {
   id?: string
   title: string
   userId: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trainers?: Prisma.CourseTrainerUncheckedCreateNestedManyWithoutCourseInput
@@ -267,6 +323,10 @@ export type CourseUncheckedCreateInput = {
 export type CourseUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trainers?: Prisma.CourseTrainerUpdateManyWithoutCourseNestedInput
@@ -280,6 +340,10 @@ export type CourseUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trainers?: Prisma.CourseTrainerUncheckedUpdateManyWithoutCourseNestedInput
@@ -292,6 +356,10 @@ export type CourseCreateManyInput = {
   id?: string
   title: string
   userId: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -299,6 +367,10 @@ export type CourseCreateManyInput = {
 export type CourseUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -307,6 +379,10 @@ export type CourseUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -325,6 +401,10 @@ export type CourseCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
+  courseUrl?: Prisma.SortOrder
+  trainerUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -333,6 +413,10 @@ export type CourseMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
+  courseUrl?: Prisma.SortOrder
+  trainerUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -341,6 +425,10 @@ export type CourseMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   title?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  description?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
+  courseUrl?: Prisma.SortOrder
+  trainerUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -451,6 +539,10 @@ export type CourseUpdateOneRequiredWithoutTagsNestedInput = {
 export type CourseCreateWithoutUserInput = {
   id?: string
   title: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trainers?: Prisma.CourseTrainerCreateNestedManyWithoutCourseInput
@@ -462,6 +554,10 @@ export type CourseCreateWithoutUserInput = {
 export type CourseUncheckedCreateWithoutUserInput = {
   id?: string
   title: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trainers?: Prisma.CourseTrainerUncheckedCreateNestedManyWithoutCourseInput
@@ -503,6 +599,10 @@ export type CourseScalarWhereInput = {
   id?: Prisma.StringFilter<"Course"> | string
   title?: Prisma.StringFilter<"Course"> | string
   userId?: Prisma.StringFilter<"Course"> | string
+  description?: Prisma.StringNullableFilter<"Course"> | string | null
+  imageUrl?: Prisma.StringNullableFilter<"Course"> | string | null
+  courseUrl?: Prisma.StringNullableFilter<"Course"> | string | null
+  trainerUrl?: Prisma.StringNullableFilter<"Course"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Course"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Course"> | Date | string
 }
@@ -510,6 +610,10 @@ export type CourseScalarWhereInput = {
 export type CourseCreateWithoutNotesInput = {
   id?: string
   title: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trainers?: Prisma.CourseTrainerCreateNestedManyWithoutCourseInput
@@ -522,6 +626,10 @@ export type CourseUncheckedCreateWithoutNotesInput = {
   id?: string
   title: string
   userId: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trainers?: Prisma.CourseTrainerUncheckedCreateNestedManyWithoutCourseInput
@@ -548,6 +656,10 @@ export type CourseUpdateToOneWithWhereWithoutNotesInput = {
 export type CourseUpdateWithoutNotesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trainers?: Prisma.CourseTrainerUpdateManyWithoutCourseNestedInput
@@ -560,6 +672,10 @@ export type CourseUncheckedUpdateWithoutNotesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trainers?: Prisma.CourseTrainerUncheckedUpdateManyWithoutCourseNestedInput
@@ -570,6 +686,10 @@ export type CourseUncheckedUpdateWithoutNotesInput = {
 export type CourseCreateWithoutTrainersInput = {
   id?: string
   title: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutCoursesInput
@@ -582,6 +702,10 @@ export type CourseUncheckedCreateWithoutTrainersInput = {
   id?: string
   title: string
   userId: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   notes?: Prisma.NoteUncheckedCreateNestedManyWithoutCourseInput
@@ -608,6 +732,10 @@ export type CourseUpdateToOneWithWhereWithoutTrainersInput = {
 export type CourseUpdateWithoutTrainersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutCoursesNestedInput
@@ -620,6 +748,10 @@ export type CourseUncheckedUpdateWithoutTrainersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   notes?: Prisma.NoteUncheckedUpdateManyWithoutCourseNestedInput
@@ -630,6 +762,10 @@ export type CourseUncheckedUpdateWithoutTrainersInput = {
 export type CourseCreateWithoutSharesInput = {
   id?: string
   title: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trainers?: Prisma.CourseTrainerCreateNestedManyWithoutCourseInput
@@ -642,6 +778,10 @@ export type CourseUncheckedCreateWithoutSharesInput = {
   id?: string
   title: string
   userId: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trainers?: Prisma.CourseTrainerUncheckedCreateNestedManyWithoutCourseInput
@@ -668,6 +808,10 @@ export type CourseUpdateToOneWithWhereWithoutSharesInput = {
 export type CourseUpdateWithoutSharesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trainers?: Prisma.CourseTrainerUpdateManyWithoutCourseNestedInput
@@ -680,6 +824,10 @@ export type CourseUncheckedUpdateWithoutSharesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trainers?: Prisma.CourseTrainerUncheckedUpdateManyWithoutCourseNestedInput
@@ -690,6 +838,10 @@ export type CourseUncheckedUpdateWithoutSharesInput = {
 export type CourseCreateWithoutTagsInput = {
   id?: string
   title: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trainers?: Prisma.CourseTrainerCreateNestedManyWithoutCourseInput
@@ -702,6 +854,10 @@ export type CourseUncheckedCreateWithoutTagsInput = {
   id?: string
   title: string
   userId: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   trainers?: Prisma.CourseTrainerUncheckedCreateNestedManyWithoutCourseInput
@@ -728,6 +884,10 @@ export type CourseUpdateToOneWithWhereWithoutTagsInput = {
 export type CourseUpdateWithoutTagsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trainers?: Prisma.CourseTrainerUpdateManyWithoutCourseNestedInput
@@ -740,6 +900,10 @@ export type CourseUncheckedUpdateWithoutTagsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trainers?: Prisma.CourseTrainerUncheckedUpdateManyWithoutCourseNestedInput
@@ -750,6 +914,10 @@ export type CourseUncheckedUpdateWithoutTagsInput = {
 export type CourseCreateManyUserInput = {
   id?: string
   title: string
+  description?: string | null
+  imageUrl?: string | null
+  courseUrl?: string | null
+  trainerUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -757,6 +925,10 @@ export type CourseCreateManyUserInput = {
 export type CourseUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trainers?: Prisma.CourseTrainerUpdateManyWithoutCourseNestedInput
@@ -768,6 +940,10 @@ export type CourseUpdateWithoutUserInput = {
 export type CourseUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trainers?: Prisma.CourseTrainerUncheckedUpdateManyWithoutCourseNestedInput
@@ -779,6 +955,10 @@ export type CourseUncheckedUpdateWithoutUserInput = {
 export type CourseUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  courseUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trainerUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -845,6 +1025,10 @@ export type CourseSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   id?: boolean
   title?: boolean
   userId?: boolean
+  description?: boolean
+  imageUrl?: boolean
+  courseUrl?: boolean
+  trainerUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   trainers?: boolean | Prisma.Course$trainersArgs<ExtArgs>
@@ -859,6 +1043,10 @@ export type CourseSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   id?: boolean
   title?: boolean
   userId?: boolean
+  description?: boolean
+  imageUrl?: boolean
+  courseUrl?: boolean
+  trainerUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -868,6 +1056,10 @@ export type CourseSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   id?: boolean
   title?: boolean
   userId?: boolean
+  description?: boolean
+  imageUrl?: boolean
+  courseUrl?: boolean
+  trainerUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -877,11 +1069,15 @@ export type CourseSelectScalar = {
   id?: boolean
   title?: boolean
   userId?: boolean
+  description?: boolean
+  imageUrl?: boolean
+  courseUrl?: boolean
+  trainerUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CourseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "userId" | "createdAt" | "updatedAt", ExtArgs["result"]["course"]>
+export type CourseOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "userId" | "description" | "imageUrl" | "courseUrl" | "trainerUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["course"]>
 export type CourseInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   trainers?: boolean | Prisma.Course$trainersArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -910,6 +1106,10 @@ export type $CoursePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     id: string
     title: string
     userId: string
+    description: string | null
+    imageUrl: string | null
+    courseUrl: string | null
+    trainerUrl: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["course"]>
@@ -1343,6 +1543,10 @@ export interface CourseFieldRefs {
   readonly id: Prisma.FieldRef<"Course", 'String'>
   readonly title: Prisma.FieldRef<"Course", 'String'>
   readonly userId: Prisma.FieldRef<"Course", 'String'>
+  readonly description: Prisma.FieldRef<"Course", 'String'>
+  readonly imageUrl: Prisma.FieldRef<"Course", 'String'>
+  readonly courseUrl: Prisma.FieldRef<"Course", 'String'>
+  readonly trainerUrl: Prisma.FieldRef<"Course", 'String'>
   readonly createdAt: Prisma.FieldRef<"Course", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Course", 'DateTime'>
 }

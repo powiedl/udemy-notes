@@ -19,7 +19,10 @@ describe('prepareAndConvertHtmlToMarkdown', () => {
     return `
       <!DOCTYPE html>
       <html>
-        <head><title>Course: React Mastery | Udemy</title></head>
+        <head>
+          <title>Course: React Mastery | Udemy</title>
+          
+        </head>
         <body>
           <div ${toAttr(UDEMY_SELECTORS.notesContainerSelector)}>
             <div ${toAttr(UDEMY_SELECTORS.noteSelector)}>

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { handleGlobalError } from '#/lib/error-handler.server'
 import { ServerActionError } from '#/types/errors'
-import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants'
+import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants.server'
 import { logToDb } from '#/lib/logging.server'
 
 // MOCK KORRIGIERT: Pfad muss exakt mit dem Import übereinstimmen!

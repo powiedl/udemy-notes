@@ -1,9 +1,7 @@
 import type { ActionResponse, ClientLoggingMetadata } from '#/types/api'
 import { logToDb } from '#/lib/logging.server' // Stelle sicher, dass logging.ts intern db.server nutzt
-import {
-  EMPTY_CLIENT_LOGGING_METADATA,
-  SERVER_ERROR_SANITIZED_MESSAGE,
-} from './constants'
+import { EMPTY_CLIENT_LOGGING_METADATA } from './constants'
+import { SERVER_ERROR_SANITIZED_MESSAGE } from './constants.server'
 import type { Session } from './auth'
 import { ServerActionError } from '#/types/errors'
 

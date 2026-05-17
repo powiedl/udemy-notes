@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { logToDb } from '#/lib/logging.server'
 import { wrapServerAction } from '#/lib/server-utils.server'
 import { ServerActionError } from '#/types/errors'
-import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants'
+import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants.server'
 
 // Wir mocken den exakten Pfad, den auch der Server-Util nutzt
 vi.mock('#/lib/logging.server', () => ({
