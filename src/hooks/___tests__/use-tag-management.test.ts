@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useTagManagement } from '../use-tag-management'
+import { useTagManagement } from '../use-tag-management.hook'
 import * as ReactQuery from '@tanstack/react-query'
 import type * as ReactRouter from '@tanstack/react-router'
 import type * as ReactStart from '@tanstack/react-start'

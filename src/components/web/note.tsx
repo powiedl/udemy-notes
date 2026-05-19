@@ -11,7 +11,7 @@ import {
   EyeOff,
   Loader2,
 } from 'lucide-react'
-import { useTagManagement } from '#/hooks/use-tag-management'
+import { useTagManagement } from '#/hooks/use-tag-management.hook'
 import { TagManager } from './tag-manager'
 import type { TagDisplay } from './tag-manager'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'

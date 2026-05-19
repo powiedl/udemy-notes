@@ -1,7 +1,7 @@
 import { CourseView } from '#/components/web/course-view'
 import { getCourseByIdFn } from '#/data/course'
 import { getNotesForCourseFn } from '#/data/note' // NEU
-import { useCourseActions } from '#/hooks/use-course-actions'
+import { useCourseActions } from '#/hooks/use-course-actions.hook'
 import { cn } from '#/lib/utils'
 import {
   createFileRoute,

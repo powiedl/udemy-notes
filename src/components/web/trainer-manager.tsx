@@ -28,7 +28,7 @@ import {
 import { handleAction } from '#/lib/client-utils'
 import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { useTrainerQuery } from '#/hooks/use-trainer-query'
+import { useTrainerQuery } from '#/hooks/use-trainer-query.hook'
 import { useQueryClient } from '@tanstack/react-query'
 import { ActionIconButton } from '../ui/action-icon-button'
 
