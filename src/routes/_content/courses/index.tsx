@@ -15,10 +15,10 @@ import {
 import CourseHeader from '#/components/web/course-header'
 import { DataTablePagination } from '#/components/web/data-table-pagination'
 import { DataTableSearch } from '#/components/web/data-table-search'
-import { getCoursesFn } from '#/data/course'
+import { getCoursesFn } from '#/data/course.data'
 import { useCourseActions } from '#/hooks/use-course-actions.hook'
-import { hasRole } from '#/lib/permissions'
-import { cn } from '#/lib/utils'
+import { hasRole } from '#/lib/permissions.lib'
+import { cn } from '#/lib/utils.lib'
 import { courseSearchSchema } from '#/schemas/search-params'
 import type { ActionResponse, ServerFnData } from '#/types/api'
 import {

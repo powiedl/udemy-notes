@@ -1,6 +1,9 @@
 import { CourseView } from '#/components/web/course-view'
-import { getCourseByTokenIdFn, getNotesByTokenIdFn } from '#/data/course-public'
-import { cn } from '#/lib/utils'
+import {
+  getCourseByTokenIdFn,
+  getNotesByTokenIdFn,
+} from '#/data/course-public.data'
+import { cn } from '#/lib/utils.lib'
 import { courseNotesSearchSchema } from '#/schemas/search-params'
 import type { CourseNotesSearchInput } from '#/schemas/search-params'
 import { createFileRoute, useRouterState } from '@tanstack/react-router'

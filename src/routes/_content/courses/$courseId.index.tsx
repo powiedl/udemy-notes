@@ -1,8 +1,8 @@
 import { CourseView } from '#/components/web/course-view'
-import { getCourseByIdFn } from '#/data/course'
-import { getNotesForCourseFn } from '#/data/note' // NEU
+import { getCourseByIdFn } from '#/data/course.data'
+import { getNotesForCourseFn } from '#/data/note.data' // NEU
 import { useCourseActions } from '#/hooks/use-course-actions.hook'
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 import {
   createFileRoute,
   useLoaderData,
@@ -17,7 +17,7 @@ import { courseNotesSearchSchema } from '#/schemas/search-params'
 import { useQuery } from '@tanstack/react-query'
 import { tagsQueryOptions } from '../route'
 
-import { hasRole } from '#/lib/permissions'
+import { hasRole } from '#/lib/permissions.lib'
 
 export const Route = createFileRoute('/_content/courses/$courseId/')({
   component: RouteComponent,

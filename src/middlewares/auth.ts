@@ -19,7 +19,7 @@ function checkUrl(url: string): boolean {
 }
 
 export const authFnMiddleware = createMiddleware().server(async ({ next }) => {
-  const { auth } = await import('#/lib/auth')
+  const { auth } = await import('#/lib/auth.lib')
   const headers = getRequestHeaders()
   const session = await auth.api.getSession({ headers })
 
@@ -38,7 +38,7 @@ export const authFnMiddleware = createMiddleware().server(async ({ next }) => {
 
 export const authMiddleware = createMiddleware({ type: 'request' }).server(
   async ({ next, request }) => {
-    const { auth } = await import('#/lib/auth')
+    const { auth } = await import('#/lib/auth.lib')
     const url = new URL(request.url)
     const headers = getRequestHeaders()
     const session = await auth.api.getSession({ headers })

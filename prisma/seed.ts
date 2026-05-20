@@ -1,4 +1,4 @@
-import { prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
 
 function toTitleCase(str: string) {
   return str

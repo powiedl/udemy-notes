@@ -3,7 +3,7 @@ import { mockDeep, mockReset } from 'vitest-mock-extended'
 import type { DeepMockProxy } from 'vitest-mock-extended'
 import type { PrismaClient } from '#/generated/prisma/client'
 
-import { prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
 import { getNotesLogic } from '../note.logic.server'
 
 // 1. Prisma Client mocken

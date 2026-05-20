@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { approveCourseTagsBatchLogic } from '#/data/tag.logic.server'
-import { prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
 
 // 1. Prisma Mock (jetzt mit courseTag UND tag)
 vi.mock('#/lib/db.server', () => ({

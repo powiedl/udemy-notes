@@ -8,7 +8,8 @@ export const errorHandlingMiddleware = createMiddleware().server(
     try {
       return await next()
     } catch (error: any) {
-      const { handleGlobalError } = await import('#/lib/error-handler.server')
+      const { handleGlobalError } =
+        await import('#/lib/error-handler.lib.server')
       return await handleGlobalError(error)
     }
   },

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { logToDb } from '#/lib/logging.server'
-import { prisma } from '#/lib/db.server'
+import { logToDb } from '#/lib/logging.lib.server'
+import { prisma } from '#/lib/db.lib.server'
 
 // WICHTIG: Der Pfad muss EXAKT dem Import oben entsprechen!
 vi.mock('#/lib/db.server', () => ({

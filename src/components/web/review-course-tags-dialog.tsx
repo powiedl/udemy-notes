@@ -11,7 +11,7 @@ import {
 import { Button } from '#/components/ui/button'
 import { Badge } from '#/components/ui/badge'
 import { Loader2, Sparkles, Check } from 'lucide-react'
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 
 export type AITagSuggestionForDialog = {
   name: string

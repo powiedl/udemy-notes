@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown'
-import { UDEMY_SELECTORS } from '#/lib/constants.server'
+import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown.lib'
+import { UDEMY_SELECTORS } from '#/lib/constants.lib.server'
 
 // 1. Das Mock-Objekt für den Test bauen
 describe('prepareAndConvertHtmlToMarkdown', () => {

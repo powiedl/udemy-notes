@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { withLogging } from './api-utils'
-import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
+import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants.lib'
 
 export const importFileSchema = withLogging(
   z.object({
@@ -31,11 +31,9 @@ export const analyzeHtmlPayloadSchema = withLogging(
   z.object({
     content: z.string(),
     fileName: z.string(),
-    fileSize: z
-      .number()
-      .max(MAX_FILE_SIZE_UPLOAD, {
-        message: `File size exceeds the maximum allowed limit of ${Math.round((MAX_FILE_SIZE_UPLOAD / 1024 / 1024) * 10) / 10}`,
-      }),
+    fileSize: z.number().max(MAX_FILE_SIZE_UPLOAD, {
+      message: `File size exceeds the maximum allowed limit of ${Math.round((MAX_FILE_SIZE_UPLOAD / 1024 / 1024) * 10) / 10}`,
+    }),
     trainers: z.array(z.string()),
     tagIds: z.array(z.string()),
     newPrivateTags: z.array(z.string()),

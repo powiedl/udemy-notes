@@ -1,5 +1,5 @@
-import { prisma } from '#/lib/db.server'
-import type { Prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
+import type { Prisma } from '#/lib/db.lib.server'
 import { ServerActionError } from '#/types/errors'
 import type {
   GetCoursesInput,
@@ -12,7 +12,7 @@ import type {
   TrainerToCourseInput,
   CreateShareLinkInput,
 } from '#/schemas/course.schema'
-import { env } from '#/lib/env.server'
+import { env } from '#/lib/env.lib.server'
 // import { mapNoteDisplayTags } from './note.logic.server'
 
 /**

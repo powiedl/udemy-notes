@@ -6,7 +6,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
-import { cn, normalizeObject } from '@/lib/utils'
+import { cn, normalizeObject } from '@/lib/utils.lib'
 
 interface DataTablePaginationProps {
   totalCount: number

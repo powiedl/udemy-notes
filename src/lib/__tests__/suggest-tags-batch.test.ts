@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { suggestTagsWithAIBatch } from '#/lib/ai.server'
-import type { BuildBatchTaggingPromptInput } from '#/lib/ai.server'
+import { suggestTagsWithAIBatch } from '#/lib/ai.lib.server'
+import type { BuildBatchTaggingPromptInput } from '#/lib/ai.lib.server'
 import { ServerActionError } from '#/types/errors'
-import { prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
 
 // -----------------------------------------------------------------------------
 // 1. MOCKS EINRICHTEN

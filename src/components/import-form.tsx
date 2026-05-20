@@ -62,20 +62,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/utils.lib'
 
 import {
   importHtmlFile,
   importMdFile,
   checkImportFile,
   analyzeHtmlPayloadFn, // NEU importiert
-} from '#/data/import-export'
-import { getTrainerSuggestionsFn } from '#/data/course'
-import { getTagsForSelectorFn } from '#/data/tag'
-import { handleAction } from '#/lib/client-utils'
-import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants'
+} from '#/data/import-export.data'
+import { getTrainerSuggestionsFn } from '#/data/course.data'
+import { getTagsForSelectorFn } from '#/data/tag.data'
+import { handleAction } from '#/lib/client-utils.lib'
+import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants.lib'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
-import { prepareMdPayload, prepareHtmlPayload } from '#/lib/import-helpers'
+import { prepareMdPayload, prepareHtmlPayload } from '#/lib/import-helpers.lib'
 import type { UdemySelectors } from '#/types/api'
 import type { AnalysisResult } from '#/types/import-export.types'
 

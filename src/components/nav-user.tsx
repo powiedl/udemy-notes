@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '#/components/ui/sidebar'
-import { authClient } from '#/lib/auth-client'
+import { authClient } from '#/lib/auth-client.lib'
 import { useNavigate } from '@tanstack/react-router'
 import type { User } from 'better-auth/types'
 import { ChevronsUpDownIcon, LogOutIcon } from 'lucide-react'

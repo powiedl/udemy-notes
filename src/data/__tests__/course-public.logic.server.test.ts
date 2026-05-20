@@ -3,7 +3,7 @@ import {
   getCourseByTokenIdLogic,
   getNotesByTokenIdLogic,
 } from '../course-public.logic.server'
-import { prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
 import { ServerActionError } from '#/types/errors'
 
 // 1. Wir mocken den Prisma-Client komplett

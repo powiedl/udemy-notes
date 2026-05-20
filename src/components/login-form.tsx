@@ -14,7 +14,7 @@ import {
   FieldLabel,
 } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
-import { authClient } from '#/lib/auth-client'
+import { authClient } from '#/lib/auth-client.lib'
 import { loginSchema } from '#/schemas/auth'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
 import { useForm } from '@tanstack/react-form'

@@ -1,6 +1,6 @@
 'use server'
 
-import { authFn, authGetFn } from '#/lib/rpc'
+import { authFn, authGetFn } from '#/lib/rpc.lib'
 import type { Prisma } from '#/generated/prisma/client'
 import {
   courseIdSchema,
@@ -45,7 +45,7 @@ export type CourseHeaderData = Prisma.CourseGetPayload<{
 export const getCoursesFn = authGetFn
   .inputValidator(getCoursesSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getCoursesLogic } = await import('./course.logic.server')
     return await wrapServerAction('getCoursesFn', context, data, () =>
       getCoursesLogic(data, context.session.user.id),
@@ -55,7 +55,7 @@ export const getCoursesFn = authGetFn
 export const getCourseByIdFn = authGetFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getCourseByIdLogic } = await import('./course.logic.server')
     return await wrapServerAction('getCourseById', context, data, () =>
       getCourseByIdLogic(data, context.session.user.id),
@@ -68,7 +68,7 @@ export type AwaitedReturnTypeGetCourseById = Awaited<
 export const deleteCourseByIdFn = authFn
   .inputValidator(courseIdSchema)
   .handler(async ({ context, data }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { deleteCourseByIdLogic } = await import('./course.logic.server')
     return await wrapServerAction('deleteCourseById', context, data, () =>
       deleteCourseByIdLogic(data, context.session.user.id),
@@ -78,7 +78,7 @@ export const deleteCourseByIdFn = authFn
 export const getTrainerSuggestionsFn = authFn // eigentlich würde authGetFn reichen - aber da cached der Browser das Ergebnis und unterbindet nachfolgende gleiche Requests
   .inputValidator(getTrainerSuggestionsSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getTrainerSuggestionsLogic } = await import('./course.logic.server')
     return await wrapServerAction(
       'getTrainerSuggestionsFn',
@@ -91,7 +91,7 @@ export const getTrainerSuggestionsFn = authFn // eigentlich würde authGetFn rei
 export const removeTagFromCourseFn = authFn
   .inputValidator(removeTagFromCourseSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { removeTagFromCourseLogic } = await import('./course.logic.server')
     return await wrapServerAction('removeTagFromCourseFn', context, data, () =>
       removeTagFromCourseLogic(data, context.session.user.id),
@@ -101,7 +101,7 @@ export const removeTagFromCourseFn = authFn
 export const linkTagToCourseFn = authFn
   .inputValidator(linkTagToCourseSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { linkTagToCourseLogic } = await import('./course.logic.server')
     return await wrapServerAction('linkTagToCourseFn', context, data, () =>
       linkTagToCourseLogic(data, context.session.user.id),
@@ -111,7 +111,7 @@ export const linkTagToCourseFn = authFn
 export const createAndLinkTagToCourseFn = authFn
   .inputValidator(createAndLinkTagToCourseSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { createAndLinkTagToCourseLogic } =
       await import('./course.logic.server')
     return await wrapServerAction(
@@ -125,7 +125,7 @@ export const createAndLinkTagToCourseFn = authFn
 export const addTrainerToCourseFn = authFn
   .inputValidator(trainerToCourseSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { addTrainerToCourseLogic } = await import('./course.logic.server')
     return await wrapServerAction('addTrainerToCourseFn', context, data, () =>
       addTrainerToCourseLogic(data, context.session.user.id),
@@ -135,7 +135,7 @@ export const addTrainerToCourseFn = authFn
 export const removeTrainerFromCourseFn = authFn
   .inputValidator(trainerToCourseSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { removeTrainerFromCourseLogic } =
       await import('./course.logic.server')
     return await wrapServerAction('addTrainerToCourseFn', context, data, () =>
@@ -146,7 +146,7 @@ export const removeTrainerFromCourseFn = authFn
 export const createAndLinkTrainerToCourseFn = authFn
   .inputValidator(createAndLinkTrainerToCourseSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { createAndLinkTrainerToCourseLogic } =
       await import('./course.logic.server')
     return await wrapServerAction(
@@ -160,7 +160,7 @@ export const createAndLinkTrainerToCourseFn = authFn
 export const createShareLinkFn = authFn
   .inputValidator(createShareLinkSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { createShareLinkLogic } = await import('./course.logic.server')
     return await wrapServerAction('createShareLinkFn', context, data, () =>
       createShareLinkLogic(data, context.session.user.id),

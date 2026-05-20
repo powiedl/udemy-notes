@@ -132,7 +132,7 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
 export const getCoursesFn = authGetFn
   .inputValidator(paginationSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     return await wrapServerAction('getCoursesFn', context, data, async () => {
       return getCoursesLogic(data, context.session.user.id)
     })

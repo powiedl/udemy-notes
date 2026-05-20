@@ -5,7 +5,7 @@ import CourseHeader from '#/components/web/course-header'
 import type {
   AwaitedReturnTypeGetNotes,
   getNotesForCourseFn,
-} from '#/data/note'
+} from '#/data/note.data'
 // import { CourseHeaderData } from '#/data/course'
 
 type GlobalNote = ExtractData<AwaitedReturnTypeGetNotes>['items'][number]

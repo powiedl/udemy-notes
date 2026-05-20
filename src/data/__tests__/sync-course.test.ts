@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { syncCourseToDatabase } from '../import-export.logic.server'
 import type { ParsedCourseData } from '../import-export.logic.server'
-import { prisma } from '#/lib/db.server'
-import { resolveTagIds } from '#/lib/tag-helpers.server'
+import { prisma } from '#/lib/db.lib.server'
+import { resolveTagIds } from '#/lib/tag-helpers.lib.server'
 // import { checkConflict } from '../import-export.logic.server'
 import type { ImportFileSchema } from '#/schemas/import-file'
 

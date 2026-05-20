@@ -3,8 +3,8 @@ import {
   parseMarkdownCourse,
   checkImportFileLogic,
 } from '../import-export.logic.server'
-import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants'
-import type * as ExportHelper from '#/lib/export-helper'
+import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants.lib'
+import type * as ExportHelper from '#/lib/export-helper.lib'
 
 // Sicherer Mock mit importOriginal, damit die restlichen Export-Helper intakt bleiben
 vi.mock('#/lib/export-helper', async (importOriginal) => {

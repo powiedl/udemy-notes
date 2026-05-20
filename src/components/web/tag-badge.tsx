@@ -1,7 +1,7 @@
 import { Check, Loader2, X } from 'lucide-react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 import React, { useEffect, useRef, useState } from 'react'
 
 interface TagBadgeProps {

@@ -1,4 +1,4 @@
-import { prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
 
 interface SeedRelation {
   type: 'course' | 'note'

@@ -1,4 +1,4 @@
-import { cn, getNodeEnv } from '#/lib/utils'
+import { cn, getNodeEnv } from '#/lib/utils.lib'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { ZodSchema } from 'zod'
 

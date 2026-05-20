@@ -1,8 +1,8 @@
-import { prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
-import { env } from './env.server'
+import { env } from '#/lib/env.lib.server'
 
 // Hilfsfunktion zur Ermittlung der korrekten URL (lokal vs. Vercel Preview vs. Vercel Prod)
 const getBaseUrl = () => {

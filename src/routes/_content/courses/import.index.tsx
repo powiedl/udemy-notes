@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ImportForm } from '#/components/import-form'
-import { getImportSelectorsFn } from '#/data/config'
+import { getImportSelectorsFn } from '#/data/config.data'
 
 export const Route = createFileRoute('/_content/courses/import/')({
   component: RouteComponent,

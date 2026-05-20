@@ -17,7 +17,7 @@ import {
 import { Input } from '#/components/ui/input'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { signupSchema } from '#/schemas/auth'
-import { authClient } from '#/lib/auth-client'
+import { authClient } from '#/lib/auth-client.lib'
 import { useState, useTransition } from 'react'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { AlertCircleIcon } from 'lucide-react'

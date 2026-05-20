@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasAnyRole, hasRole } from '../permissions'
+import { hasAnyRole, hasRole } from '../permissions.lib'
 
 describe('permissions', () => {
   it('hasRole', () => {

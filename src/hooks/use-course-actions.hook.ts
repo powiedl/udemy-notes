@@ -1,7 +1,7 @@
 import { useServerFn } from '@tanstack/react-start'
-import { exportMdFile } from '#/data/import-export'
-import { createShareLinkFn, deleteCourseByIdFn } from '#/data/course'
-import { handleAction } from '#/lib/client-utils'
+import { exportMdFile } from '#/data/import-export.data'
+import { createShareLinkFn, deleteCourseByIdFn } from '#/data/course.data'
+import { handleAction } from '#/lib/client-utils.lib'
 import { useRouter } from '@tanstack/react-router'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
 

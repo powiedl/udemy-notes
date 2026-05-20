@@ -1,4 +1,4 @@
-import { getTrainerSuggestionsFn } from '#/data/course'
+import { getTrainerSuggestionsFn } from '#/data/course.data'
 import { trainerKeys } from '#/data/trainer.queries'
 import { useQuery } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'

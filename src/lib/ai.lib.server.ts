@@ -1,12 +1,12 @@
 // src/lib/ai.server.ts
 import { ServerActionError } from '#/types/errors'
 import type { ChatResult } from '@openrouter/sdk/models'
-import { sanitizeAITags } from './ai-sanitize'
-import { openrouter } from './openrouter-client.server'
+import { sanitizeAITags } from './ai-sanitize.lib'
+import { openrouter } from './openrouter-client.lib.server'
 import { aiBatchTagResponseSchema } from '#/schemas/ai'
 import type { AIEntityTagResponse } from '#/schemas/ai'
-import { getNodeEnv } from './utils'
-import { prisma } from './db.server'
+import { getNodeEnv } from './utils.lib'
+import { prisma } from './db.lib.server'
 // import type { AITagSuggestion } from '#/schemas/ai'
 
 // --- 1. Zod Schemas für garantierte Typsicherheit ---

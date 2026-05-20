@@ -1,4 +1,4 @@
-import { authFn, authGetFn } from '#/lib/rpc'
+import { authFn, authGetFn } from '#/lib/rpc.lib'
 import { withLogging } from '#/schemas/api-utils'
 import {
   TAG_PAGINATION_DEFAULTS,
@@ -55,7 +55,7 @@ export const noteTagActionSchema = withLogging(
 export type GetTagUsageCountInput = z.infer<typeof getTagUsageCountFn>
 
 export const createDefaultTagsFn = authFn.handler(async ({ context }) => {
-  const { wrapServerAction } = await import('#/lib/server-utils.server')
+  const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
   // Dynamischer Import INSIDE handler ist zu 100% sicher vor dem Client
   const { createDefaultTagsLogic } = await import('./tag.logic.server')
 
@@ -67,7 +67,7 @@ export const createDefaultTagsFn = authFn.handler(async ({ context }) => {
 export const getAvailableTagsFn = authGetFn
   .inputValidator(getAvailableTagsSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getAvailableTagsLogic } = await import('./tag.logic.server')
 
     return await wrapServerAction(
@@ -83,7 +83,7 @@ export const getAvailableTagsFn = authGetFn
 export const getTagsForSelectorFn = authGetFn
   .inputValidator(getTagsForSelectorSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getTagsForSelectorLogic } = await import('./tag.logic.server')
 
     return await wrapServerAction(
@@ -97,7 +97,7 @@ export const getTagsForSelectorFn = authGetFn
 export const deleteTagFn = authFn
   .inputValidator(deleteTagSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { deleteTagLogic } = await import('./tag.logic.server')
 
     return await wrapServerAction('deleteTagFn', context, data, async () =>
@@ -108,7 +108,7 @@ export const deleteTagFn = authFn
 export const createAndLinkTagToTargetFn = authFn
   .inputValidator(createAndLinkTagToTargetSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { createAndLinkTagLogic } = await import('./tag.logic.server') // Pfad anpassen
 
     return await wrapServerAction('createAndLinkTagFn', context, data, () =>
@@ -119,7 +119,7 @@ export const createAndLinkTagToTargetFn = authFn
 export const renameTagFn = authFn
   .inputValidator(renameTagSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     return await wrapServerAction('renameTag', context, data, () =>
       renameTagLogic(data, context.session.user.id),
     )
@@ -128,7 +128,7 @@ export const renameTagFn = authFn
 export const getTagUsageCountFn = authGetFn
   .inputValidator(getTagsUsageCountSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getTagUsageCountLogic } = await import('./tag.logic.server')
 
     return await wrapServerAction(
@@ -143,7 +143,7 @@ export const autoTagCourseBatchFn = authFn
   .inputValidator(autoTagCourseBatchSchema)
   .handler(async ({ data, context }) => {
     // 3. Dynamische Imports schützen das Client-Bundle!
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { autoTagCourseBatchLogic } = await import('./tag.logic.server')
 
     // 4. Das Sicherheitsnetz (Error Handling & Logging)
@@ -167,7 +167,7 @@ export const approveCourseTagsBatchFn = authFn
   .inputValidator(approveCourseTagsBatchSchema)
   .handler(async ({ data, context }) => {
     // 1. Dynamische Imports schützen das Client-Bundle!
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { approveCourseTagsBatchLogic } = await import('./tag.logic.server')
 
     // 2. Das Sicherheitsnetz
@@ -191,7 +191,7 @@ export const approveCourseTagsBatchFn = authFn
 export const approveNoteTagFn = authFn
   .inputValidator(noteTagActionSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { approveNoteTagLogic } = await import('./tag.logic.server')
 
     return await wrapServerAction(
@@ -207,7 +207,7 @@ export const approveNoteTagFn = authFn
 export const rejectNoteTagFn = authFn
   .inputValidator(noteTagActionSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { rejectNoteTagLogic } = await import('./tag.logic.server')
 
     return await wrapServerAction(

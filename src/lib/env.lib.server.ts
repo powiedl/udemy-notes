@@ -17,7 +17,7 @@ import {
   DEFAULT_COURSE_URL_SELECTOR,
   DEFAULT_TRAINER_URL_SELECTOR,
   DEFAULT_SERVER_ERROR_SANITIZED_MESSAGE,
-} from './defaults'
+} from '#/lib/defaults.lib'
 
 export const SCRIPT_DEFAULT_AGE_SHARE_LINK_IN_DAYS = 7
 const envSchema = z.object({

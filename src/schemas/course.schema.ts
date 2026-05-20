@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { withLogging } from './api-utils'
 import { courseSearchSchema } from './search-params'
-import { env } from '#/lib/env.server'
+import { env } from '#/lib/env.lib.server'
 
 // #region validation schemas
 export const courseIdSchema = withLogging(z.object({ id: z.string() }))

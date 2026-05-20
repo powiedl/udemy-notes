@@ -1,8 +1,8 @@
 import crypto from 'node:crypto'
-import type { SingleNote } from './prisma-types'
+import type { SingleNote } from '#/lib/prisma-types.lib'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
-import { HTML_COMMENT_END, HTML_COMMENT_START } from './constants'
-import { SIGNING_SECRET } from './constants.server'
+import { HTML_COMMENT_END, HTML_COMMENT_START } from './constants.lib'
+import { SIGNING_SECRET } from './constants.lib.server'
 
 export const parseMarkdownCourse = (mdContent: string) => {
   // 1. Text in Header und Notizen splitten (inkl. dynamischer Meta-Tags)

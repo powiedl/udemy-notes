@@ -1,11 +1,11 @@
-import { prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
 import type { Prisma } from '#/generated/prisma/client'
 import type {
   CourseNotesSearchInput,
   NoteSearchInput,
 } from '#/schemas/search-params'
 import { ServerActionError } from '#/types/errors'
-import type { UpdateNoteContentInput } from './note'
+import type { UpdateNoteContentInput } from './note.data'
 
 // Hilfstyp, um TypeScript glücklich zu machen, egal aus welcher Query die Notiz kommt
 // Minimale Anforderung an ein Tag-Item, das aus der DB kommt

@@ -6,10 +6,10 @@ import {
 } from '@tanstack/react-router'
 import { noteSearchSchema } from '#/schemas/search-params'
 // Achte darauf, dass der Import-Pfad zu deiner getNotesFn stimmt!
-import { getNotesFn } from '#/data/note'
+import { getNotesFn } from '#/data/note.data'
 import { Check, Tag as TagIcon, X, AlertCircle } from 'lucide-react'
 import { Suspense, useDeferredValue, useEffect, useState } from 'react'
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 import { DataTableSearch } from '#/components/web/data-table-search'
 import { DataTablePagination } from '#/components/web/data-table-pagination'
 import {

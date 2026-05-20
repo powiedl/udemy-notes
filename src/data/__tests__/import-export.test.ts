@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mockDeep, mockReset } from 'vitest-mock-extended'
 import type { DeepMockProxy } from 'vitest-mock-extended'
 import type { PrismaClient } from '#/generated/prisma/client'
-import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants'
-import { prisma } from '#/lib/db.server'
-import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown'
+import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants.lib'
+import { prisma } from '#/lib/db.lib.server'
+import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown.lib'
 import {
   analyzeHtmlPayloadLogic,
   importHtmlFileLogic,

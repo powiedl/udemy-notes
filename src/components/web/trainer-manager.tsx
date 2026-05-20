@@ -6,7 +6,7 @@ import {
   User,
   MessageSquareWarning,
 } from 'lucide-react'
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 import { Button } from '../ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import {
@@ -24,8 +24,8 @@ import {
   addTrainerToCourseFn,
   removeTrainerFromCourseFn,
   createAndLinkTrainerToCourseFn,
-} from '#/data/course'
-import { handleAction } from '#/lib/client-utils'
+} from '#/data/course.data'
+import { handleAction } from '#/lib/client-utils.lib'
 import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
 import { useTrainerQuery } from '#/hooks/use-trainer-query.hook'

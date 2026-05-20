@@ -1,5 +1,5 @@
 import { exportMdFileSchema } from '#/schemas/export-file'
-import { authFn } from '#/lib/rpc'
+import { authFn } from '#/lib/rpc.lib'
 import { withLogging } from '#/schemas/api-utils'
 import {
   analyzeHtmlPayloadSchema,
@@ -31,7 +31,7 @@ export type AwaitedReturnTypeImportHtmlFile = Awaited<
 export const checkImportFile = authFn
   .inputValidator(checkImportFileValidationSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { checkImportFileLogic } =
       await import('./import-export.logic.server')
 
@@ -52,7 +52,7 @@ export const checkImportFile = authFn
 export const importHtmlFile = authFn
   .inputValidator(saveParsedCourseSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     return await wrapServerAction('importHtmlFile', context, data, async () => {
       const result = await importHtmlFileLogic(data, context.session.user.id)
       return result
@@ -62,7 +62,7 @@ export const importHtmlFile = authFn
 export const analyzeHtmlPayloadFn = authFn
   .inputValidator(analyzeHtmlPayloadSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
 
     // Wir übergeben ein leeres loggingMetadata Objekt, falls wir später Metadaten ergänzen wollen,
     // ansonsten fängt das Sicherheitsnetz im wrapServerAction dies sauber ab.
@@ -85,7 +85,7 @@ export const analyzeHtmlPayloadFn = authFn
 export const importMdFile = authFn
   .inputValidator(importFileValidationSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     return await wrapServerAction('importMdFile', context, data, async () => {
       return importMdFileLogic(data, context.session.user.id)
     })
@@ -99,7 +99,7 @@ export const importMdFile = authFn
 export const exportMdFile = authFn
   .inputValidator(exportMdFileValidationSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     return await wrapServerAction('exportMdFile', context, data, async () => {
       return exportMdFileLogic(data, context.session.user.id)
     })

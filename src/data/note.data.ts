@@ -1,6 +1,6 @@
 'use server'
 
-import { authGetFn, authFn } from '#/lib/rpc'
+import { authGetFn, authFn } from '#/lib/rpc.lib'
 import {
   getNotesForCourseInputSchema,
   getNotesSchema,
@@ -18,7 +18,7 @@ export const getNotesFn = authGetFn
   .inputValidator(getNotesSchema)
   .handler(async ({ data, context }) => {
     // Dynamischer Import schützt den Client-Bundle!
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getNotesLogic } = await import('./note.logic.server')
 
     return await wrapServerAction('getNotesFn', context, data, async () => {
@@ -30,7 +30,7 @@ export const getNotesForCourseFn = authGetFn
   // Wir nutzen hier ein Zod-Objekt, das courseId UND die searchParams vereint
   .inputValidator(getNotesForCourseInputSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getNotesForCourseLogic } = await import('./note.logic.server')
 
     return await wrapServerAction(
@@ -50,7 +50,7 @@ export const getNotesForCourseFn = authGetFn
 export const toggleNoteTagFn = authFn
   .inputValidator(toggleNoteTagSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { toggleNoteTagLogic } = await import('./note.logic.server')
 
     return await wrapServerAction(
@@ -67,7 +67,7 @@ export const toggleNoteTagFn = authFn
 export const updateNoteContentFn = authFn
   .inputValidator(updateNoteContentSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { updateNoteContentLogic } = await import('./note.logic.server')
 
     return await wrapServerAction(

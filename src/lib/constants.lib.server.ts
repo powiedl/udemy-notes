@@ -1,5 +1,5 @@
 // src/lib/constants.server.ts
-import { env } from './env.server'
+import { env } from '#/lib/env.lib.server'
 import type { UdemySelectors } from '#/types/api'
 import {
   DEFAULT_NOTES_CONTAINER_SELECTOR,
@@ -18,7 +18,7 @@ import {
   DEFAULT_COURSE_URL_SELECTOR,
   DEFAULT_TRAINER_URL_SELECTOR,
   DEFAULT_SERVER_ERROR_SANITIZED_MESSAGE,
-} from './defaults'
+} from '#/lib/defaults.lib'
 
 export const UDEMY_SELECTORS: UdemySelectors = {
   notesContainerSelector:

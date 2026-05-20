@@ -8,9 +8,9 @@ import {
 import { useRouter, Link } from '@tanstack/react-router'
 import { Button } from '../ui/button'
 import { Sparkles, Trash2, Download, Loader2, Share2 } from 'lucide-react'
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 import { useState, useTransition } from 'react'
-import type { CourseHeaderData } from '#/data/course'
+import type { CourseHeaderData } from '#/data/course.data'
 import { useTagManagement } from '#/hooks/use-tag-management.hook'
 import { TagManager } from './tag-manager'
 import type { TagDisplay } from './tag-manager'
@@ -21,8 +21,8 @@ import ExportCourseDialog from '../export-course-dialog'
 import type { ExportMdFileSchema } from '#/schemas/export-file'
 
 // --- NEU: Imports für AI Tagging Dialog und Save-Funktion ---
-import { autoTagCourseBatchFn, approveCourseTagsBatchFn } from '#/data/tag'
-import { handleAction } from '#/lib/client-utils'
+import { autoTagCourseBatchFn, approveCourseTagsBatchFn } from '#/data/tag.data'
+import { handleAction } from '#/lib/client-utils.lib'
 import { ReviewCourseTagsDialog } from './review-course-tags-dialog'
 import type { AITagSuggestionForDialog } from './review-course-tags-dialog'
 import { toast } from 'sonner' // Für die Info, falls keine Tags gefunden wurden

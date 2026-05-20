@@ -128,7 +128,7 @@ describe('useTagManagement Hook', () => {
   // ==========================================
   describe('Actions and Server Functions', () => {
     it('handleLink calls correct note-function and resets state', async () => {
-      const { toggleNoteTagFn } = await import('#/data/note')
+      const { toggleNoteTagFn } = await import('#/data/note.data')
       const { result } = renderHook(() =>
         useTagManagement('note-1', 'note', 'Test'),
       )
@@ -162,7 +162,7 @@ describe('useTagManagement Hook', () => {
     })
 
     it('handleCreateAndLink bails out if tag name is empty', async () => {
-      const { createAndLinkTagToTargetFn } = await import('#/data/tag')
+      const { createAndLinkTagToTargetFn } = await import('#/data/tag.data')
       const { result } = renderHook(() =>
         useTagManagement('course-1', 'course', 'Test'),
       )
@@ -177,7 +177,7 @@ describe('useTagManagement Hook', () => {
     })
 
     it('handleDeleteTagAssociation sets deletingTagId temporarily and removes tag from course', async () => {
-      const { removeTagFromCourseFn } = await import('#/data/course')
+      const { removeTagFromCourseFn } = await import('#/data/course.data')
       const { result } = renderHook(() =>
         useTagManagement('course-1', 'course', 'Test'),
       )

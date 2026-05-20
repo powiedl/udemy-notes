@@ -7,9 +7,9 @@ import {
   getAvailableTagsFn,
   renameTagFn,
   getTagUsageCountFn, // NEU: Statistik-Funktion
-} from '#/data/tag'
-import { handleAction } from '#/lib/client-utils'
-import { cn } from '#/lib/utils'
+} from '#/data/tag.data'
+import { handleAction } from '#/lib/client-utils.lib'
+import { cn } from '#/lib/utils.lib'
 import type { ClientLoggingMetadata } from '#/schemas/api-utils'
 import {
   COURSE_SEARCH_DEFAULTS,

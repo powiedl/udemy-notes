@@ -1,4 +1,4 @@
-import { authGetFn } from '#/lib/rpc'
+import { authGetFn } from '#/lib/rpc.lib'
 
 /**
  * Ruft die aktuelle Benutzersitzung (Session) ab.
@@ -9,7 +9,7 @@ import { authGetFn } from '#/lib/rpc'
  */
 export const getSessionFn = authGetFn // Wir behalten GET bei
   .handler(async ({ context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
 
     // wrapServerAction stellt sicher, dass der Aufruf mit einer requestId getraced wird
     // und Fehler konsistent an das Logging-System übertragen werden.
