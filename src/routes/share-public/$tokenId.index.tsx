@@ -4,8 +4,8 @@ import {
   getNotesByTokenIdFn,
 } from '#/data/course-public.data'
 import { cn } from '#/lib/utils.lib'
-import { courseNotesSearchSchema } from '#/schemas/search-params'
-import type { CourseNotesSearchInput } from '#/schemas/search-params'
+import { courseNotesSearchSchema } from '#/schemas/search-params.schema'
+import type { CourseNotesSearchInput } from '#/schemas/search-params.schema'
 import { createFileRoute, useRouterState } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { Suspense, use, useDeferredValue, useEffect, useState } from 'react'

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { analyzeHtmlPayloadSchema } from '../import-file'
+import { analyzeHtmlPayloadSchema } from '../import-file.schema'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants.lib'
 
 describe('analyzeHtmlPayloadSchema Validation', () => {

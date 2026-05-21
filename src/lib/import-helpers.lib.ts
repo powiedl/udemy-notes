@@ -1,5 +1,5 @@
-import type { AnalyzeHtmlPayloadSchema } from '#/schemas/import-file'
-import type { UdemySelectors } from '#/types/api'
+import type { AnalyzeHtmlPayloadSchema } from '#/schemas/import-file.schema'
+import type { UdemySelectors } from '#/types/api.type'
 
 export const validateMarkdown = (content: string): boolean => {
   if (!content || content.trim() === '') {

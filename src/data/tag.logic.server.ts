@@ -2,7 +2,7 @@
 import { prisma } from '#/lib/db.lib.server'
 import { isEmpty } from '#/lib/utils.lib'
 import { suggestTagsWithAIBatch } from '#/lib/ai.lib.server'
-import { ServerActionError } from '#/types/errors'
+import { ServerActionError } from '#/types/errors.type'
 import type { CreateAndLinkTagToTargetInput } from './tag.data'
 import type {
   AutoTagCourseBatchInput,

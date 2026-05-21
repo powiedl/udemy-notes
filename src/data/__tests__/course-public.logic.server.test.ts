@@ -4,7 +4,7 @@ import {
   getNotesByTokenIdLogic,
 } from '../course-public.logic.server'
 import { prisma } from '#/lib/db.lib.server'
-import { ServerActionError } from '#/types/errors'
+import { ServerActionError } from '#/types/errors.type'
 
 // 1. Wir mocken den Prisma-Client komplett
 vi.mock('#/lib/db.server', () => ({

@@ -19,8 +19,8 @@ import { getCoursesFn } from '#/data/course.data'
 import { useCourseActions } from '#/hooks/use-course-actions.hook'
 import { hasRole } from '#/lib/permissions.lib'
 import { cn } from '#/lib/utils.lib'
-import { courseSearchSchema } from '#/schemas/search-params'
-import type { ActionResponse, ServerFnData } from '#/types/api'
+import { courseSearchSchema } from '#/schemas/search-params.schema'
+import type { ActionResponse, ServerFnData } from '#/types/api.type'
 import {
   createFileRoute,
   getRouteApi,

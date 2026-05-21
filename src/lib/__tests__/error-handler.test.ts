@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { handleGlobalError } from '#/lib/error-handler.lib.server'
-import { ServerActionError } from '#/types/errors'
+import { ServerActionError } from '#/types/errors.type'
 import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants.lib.server'
 import { logToDb } from '#/lib/logging.lib.server'
 

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { withLogging } from './api-utils'
+import { withLogging } from './api-utils.schema'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants.lib'
 
 export const importFileSchema = withLogging(

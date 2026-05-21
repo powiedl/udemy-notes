@@ -1,7 +1,7 @@
 // src/lib/rpc.ts
 import { createMiddleware, createServerFn } from '@tanstack/react-start'
-import { authFnMiddleware } from '#/middlewares/auth' // Achte darauf, dass dieses File "clean" ist
-import { requestIdMiddleware } from '#/middlewares/request-id'
+import { authFnMiddleware } from '#/middlewares/auth.middleware' // Achte darauf, dass dieses File "clean" ist
+import { requestIdMiddleware } from '#/middlewares/request-id.middleware'
 
 export const errorHandlingMiddleware = createMiddleware().server(
   async ({ next }) => {

@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio'
-import type { ImportCourse, ImportNote } from '#/types/course'
-import type { UdemySelectors } from '#/types/api'
+import type { ImportCourse, ImportNote } from '#/types/course.type'
+import type { UdemySelectors } from '#/types/api.type'
 
 interface ConvertResultSuccess {
   markdown: string

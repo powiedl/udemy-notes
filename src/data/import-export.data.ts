@@ -1,12 +1,12 @@
-import { exportMdFileSchema } from '#/schemas/export-file'
+import { exportMdFileSchema } from '#/schemas/export-file.schema'
 import { authFn } from '#/lib/rpc.lib'
-import { withLogging } from '#/schemas/api-utils'
+import { withLogging } from '#/schemas/api-utils.schema'
 import {
   analyzeHtmlPayloadSchema,
   checkImportFileSchema,
   importFileSchema,
   saveParsedCourseSchema,
-} from '#/schemas/import-file'
+} from '#/schemas/import-file.schema'
 import {
   exportMdFileLogic,
   importHtmlFileLogic,

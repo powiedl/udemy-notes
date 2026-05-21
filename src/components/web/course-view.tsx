@@ -22,9 +22,9 @@ import {
 import { Check, Loader2, Tag as TagIcon, X } from 'lucide-react'
 import { Suspense, use, useState } from 'react'
 import { cn } from '#/lib/utils.lib'
-import type { ExportMdFileSchema } from '#/schemas/export-file'
+import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 import type { getNotesForCourseFn } from '#/data/note.data'
-import type { CourseNotesSearchInput } from '#/schemas/search-params'
+import type { CourseNotesSearchInput } from '#/schemas/search-params.schema'
 
 // Wir definieren strikt, was die Komponente von der Route braucht
 export interface CourseViewProps {

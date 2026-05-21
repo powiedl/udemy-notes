@@ -1,10 +1,10 @@
 // src/lib/ai.server.ts
-import { ServerActionError } from '#/types/errors'
+import { ServerActionError } from '#/types/errors.type'
 import type { ChatResult } from '@openrouter/sdk/models'
 import { sanitizeAITags } from './ai-sanitize.lib'
 import { openrouter } from './openrouter-client.lib.server'
-import { aiBatchTagResponseSchema } from '#/schemas/ai'
-import type { AIEntityTagResponse } from '#/schemas/ai'
+import { aiBatchTagResponseSchema } from '#/schemas/ai.schema'
+import type { AIEntityTagResponse } from '#/schemas/ai.schema'
 import { getNodeEnv } from './utils.lib'
 import { prisma } from './db.lib.server'
 // import type { AITagSuggestion } from '#/schemas/ai'

@@ -1,9 +1,9 @@
 import { authFn, authGetFn } from '#/lib/rpc.lib'
-import { withLogging } from '#/schemas/api-utils'
+import { withLogging } from '#/schemas/api-utils.schema'
 import {
   TAG_PAGINATION_DEFAULTS,
   tagPaginationSchema,
-} from '#/schemas/search-params'
+} from '#/schemas/search-params.schema'
 import { z } from 'zod'
 import { renameTagLogic } from './tag.logic.server'
 

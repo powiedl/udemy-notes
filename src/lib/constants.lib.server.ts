@@ -1,6 +1,6 @@
 // src/lib/constants.server.ts
 import { env } from '#/lib/env.lib.server'
-import type { UdemySelectors } from '#/types/api'
+import type { UdemySelectors } from '#/types/api.type'
 import {
   DEFAULT_NOTES_CONTAINER_SELECTOR,
   DEFAULT_NOTE_SELECTOR,

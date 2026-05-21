@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // WICHTIG: Importe und Mocks müssen exakt zusammenpassen
 import { logToDb } from '#/lib/logging.lib.server'
 import { wrapServerAction } from '#/lib/server-utils.lib.server'
-import { ServerActionError } from '#/types/errors'
+import { ServerActionError } from '#/types/errors.type'
 import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants.lib.server'
 
 // Wir mocken den exakten Pfad, den auch der Server-Util nutzt

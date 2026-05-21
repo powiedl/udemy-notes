@@ -12,7 +12,7 @@ import { Loader2 } from 'lucide-react'
 import { Suspense, use, useDeferredValue, useState, useEffect } from 'react' // NEU: useState, useEffect
 
 // NEUE IMPORTE FÜR DIE SUCHE
-import { courseNotesSearchSchema } from '#/schemas/search-params'
+import { courseNotesSearchSchema } from '#/schemas/search-params.schema'
 
 import { useQuery } from '@tanstack/react-query'
 import { tagsQueryOptions } from '../route'

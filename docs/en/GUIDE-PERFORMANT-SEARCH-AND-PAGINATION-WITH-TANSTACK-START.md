@@ -59,7 +59,7 @@ Instead of setting defaults in components, we define them centrally in the Zod s
 
 Since the router now handles parameter sorting, we can (and should) use practical Zod methods like `.extend()` to cleanly extend base schemas.
 
-**File:** `src/schemas/search-params.ts`
+**File:** `src/schemas/search-params.schema'.ts`
 
 ```typescript
 import { z } from 'zod'

@@ -6,22 +6,22 @@ import {
   HTML_COMMENT_START,
   MAX_FILE_SIZE_UPLOAD,
 } from '#/lib/constants.lib'
-import { ServerActionError } from '#/types/errors'
+import { ServerActionError } from '#/types/errors.type'
 import {
   generateSignature,
   processNoteForMarkdown,
 } from '#/lib/export-helper.lib'
-import type { ExportMdFileSchema } from '#/schemas/export-file'
+import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 import type {
   AnalyzeHtmlPayloadSchema,
   ImportFileSchema,
   SaveParsedCourseSchema,
-} from '#/schemas/import-file'
+} from '#/schemas/import-file.schema'
 import { orderInfo } from '#/lib/udemy.lib'
 import { resolveTagIds } from '#/lib/tag-helpers.lib.server'
 import { UDEMY_SELECTORS } from '#/lib/constants.lib.server'
 import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown.lib'
-import type { AnalysisResult } from '#/types/import-export.types'
+import type { AnalysisResult } from '#/types/import-export.type'
 
 // #region allgemeines
 export type IntegrityStatus =

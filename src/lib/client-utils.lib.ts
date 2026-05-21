@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import type { ActionResponse } from '#/types/api'
+import type { ActionResponse } from '#/types/api.type'
 
 export class ActionAbortedError extends Error {
   constructor(message: string) {

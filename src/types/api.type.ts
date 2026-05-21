@@ -18,7 +18,7 @@ export type ServerFnData<T extends (...args: any) => Promise<any>> =
   ExtractData<Awaited<ReturnType<T>>>
 
 // Re-Export des ClientLoggingMetadata-Typs aus dem Schema
-export type { ClientLoggingMetadata } from '#/schemas/api-utils'
+export type { ClientLoggingMetadata } from '#/schemas/api-utils.schema'
 
 // Globaler Typ für allgemeine Action-Antworten
 export type ActionResponse<T = void> = {

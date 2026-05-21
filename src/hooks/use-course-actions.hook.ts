@@ -3,7 +3,7 @@ import { exportMdFile } from '#/data/import-export.data'
 import { createShareLinkFn, deleteCourseByIdFn } from '#/data/course.data'
 import { handleAction } from '#/lib/client-utils.lib'
 import { useRouter } from '@tanstack/react-router'
-import type { ExportMdFileSchema } from '#/schemas/export-file'
+import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 
 export function useCourseActions() {
   const router = useRouter()

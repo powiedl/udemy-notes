@@ -16,13 +16,13 @@ import {
 } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { signupSchema } from '#/schemas/auth'
+import { signupSchema } from '#/schemas/auth.schema'
 import { authClient } from '#/lib/auth-client.lib'
 import { useState, useTransition } from 'react'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { AlertCircleIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
+import { PAGINATION_DEFAULTS } from '#/schemas/search-params.schema'
 
 export function SignupForm() {
   const [error, setError] = useState('')

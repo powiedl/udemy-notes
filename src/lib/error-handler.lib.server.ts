@@ -1,5 +1,5 @@
 import { isRedirect } from '@tanstack/react-router'
-import { ServerActionError } from '#/types/errors'
+import { ServerActionError } from '#/types/errors.type'
 import { SERVER_ERROR_SANITIZED_MESSAGE } from './constants.lib.server'
 import { logToDb } from '#/lib/logging.lib.server'
 

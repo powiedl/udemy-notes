@@ -1,4 +1,4 @@
-import type { ClientLoggingMetadata } from '#/types/api'
+import type { ClientLoggingMetadata } from '#/types/api.type'
 
 export type LogSeverity = 'info' | 'warning' | 'error' | 'critical'
 

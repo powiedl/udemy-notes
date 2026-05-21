@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 import type { SingleNote } from '#/lib/prisma-types.lib'
-import type { ExportMdFileSchema } from '#/schemas/export-file'
+import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 import { HTML_COMMENT_END, HTML_COMMENT_START } from './constants.lib'
 import { SIGNING_SECRET } from './constants.lib.server'
 

@@ -74,10 +74,10 @@ import { getTrainerSuggestionsFn } from '#/data/course.data'
 import { getTagsForSelectorFn } from '#/data/tag.data'
 import { handleAction } from '#/lib/client-utils.lib'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants.lib'
-import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
+import { PAGINATION_DEFAULTS } from '#/schemas/search-params.schema'
 import { prepareMdPayload, prepareHtmlPayload } from '#/lib/import-helpers.lib'
-import type { UdemySelectors } from '#/types/api'
-import type { AnalysisResult } from '#/types/import-export.types'
+import type { UdemySelectors } from '#/types/api.type'
+import type { AnalysisResult } from '#/types/import-export.type'
 
 // --- TYPEN ---
 

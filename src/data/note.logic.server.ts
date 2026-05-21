@@ -3,8 +3,8 @@ import type { Prisma } from '#/generated/prisma/client'
 import type {
   CourseNotesSearchInput,
   NoteSearchInput,
-} from '#/schemas/search-params'
-import { ServerActionError } from '#/types/errors'
+} from '#/schemas/search-params.schema'
+import { ServerActionError } from '#/types/errors.type'
 import type { UpdateNoteContentInput } from './note.data'
 
 // Hilfstyp, um TypeScript glücklich zu machen, egal aus welcher Query die Notiz kommt

@@ -1,4 +1,4 @@
-import type { ClientLoggingMetadata } from '#/types/api'
+import type { ClientLoggingMetadata } from '#/types/api.type'
 
 export const MAX_FILE_SIZE_UPLOAD = 5 * 1024 * 1024 // 5 MB
 

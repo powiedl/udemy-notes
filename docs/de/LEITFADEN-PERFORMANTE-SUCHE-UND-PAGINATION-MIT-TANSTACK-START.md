@@ -59,7 +59,7 @@ Anstatt Defaults in Komponenten zu setzen, definieren wir sie zentral im Zod-Sch
 
 Da der Router nun die Sortierung der Parameter übernimmt, können (und sollten) wir die praktischen Methoden von Zod wie `.extend()` nutzen, um Basis-Schemata sauber zu erweitern.
 
-**Datei:** `src/schemas/search-params.ts`
+**Datei:** `src/schemas/search-params.schema'.ts`
 
 ```typescript
 import { z } from 'zod'

@@ -14,7 +14,7 @@ import {
 import { useTagManagement } from '#/hooks/use-tag-management.hook'
 import { TagManager } from './tag-manager'
 import type { TagDisplay } from './tag-manager'
-import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
+import { PAGINATION_DEFAULTS } from '#/schemas/search-params.schema'
 import type { Prisma } from '#/lib/db.lib.server'
 import { useState, useTransition, Suspense, lazy } from 'react'
 import { Button } from '../ui/button'

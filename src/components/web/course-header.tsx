@@ -14,11 +14,11 @@ import type { CourseHeaderData } from '#/data/course.data'
 import { useTagManagement } from '#/hooks/use-tag-management.hook'
 import { TagManager } from './tag-manager'
 import type { TagDisplay } from './tag-manager'
-import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
+import { PAGINATION_DEFAULTS } from '#/schemas/search-params.schema'
 import type { TrainerDisplay } from './trainer-manager'
 import { TrainerManager } from './trainer-manager'
 import ExportCourseDialog from '../export-course-dialog'
-import type { ExportMdFileSchema } from '#/schemas/export-file'
+import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 
 // --- NEU: Imports für AI Tagging Dialog und Save-Funktion ---
 import { autoTagCourseBatchFn, approveCourseTagsBatchFn } from '#/data/tag.data'

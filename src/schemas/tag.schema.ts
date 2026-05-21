@@ -1,6 +1,9 @@
 import { z } from 'zod'
-import { withLogging } from './api-utils'
-import { TAG_PAGINATION_DEFAULTS, tagPaginationSchema } from './search-params'
+import { withLogging } from './api-utils.schema'
+import {
+  TAG_PAGINATION_DEFAULTS,
+  tagPaginationSchema,
+} from './search-params.schema'
 
 // #region validation schemas
 export const getAvailableTagsSchema = withLogging(tagPaginationSchema).default(

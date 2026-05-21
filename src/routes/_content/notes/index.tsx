@@ -4,7 +4,7 @@ import {
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router'
-import { noteSearchSchema } from '#/schemas/search-params'
+import { noteSearchSchema } from '#/schemas/search-params.schema'
 // Achte darauf, dass der Import-Pfad zu deiner getNotesFn stimmt!
 import { getNotesFn } from '#/data/note.data'
 import { Check, Tag as TagIcon, X, AlertCircle } from 'lucide-react'

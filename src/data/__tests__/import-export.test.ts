@@ -11,7 +11,7 @@ import {
   exportMdFileLogic,
   importMdFileLogic,
 } from '../import-export.logic.server'
-import type { ExportMdFileSchema } from '#/schemas/export-file'
+import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 
 // 1. Mocks definieren
 vi.mock('#/lib/db.server', () => ({

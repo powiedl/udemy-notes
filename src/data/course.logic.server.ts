@@ -1,6 +1,6 @@
 import { prisma } from '#/lib/db.lib.server'
 import type { Prisma } from '#/lib/db.lib.server'
-import { ServerActionError } from '#/types/errors'
+import { ServerActionError } from '#/types/errors.type'
 import type {
   GetCoursesInput,
   CourseIdInput,

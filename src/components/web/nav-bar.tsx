@@ -17,7 +17,7 @@ import {
   NOTE_SEARCH_DEFAULTS,
   PAGINATION_DEFAULTS,
   TAG_PAGINATION_DEFAULTS,
-} from '#/schemas/search-params'
+} from '#/schemas/search-params.schema'
 
 const Navbar = ({ className }: { className: string }) => {
   const { data: session, isPending } = authClient.useSession()
