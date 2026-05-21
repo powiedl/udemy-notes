@@ -108,7 +108,7 @@ The server function is split into **Logic** and **Handler**. The logic calculate
 ```typescript
 // 1. The extracted logic (accessible for unit tests)
 export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
-  const { prisma } = await import('#/lib/db.server')
+  const { prisma } = await import('#/lib/db.lib.server')
   const { page, pageSize, search } = data
   const skip = (page - 1) * pageSize
 

@@ -6,7 +6,7 @@ import { ServerActionError } from '#/types/errors.type'
 import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants.lib.server'
 
 // Wir mocken den exakten Pfad, den auch der Server-Util nutzt
-vi.mock('#/lib/logging.server', () => ({
+vi.mock('#/lib/logging.lib.server', () => ({
   logToDb: vi.fn().mockResolvedValue(undefined),
 }))
 

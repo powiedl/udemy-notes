@@ -14,7 +14,7 @@ import {
 } from '../course.logic.server'
 
 // 1. Prisma Client mocken - Simpel & direkt
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: mockDeep<PrismaClient>(),
 }))
 

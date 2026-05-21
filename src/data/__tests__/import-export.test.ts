@@ -14,19 +14,19 @@ import {
 import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 
 // 1. Mocks definieren
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: mockDeep<PrismaClient>(),
 }))
 
-vi.mock('#/lib/convertHtmlToMarkdown', () => ({
+vi.mock('#/lib/convertHtmlToMarkdown.lib', () => ({
   prepareAndConvertHtmlToMarkdown: vi.fn(),
 }))
 
-vi.mock('#/lib/udemy', () => ({
+vi.mock('#/lib/udemy.lib', () => ({
   orderInfo: vi.fn(() => '999-999-999'),
 }))
 
-vi.mock('#/lib/export-helper', () => ({
+vi.mock('#/lib/export-helper.lib', () => ({
   processNoteForMarkdown: vi.fn(() => 'Mocked Note Markdown'),
   generateSignature: vi.fn().mockReturnValue('mock-signature-123'),
 }))

@@ -7,7 +7,7 @@ import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants.lib'
 import type * as ExportHelper from '#/lib/export-helper.lib'
 
 // Sicherer Mock mit importOriginal, damit die restlichen Export-Helper intakt bleiben
-vi.mock('#/lib/export-helper', async (importOriginal) => {
+vi.mock('#/lib/export-helper.lib', async (importOriginal) => {
   // Hier nutzen wir nun den sauber importierten Typen
   const actual = await importOriginal<typeof ExportHelper>()
   return {

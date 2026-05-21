@@ -5,11 +5,11 @@ import { SERVER_ERROR_SANITIZED_MESSAGE } from '#/lib/constants.lib.server'
 import { logToDb } from '#/lib/logging.lib.server'
 
 // MOCK KORRIGIERT: Pfad muss exakt mit dem Import übereinstimmen!
-vi.mock('#/lib/logging.server', () => ({
+vi.mock('#/lib/logging.lib.server', () => ({
   logToDb: vi.fn(async () => {}).mockResolvedValue(undefined),
 }))
 
-// import { logToDb } from '#/lib/logging.server' // wäre notwendig, wenn man irgendwo mit dynamischen import arbeiten würde: const { logToDb } = await import('#/lib/logging.server')
+// import { logToDb } from '#/lib/logging.lib.server' // wäre notwendig, wenn man irgendwo mit dynamischen import arbeiten würde: const { logToDb } = await import('#/lib/logging.lib.server')
 
 describe('Global Error Handling Logic', () => {
   beforeEach(() => {

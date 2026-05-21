@@ -11,7 +11,7 @@ import {
 } from '../tag.logic.server'
 
 // 1. Prisma Client mocken
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: mockDeep<PrismaClient>(),
 }))
 

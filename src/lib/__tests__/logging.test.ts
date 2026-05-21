@@ -3,7 +3,7 @@ import { logToDb } from '#/lib/logging.lib.server'
 import { prisma } from '#/lib/db.lib.server'
 
 // WICHTIG: Der Pfad muss EXAKT dem Import oben entsprechen!
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: {
     log: {
       create: vi.fn(),

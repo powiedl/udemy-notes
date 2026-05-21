@@ -193,7 +193,7 @@ export const renameTagLogic = async (data: RenameTagInput, userId: string) => {
 }
 
 export const getTagUsageCountLogic = async (id: string, userId: string) => {
-  // const { prisma } = await import('#/lib/db.server')
+  // const { prisma } = await import('#/lib/db.lib.server')
 
   const tag = await prisma.tag.findUnique({
     where: {

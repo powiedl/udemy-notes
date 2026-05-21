@@ -7,21 +7,21 @@ import type * as ReactStart from '@tanstack/react-start'
 
 // --- 1. MOCKS FÜR DATA & UTILS ---
 // Wir mocken die Server-Funktionen, damit sie nicht wirklich ausgeführt werden
-vi.mock('#/data/course', () => ({
+vi.mock('#/data/course.data', () => ({
   linkTagToCourseFn: vi.fn().mockResolvedValue({ success: true }),
   removeTagFromCourseFn: vi.fn().mockResolvedValue({ success: true }),
 }))
 
-vi.mock('#/data/note', () => ({
+vi.mock('#/data/note.data', () => ({
   toggleNoteTagFn: vi.fn().mockResolvedValue({ success: true }),
 }))
 
-vi.mock('#/data/tag', () => ({
+vi.mock('#/data/tag.data', () => ({
   createAndLinkTagToTargetFn: vi.fn().mockResolvedValue({ success: true }),
 }))
 
 // handleAction auspacken, damit es das Promise einfach direkt ausführt
-vi.mock('#/lib/client-utils', () => ({
+vi.mock('#/lib/client-utils.lib', () => ({
   handleAction: vi.fn(async (promise) => {
     const result = await promise
     // Falls die Funktion nichts zurückgibt, tun wir so als wäre sie erfolgreich

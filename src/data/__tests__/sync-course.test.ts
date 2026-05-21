@@ -7,7 +7,7 @@ import { resolveTagIds } from '#/lib/tag-helpers.lib.server'
 import type { ImportFileSchema } from '#/schemas/import-file.schema'
 
 // --- 1. Mocks einrichten ---
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: {
     tag: { create: vi.fn() },
     course: { findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
@@ -15,15 +15,15 @@ vi.mock('#/lib/db.server', () => ({
   },
 }))
 
-vi.mock('#/lib/udemy', () => ({
+vi.mock('#/lib/udemy.lib', () => ({
   orderInfo: vi.fn().mockReturnValue('001-001-00000'),
 }))
 
-vi.mock('#/lib/tag-helpers.server', () => ({
+vi.mock('#/lib/tag-helpers.lib.server', () => ({
   resolveTagIds: vi.fn(),
 }))
 
-vi.mock('#/lib/conflict-helper', () => ({
+vi.mock('#/lib/conflict-helper.lib', () => ({
   checkConflict: vi.fn().mockReturnValue(false),
 }))
 

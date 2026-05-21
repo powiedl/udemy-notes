@@ -3,7 +3,7 @@ import { resolveTagIds } from '../tag-helpers.lib.server'
 import { prisma } from '#/lib/db.lib.server'
 
 // 1. Prisma Modul mocken
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: {
     tag: {
       findMany: vi.fn(),

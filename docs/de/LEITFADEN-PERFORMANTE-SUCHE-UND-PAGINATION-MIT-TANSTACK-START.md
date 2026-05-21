@@ -108,7 +108,7 @@ Die Server Function wird in **Logik** und **Handler** aufgeteilt. Die Logik bere
 ```typescript
 // 1. Die extrahierte Logik (für Unit-Tests zugänglich)
 export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
-  const { prisma } = await import('#/lib/db.server')
+  const { prisma } = await import('#/lib/db.lib.server')
   const { page, pageSize, search } = data
   const skip = (page - 1) * pageSize
 
