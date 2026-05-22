@@ -85,7 +85,9 @@ describe('CourseHeader Component', () => {
     )
 
     // Elementarer Check: Sind die Daten trotzdem da?
-    expect(screen.getByText('Advanced React')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Advanced React' }),
+    ).toBeInTheDocument()
     expect(screen.getByText('5 notes')).toBeInTheDocument()
 
     // Sicherheits-Check: Sind die Buttons weg?

@@ -1,43 +1,48 @@
+import { useEffect, useState } from 'react'
 import {
+  User,
   Plus,
   Loader2,
-  Check,
   CornerDownLeft,
-  User,
   MessageSquareWarning,
+  Check,
+  LinkIcon,
 } from 'lucide-react'
-import { cn } from '#/lib/utils.lib'
-import { Button } from '../ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import {
   Command,
+  CommandInput,
+  CommandList,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
-  CommandList,
-} from '../ui/command'
+} from '#/components/ui/command'
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '#/components/ui/popover'
+import { Button } from '#/components/ui/button'
+import { ActionIconButton } from '../ui/action-icon-button'
 import TagBadge from './tag-badge'
-import { useEffect, useState } from 'react'
+import { cn } from '#/lib/utils.lib'
+import { useRouter } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { useTrainerQuery } from '#/hooks/use-trainer-query.hook'
 import { useServerFn } from '@tanstack/react-start'
 import {
   addTrainerToCourseFn,
-  removeTrainerFromCourseFn,
   createAndLinkTrainerToCourseFn,
+  removeTrainerFromCourseFn,
 } from '#/data/course.data'
 import { handleAction } from '#/lib/client-utils.lib'
-import { useRouter } from '@tanstack/react-router'
 import { toast } from 'sonner'
-import { useTrainerQuery } from '#/hooks/use-trainer-query.hook'
-import { useQueryClient } from '@tanstack/react-query'
-import { ActionIconButton } from '../ui/action-icon-button'
 
 export interface TrainerDisplay {
   id: string
   name: string
-  tooltip?: string
+  profileUrl?: string | null
   isDeletable?: boolean
-  profileUrl?: string
+  tooltip?: string
 }
 
 interface TrainerManagerProps {
@@ -61,7 +66,7 @@ const isQueryInTrainers = (
     .map((t) => t.name.toLocaleLowerCase())
     .includes(query.toLocaleLowerCase())
 
-export function TrainerManager({
+export const TrainerManager = ({
   trainers,
   courseId,
   isPending,
@@ -69,7 +74,7 @@ export function TrainerManager({
   deletingTrainerId,
   size = 'default',
   className,
-}: TrainerManagerProps) {
+}: TrainerManagerProps) => {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
@@ -84,6 +89,19 @@ export function TrainerManager({
     createAndLinkTrainerToCourseFn,
   )
 
+  // =====================================================================
+  // WICHTIG: HIER DEINE URSPRÜNGLICHEN HOOKS WIEDER EINFÜGEN!
+  // (z.B. const { handleRemoveTrainer, availableSuggestions, ... } = useTrainerAPI(courseId))
+  // Die folgenden Variablen müssen aus deinen Hooks kommen:
+  // - handleRemoveTrainer
+  // - handleAddTrainer
+  // - handleCreateTrainer
+  // - availableSuggestions
+  // - suggestionsData
+  // - isFetching
+  // - isPending
+  // - deletingTrainerId
+  // =====================================================================
   const handleRemoveTrainer = async (trainerId: string) => {
     if (!isEditable) return
     try {
@@ -107,7 +125,6 @@ export function TrainerManager({
       // console.error('Löschvorgang abgebrochen:', error)
     }
   }
-  //trainers.map((t) => console.log('single Trainer:', t))
   const handleAddTrainer = async (trainerId: string) => {
     if (!isEditable) return
     try {
@@ -169,24 +186,70 @@ export function TrainerManager({
   return (
     <div className={cn('flex flex-wrap gap-1.5 mt-1 items-center', className)}>
       {trainers.length === 0 && (
-        <span className="text-muted-foreground">add a trainer</span>
+        <span className="text-muted-foreground text-sm">add a trainer</span>
       )}
+
       {trainers.map((trainer) => (
         <TagBadge
           key={trainer.id}
-          tag={trainer}
+          tag={{
+            id: trainer.id,
+            name: trainer.name,
+          }}
           size={size}
           onDelete={
-            trainer.isDeletable
+            isEditable && trainer.isDeletable
               ? () => handleRemoveTrainer(trainer.id)
               : undefined
           }
-          className="bg-green-100 text-green-700 dark:bg-green-400 dark:text-green-900"
+          onClick={
+            trainer.profileUrl
+              ? () => {
+                  const appWidth = window.innerWidth
+                  const appHeight = window.innerHeight
+                  const appLeft = window.screenX
+                  const appTop = window.screenY
+
+                  const popupWidth = Math.round(appWidth * 0.8)
+                  const popupHeight = Math.round(appHeight * 0.8)
+
+                  const popupLeft = Math.round(
+                    appLeft + (appWidth - popupWidth) / 2,
+                  )
+                  const popupTop = Math.round(
+                    appTop + (appHeight - popupHeight) / 2,
+                  )
+
+                  window.open(
+                    trainer.profileUrl!,
+                    'TrainerProfile',
+                    `width=${popupWidth},height=${popupHeight},top=${popupTop},left=${popupLeft},noopener,noreferrer`,
+                  )
+                }
+              : undefined
+          }
+          className={cn(
+            'bg-green-100 text-green-700 dark:bg-green-400 dark:text-green-900',
+            trainer.profileUrl &&
+              'hover:bg-green-200 dark:hover:bg-green-500 transition-colors',
+            size === 'sm' ? 'h-5' : 'h-7',
+            'group/trainer',
+          )}
           isDeleting={deletingTrainerId === trainer.id}
-          title={trainer.tooltip}
-          // Das Link-Icon für vererbte Tags reichen wir hier rein
-          icon=<User className="size-3.5 " />
-          /* bg-green-100 text-green-700 dark:bg-green-700 dark:text-green-100 rounded-md */
+          title={
+            trainer.tooltip ||
+            (trainer.profileUrl ? `Visit profile: ${trainer.name}` : undefined)
+          }
+          icon={
+            trainer.profileUrl ? (
+              <LinkIcon
+                className="size-3.5 text-primary transition-transform group-hover/trainer:scale-110"
+                strokeWidth={2.5}
+              />
+            ) : (
+              <User className="size-3.5" />
+            )
+          }
         />
       ))}
 
@@ -218,21 +281,18 @@ export function TrainerManager({
             <Command
               shouldFilter={false}
               onKeyDown={(e) => {
-                // Enter-Logik für neues Tag
                 if (e.key === 'Enter' && query.length > 0) {
-                  // 1. Suchen, ob der exakte Name in den Suggestions vom Server ist
                   const matchedTrainer = availableSuggestions.find(
                     (t) => t.name.toLowerCase() === query.toLowerCase(),
                   )
 
                   if (matchedTrainer) {
-                    // 2. Prüfen, ob er nicht ohnehin schon dem Kurs zugewiesen ist
                     const isAlreadyAssigned = trainers.some(
                       (t) => t.id === matchedTrainer.id,
                     )
 
                     if (!isAlreadyAssigned) {
-                      handleAddTrainer(matchedTrainer.id) // ✅ Richtig: Wir übergeben die ID
+                      handleAddTrainer(matchedTrainer.id)
                       setQuery('')
                       setOpen(false)
                     }
@@ -254,7 +314,6 @@ export function TrainerManager({
                 )}
                 {!isFetching && (
                   <CommandEmpty className="p-1">
-                    {/* Dein schöner Create-Button, wenn nichts gefunden wurde */}
                     {query.length > 0 && !isQueryInTrainers(query, trainers) ? (
                       <Button
                         type="button"
@@ -285,7 +344,7 @@ export function TrainerManager({
                     ) : (
                       <div className="p-2 text-xs text-muted-foreground text-center">
                         {query.length > 0 ? (
-                          <div className="flex items-center gap-x-1">
+                          <div className="flex items-center gap-x-1 justify-center">
                             <MessageSquareWarning className="size-3.5 text-orange-400" />
                             <span>Trainer already assigned</span>
                           </div>
