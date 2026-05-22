@@ -37,6 +37,7 @@ export interface TrainerDisplay {
   name: string
   tooltip?: string
   isDeletable?: boolean
+  profileUrl?: string
 }
 
 interface TrainerManagerProps {
@@ -106,6 +107,7 @@ export function TrainerManager({
       // console.error('Löschvorgang abgebrochen:', error)
     }
   }
+  //trainers.map((t) => console.log('single Trainer:', t))
   const handleAddTrainer = async (trainerId: string) => {
     if (!isEditable) return
     try {

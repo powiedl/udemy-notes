@@ -132,7 +132,7 @@ const HeaderTitle = () => {
                 href={course.courseUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block ml-3 hover:scale-110 transition-transform dark:brightness-110 hover:brightness-90 hover:dark:brightness-125 translate-y-[-2px]"
+                className="inline-block ml-3 hover:scale-110 transition-transform dark:brightness-110 hover:brightness-90 hover:dark:brightness-125 -translate-y-0.5"
               >
                 <LinkIcon className="size-6 text-primary" strokeWidth={3} />
               </a>
@@ -389,6 +389,7 @@ const CourseHeader = (props: CourseHeaderProps) => {
     (t): TrainerDisplay => ({
       name: t.trainer.name,
       id: t.trainer.id,
+      profileUrl: t.trainer.profileUrl || undefined,
       isDeletable: !readOnly && variant === 'default',
     }),
   )
@@ -468,6 +469,8 @@ const CourseHeader = (props: CourseHeaderProps) => {
     handleCreateAndLink,
     handleDeleteTagAssociation,
   }
+  // console.log('CourseHeader, course:', course)
+  // console.log('CourseHeader, trainersDisplay:', trainersDisplay)
 
   return (
     <CourseHeaderContext.Provider value={contextValue}>
