@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 // Passe diese Imports an deine tatsächlichen Funktionen an
-import { sanitizeAITags } from '#/lib/ai-sanitize' // Die Funktion, die wir testen
+import { sanitizeAITags } from '#/lib/ai-sanitize.lib' // Die Funktion, die wir testen
 
 describe('AI Tag Sanitization & Validation', () => {
   // Mock-Datenbank-Status, den wir der Funktion übergeben

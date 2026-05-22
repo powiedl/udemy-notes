@@ -1,7 +1,7 @@
 import Footer from '#/components/Footer'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import TagBadge from '#/components/web/tag-badge'
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   Info,

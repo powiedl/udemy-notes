@@ -22,12 +22,12 @@ import {
 } from 'lucide-react'
 import { NavPrimary } from './nav-primary'
 import { SidebarSeparator } from './ui/sidebar-ori'
-import { createDefaultTagsFn } from '#/data/tag'
+import { createDefaultTagsFn } from '#/data/tag.data'
 import { NavAdmin } from './nav-admin'
-import { handleAction } from '#/lib/client-utils'
+import { handleAction } from '#/lib/client-utils.lib'
 import { useServerFn } from '@tanstack/react-start'
 import { useTransition } from 'react'
-import { hasRole } from '#/lib/permissions'
+import { hasRole } from '#/lib/permissions.lib'
 
 const navItems: NavPrimaryProps['items'] = [
   {

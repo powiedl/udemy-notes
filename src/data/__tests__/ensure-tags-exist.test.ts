@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ensureTagsExist } from '#/data/tag.logic.server'
-import { prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
 
 // Wir mocken den kompletten Prisma-Client
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: {
     tag: {
       findFirst: vi.fn(),

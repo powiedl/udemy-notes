@@ -3,11 +3,11 @@ import {
   getCourseByTokenIdLogic,
   getNotesByTokenIdLogic,
 } from '../course-public.logic.server'
-import { prisma } from '#/lib/db.server'
-import { ServerActionError } from '#/types/errors'
+import { prisma } from '#/lib/db.lib.server'
+import { ServerActionError } from '#/types/errors.type'
 
 // 1. Wir mocken den Prisma-Client komplett
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: {
     courseShareToken: { findUnique: vi.fn() },
     course: { findUnique: vi.fn() },

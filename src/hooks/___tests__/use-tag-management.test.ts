@@ -1,27 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useTagManagement } from '../use-tag-management'
+import { useTagManagement } from '../use-tag-management.hook'
 import * as ReactQuery from '@tanstack/react-query'
 import type * as ReactRouter from '@tanstack/react-router'
 import type * as ReactStart from '@tanstack/react-start'
 
 // --- 1. MOCKS FÜR DATA & UTILS ---
 // Wir mocken die Server-Funktionen, damit sie nicht wirklich ausgeführt werden
-vi.mock('#/data/course', () => ({
+vi.mock('#/data/course.data', () => ({
   linkTagToCourseFn: vi.fn().mockResolvedValue({ success: true }),
   removeTagFromCourseFn: vi.fn().mockResolvedValue({ success: true }),
 }))
 
-vi.mock('#/data/note', () => ({
+vi.mock('#/data/note.data', () => ({
   toggleNoteTagFn: vi.fn().mockResolvedValue({ success: true }),
 }))
 
-vi.mock('#/data/tag', () => ({
+vi.mock('#/data/tag.data', () => ({
   createAndLinkTagToTargetFn: vi.fn().mockResolvedValue({ success: true }),
 }))
 
 // handleAction auspacken, damit es das Promise einfach direkt ausführt
-vi.mock('#/lib/client-utils', () => ({
+vi.mock('#/lib/client-utils.lib', () => ({
   handleAction: vi.fn(async (promise) => {
     const result = await promise
     // Falls die Funktion nichts zurückgibt, tun wir so als wäre sie erfolgreich
@@ -128,7 +128,7 @@ describe('useTagManagement Hook', () => {
   // ==========================================
   describe('Actions and Server Functions', () => {
     it('handleLink calls correct note-function and resets state', async () => {
-      const { toggleNoteTagFn } = await import('#/data/note')
+      const { toggleNoteTagFn } = await import('#/data/note.data')
       const { result } = renderHook(() =>
         useTagManagement('note-1', 'note', 'Test'),
       )
@@ -162,7 +162,7 @@ describe('useTagManagement Hook', () => {
     })
 
     it('handleCreateAndLink bails out if tag name is empty', async () => {
-      const { createAndLinkTagToTargetFn } = await import('#/data/tag')
+      const { createAndLinkTagToTargetFn } = await import('#/data/tag.data')
       const { result } = renderHook(() =>
         useTagManagement('course-1', 'course', 'Test'),
       )
@@ -177,7 +177,7 @@ describe('useTagManagement Hook', () => {
     })
 
     it('handleDeleteTagAssociation sets deletingTagId temporarily and removes tag from course', async () => {
-      const { removeTagFromCourseFn } = await import('#/data/course')
+      const { removeTagFromCourseFn } = await import('#/data/course.data')
       const { result } = renderHook(() =>
         useTagManagement('course-1', 'course', 'Test'),
       )

@@ -7,15 +7,15 @@ import {
   getAvailableTagsFn,
   renameTagFn,
   getTagUsageCountFn, // NEU: Statistik-Funktion
-} from '#/data/tag'
-import { handleAction } from '#/lib/client-utils'
-import { cn } from '#/lib/utils'
-import type { ClientLoggingMetadata } from '#/schemas/api-utils'
+} from '#/data/tag.data'
+import { handleAction } from '#/lib/client-utils.lib'
+import { cn } from '#/lib/utils.lib'
+import type { ClientLoggingMetadata } from '#/schemas/api-utils.schema'
 import {
   COURSE_SEARCH_DEFAULTS,
   NOTE_SEARCH_DEFAULTS,
   tagPaginationSchema,
-} from '#/schemas/search-params'
+} from '#/schemas/search-params.schema'
 import {
   createFileRoute,
   Link,

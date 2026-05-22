@@ -1,8 +1,8 @@
 import { AppSidebar } from '#/components/app-sidebar'
 import Footer from '#/components/Footer'
 import { SidebarInset, SidebarProvider } from '#/components/ui/sidebar'
-import { getSessionFn } from '#/data/session'
-import { getTagsForSelectorFn } from '#/data/tag'
+import { getSessionFn } from '#/data/session.data'
+import { getTagsForSelectorFn } from '#/data/tag.data'
 import { queryOptions } from '@tanstack/react-query'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 

@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { syncCourseToDatabase } from '../import-export.logic.server'
 import type { ParsedCourseData } from '../import-export.logic.server'
-import { prisma } from '#/lib/db.server'
-import { resolveTagIds } from '#/lib/tag-helpers.server'
+import { prisma } from '#/lib/db.lib.server'
+import { resolveTagIds } from '#/lib/tag-helpers.lib.server'
 // import { checkConflict } from '../import-export.logic.server'
-import type { ImportFileSchema } from '#/schemas/import-file'
+import type { ImportFileSchema } from '#/schemas/import-file.schema'
 
 // --- 1. Mocks einrichten ---
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: {
     tag: { create: vi.fn() },
     course: { findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
@@ -15,15 +15,15 @@ vi.mock('#/lib/db.server', () => ({
   },
 }))
 
-vi.mock('#/lib/udemy', () => ({
+vi.mock('#/lib/udemy.lib', () => ({
   orderInfo: vi.fn().mockReturnValue('001-001-00000'),
 }))
 
-vi.mock('#/lib/tag-helpers.server', () => ({
+vi.mock('#/lib/tag-helpers.lib.server', () => ({
   resolveTagIds: vi.fn(),
 }))
 
-vi.mock('#/lib/conflict-helper', () => ({
+vi.mock('#/lib/conflict-helper.lib', () => ({
   checkConflict: vi.fn().mockReturnValue(false),
 }))
 

@@ -1,7 +1,7 @@
 import { Link, useLocation } from '@tanstack/react-router'
 import ThemeToggle from '../ThemeToggle'
 import { Button, buttonVariants } from '../ui/button'
-import { authClient } from '#/lib/auth-client'
+import { authClient } from '#/lib/auth-client.lib'
 import { toast } from 'sonner'
 import {
   Bookmark,
@@ -12,12 +12,12 @@ import {
   LogOut,
   NotebookPen,
 } from 'lucide-react'
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 import {
   NOTE_SEARCH_DEFAULTS,
   PAGINATION_DEFAULTS,
   TAG_PAGINATION_DEFAULTS,
-} from '#/schemas/search-params'
+} from '#/schemas/search-params.schema'
 
 const Navbar = ({ className }: { className: string }) => {
   const { data: session, isPending } = authClient.useSession()

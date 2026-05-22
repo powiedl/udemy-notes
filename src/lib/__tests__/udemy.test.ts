@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { orderInfo } from '#/lib/udemy'
+import { orderInfo } from '#/lib/udemy.lib'
 
 /**
  * Tests for the orderInfo function

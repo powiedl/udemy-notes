@@ -1,6 +1,9 @@
 import { z } from 'zod'
-import { withLogging } from './api-utils'
-import { courseNotesSearchSchema, noteSearchSchema } from './search-params'
+import { withLogging } from './api-utils.schema'
+import {
+  courseNotesSearchSchema,
+  noteSearchSchema,
+} from './search-params.schema'
 
 // #region validation schemas
 export const getNotesSchema = withLogging(noteSearchSchema)

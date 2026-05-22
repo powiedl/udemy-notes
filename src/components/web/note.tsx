@@ -1,5 +1,5 @@
 import { Link, useRouter } from '@tanstack/react-router'
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 import { Card, CardContent, CardDescription } from '../ui/card'
 import ReactMarkdown from 'react-markdown'
 import {
@@ -11,18 +11,18 @@ import {
   EyeOff,
   Loader2,
 } from 'lucide-react'
-import { useTagManagement } from '#/hooks/use-tag-management'
+import { useTagManagement } from '#/hooks/use-tag-management.hook'
 import { TagManager } from './tag-manager'
 import type { TagDisplay } from './tag-manager'
-import { PAGINATION_DEFAULTS } from '#/schemas/search-params'
-import type { Prisma } from '#/lib/db.server'
+import { PAGINATION_DEFAULTS } from '#/schemas/search-params.schema'
+import type { Prisma } from '#/lib/db.lib.server'
 import { useState, useTransition, Suspense, lazy } from 'react'
 import { Button } from '../ui/button'
-import { handleAction } from '#/lib/client-utils'
-import { updateNoteContentFn } from '#/data/note'
+import { handleAction } from '#/lib/client-utils.lib'
+import { updateNoteContentFn } from '#/data/note.data'
 import { useServerFn } from '@tanstack/react-start'
 // rejectNoteTagFn können wir entfernen, da onRemoveTag (handleDelete) exakt denselben Job macht!
-import { approveNoteTagFn } from '#/data/tag'
+import { approveNoteTagFn } from '#/data/tag.data'
 
 const MarkdownEditor = lazy(() => import('./markdown-editor'))
 

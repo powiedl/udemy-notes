@@ -2,31 +2,31 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mockDeep, mockReset } from 'vitest-mock-extended'
 import type { DeepMockProxy } from 'vitest-mock-extended'
 import type { PrismaClient } from '#/generated/prisma/client'
-import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants'
-import { prisma } from '#/lib/db.server'
-import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown'
+import { HTML_COMMENT_START, HTML_COMMENT_END } from '#/lib/constants.lib'
+import { prisma } from '#/lib/db.lib.server'
+import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown.lib'
 import {
   analyzeHtmlPayloadLogic,
   importHtmlFileLogic,
   exportMdFileLogic,
   importMdFileLogic,
 } from '../import-export.logic.server'
-import type { ExportMdFileSchema } from '#/schemas/export-file'
+import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 
 // 1. Mocks definieren
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: mockDeep<PrismaClient>(),
 }))
 
-vi.mock('#/lib/convertHtmlToMarkdown', () => ({
+vi.mock('#/lib/convertHtmlToMarkdown.lib', () => ({
   prepareAndConvertHtmlToMarkdown: vi.fn(),
 }))
 
-vi.mock('#/lib/udemy', () => ({
+vi.mock('#/lib/udemy.lib', () => ({
   orderInfo: vi.fn(() => '999-999-999'),
 }))
 
-vi.mock('#/lib/export-helper', () => ({
+vi.mock('#/lib/export-helper.lib', () => ({
   processNoteForMarkdown: vi.fn(() => 'Mocked Note Markdown'),
   generateSignature: vi.fn().mockReturnValue('mock-signature-123'),
 }))

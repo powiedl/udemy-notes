@@ -1,4 +1,4 @@
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 
 export default function Footer({ className = '' }: { className?: string }) {
   // const year = new Date().getFullYear()

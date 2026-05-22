@@ -1,8 +1,8 @@
-import { prisma } from '#/lib/db.server'
-import type { Prisma } from '#/lib/db.server'
+import { prisma } from '#/lib/db.lib.server'
+import type { Prisma } from '#/lib/db.lib.server'
 import type { TokenIdInput } from '#/schemas/course-public.schema'
-import type { CourseNotesSearchInput } from '#/schemas/search-params'
-import { ServerActionError } from '#/types/errors'
+import type { CourseNotesSearchInput } from '#/schemas/search-params.schema'
+import { ServerActionError } from '#/types/errors.type'
 import { mapNoteDisplayTags } from './note.logic.server'
 
 // #region helper functions

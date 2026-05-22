@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { handleAction, ActionAbortedError } from '#/lib/client-utils'
+import { handleAction, ActionAbortedError } from '#/lib/client-utils.lib'
 import { toast } from 'sonner'
 
 // 1. Wir mocken Sonner, damit keine echten DOM-Elemente gerendert werden müssen

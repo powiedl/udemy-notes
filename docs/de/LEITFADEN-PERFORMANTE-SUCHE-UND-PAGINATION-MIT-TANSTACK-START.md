@@ -59,7 +59,7 @@ Anstatt Defaults in Komponenten zu setzen, definieren wir sie zentral im Zod-Sch
 
 Da der Router nun die Sortierung der Parameter übernimmt, können (und sollten) wir die praktischen Methoden von Zod wie `.extend()` nutzen, um Basis-Schemata sauber zu erweitern.
 
-**Datei:** `src/schemas/search-params.ts`
+**Datei:** `src/schemas/search-params.schema'.ts`
 
 ```typescript
 import { z } from 'zod'
@@ -108,7 +108,7 @@ Die Server Function wird in **Logik** und **Handler** aufgeteilt. Die Logik bere
 ```typescript
 // 1. Die extrahierte Logik (für Unit-Tests zugänglich)
 export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
-  const { prisma } = await import('#/lib/db.server')
+  const { prisma } = await import('#/lib/db.lib.server')
   const { page, pageSize, search } = data
   const skip = (page - 1) * pageSize
 
@@ -132,7 +132,7 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
 export const getCoursesFn = authGetFn
   .inputValidator(paginationSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     return await wrapServerAction('getCoursesFn', context, data, async () => {
       return getCoursesLogic(data, context.session.user.id)
     })

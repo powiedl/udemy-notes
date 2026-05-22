@@ -1,11 +1,11 @@
 import { Fragment } from 'react'
-import type { ExtractData, ServerFnData } from '#/types/api'
+import type { ExtractData, ServerFnData } from '#/types/api.type'
 import Note from './note'
 import CourseHeader from '#/components/web/course-header'
 import type {
   AwaitedReturnTypeGetNotes,
   getNotesForCourseFn,
-} from '#/data/note'
+} from '#/data/note.data'
 // import { CourseHeaderData } from '#/data/course'
 
 type GlobalNote = ExtractData<AwaitedReturnTypeGetNotes>['items'][number]

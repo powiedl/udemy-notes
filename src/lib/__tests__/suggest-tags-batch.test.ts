@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { suggestTagsWithAIBatch } from '#/lib/ai.server'
-import type { BuildBatchTaggingPromptInput } from '#/lib/ai.server'
-import { ServerActionError } from '#/types/errors'
-import { prisma } from '#/lib/db.server'
+import { suggestTagsWithAIBatch } from '#/lib/ai.lib.server'
+import type { BuildBatchTaggingPromptInput } from '#/lib/ai.lib.server'
+import { ServerActionError } from '#/types/errors.type'
+import { prisma } from '#/lib/db.lib.server'
 
 // -----------------------------------------------------------------------------
 // 1. MOCKS EINRICHTEN
@@ -14,14 +14,14 @@ const { mockOpenRouterSend } = vi.hoisted(() => {
 
 // Wir mocken JETZT die ausgelagerte Datei!
 // Dadurch verwendet suggestTagsWithAIBatch garantiert unseren Mock.
-vi.mock('#/lib/openrouter-client.server', () => ({
+vi.mock('#/lib/openrouter-client.lib.server', () => ({
   openrouter: {
     chat: { send: mockOpenRouterSend },
   },
 }))
 
 // Wir mocken Prisma für das Telemetrie-Logging
-vi.mock('#/lib/db.server', () => ({
+vi.mock('#/lib/db.lib.server', () => ({
   prisma: {
     aiUsageLog: {
       create: vi.fn().mockResolvedValue({ id: 'log-1' }),

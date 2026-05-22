@@ -1,9 +1,9 @@
 // src/data/tag.logic.server.ts
-import { prisma } from '#/lib/db.server'
-import { isEmpty } from '#/lib/utils'
-import { suggestTagsWithAIBatch } from '#/lib/ai.server'
-import { ServerActionError } from '#/types/errors'
-import type { CreateAndLinkTagToTargetInput } from './tag'
+import { prisma } from '#/lib/db.lib.server'
+import { isEmpty } from '#/lib/utils.lib'
+import { suggestTagsWithAIBatch } from '#/lib/ai.lib.server'
+import { ServerActionError } from '#/types/errors.type'
+import type { CreateAndLinkTagToTargetInput } from './tag.data'
 import type {
   AutoTagCourseBatchInput,
   DeleteTagInput,
@@ -193,7 +193,7 @@ export const renameTagLogic = async (data: RenameTagInput, userId: string) => {
 }
 
 export const getTagUsageCountLogic = async (id: string, userId: string) => {
-  // const { prisma } = await import('#/lib/db.server')
+  // const { prisma } = await import('#/lib/db.lib.server')
 
   const tag = await prisma.tag.findUnique({
     where: {

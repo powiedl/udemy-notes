@@ -59,7 +59,7 @@ Instead of setting defaults in components, we define them centrally in the Zod s
 
 Since the router now handles parameter sorting, we can (and should) use practical Zod methods like `.extend()` to cleanly extend base schemas.
 
-**File:** `src/schemas/search-params.ts`
+**File:** `src/schemas/search-params.schema'.ts`
 
 ```typescript
 import { z } from 'zod'
@@ -108,7 +108,7 @@ The server function is split into **Logic** and **Handler**. The logic calculate
 ```typescript
 // 1. The extracted logic (accessible for unit tests)
 export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
-  const { prisma } = await import('#/lib/db.server')
+  const { prisma } = await import('#/lib/db.lib.server')
   const { page, pageSize, search } = data
   const skip = (page - 1) * pageSize
 
@@ -132,7 +132,7 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
 export const getCoursesFn = authGetFn
   .inputValidator(paginationSchema)
   .handler(async ({ data, context }) => {
-    const { wrapServerAction } = await import('#/lib/server-utils.server')
+    const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     return await wrapServerAction('getCoursesFn', context, data, async () => {
       return getCoursesLogic(data, context.session.user.id)
     })

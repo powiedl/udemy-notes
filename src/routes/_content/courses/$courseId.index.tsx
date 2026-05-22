@@ -1,8 +1,8 @@
 import { CourseView } from '#/components/web/course-view'
-import { getCourseByIdFn } from '#/data/course'
-import { getNotesForCourseFn } from '#/data/note' // NEU
-import { useCourseActions } from '#/hooks/use-course-actions'
-import { cn } from '#/lib/utils'
+import { getCourseByIdFn } from '#/data/course.data'
+import { getNotesForCourseFn } from '#/data/note.data' // NEU
+import { useCourseActions } from '#/hooks/use-course-actions.hook'
+import { cn } from '#/lib/utils.lib'
 import {
   createFileRoute,
   useLoaderData,
@@ -12,12 +12,12 @@ import { Loader2 } from 'lucide-react'
 import { Suspense, use, useDeferredValue, useState, useEffect } from 'react' // NEU: useState, useEffect
 
 // NEUE IMPORTE FÜR DIE SUCHE
-import { courseNotesSearchSchema } from '#/schemas/search-params'
+import { courseNotesSearchSchema } from '#/schemas/search-params.schema'
 
 import { useQuery } from '@tanstack/react-query'
 import { tagsQueryOptions } from '../route'
 
-import { hasRole } from '#/lib/permissions'
+import { hasRole } from '#/lib/permissions.lib'
 
 export const Route = createFileRoute('/_content/courses/$courseId/')({
   component: RouteComponent,

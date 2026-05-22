@@ -1,5 +1,5 @@
 import { Plus, Loader2, Check, Link2, CornerDownLeft } from 'lucide-react'
-import { cn } from '#/lib/utils'
+import { cn } from '#/lib/utils.lib'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import {
   Command,
