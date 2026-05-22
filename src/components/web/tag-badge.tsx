@@ -1,10 +1,10 @@
-import { Check, Loader2, X } from 'lucide-react'
-import { Badge } from '../ui/badge'
-import { Button } from '../ui/button'
+import React, { useState, useRef, useEffect } from 'react'
+import { X, Check, Loader2 } from 'lucide-react'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils.lib'
-import React, { useEffect, useRef, useState } from 'react'
 
-interface TagBadgeProps {
+export interface TagBadgeProps {
   tag: {
     id: string
     name: string
@@ -17,6 +17,7 @@ interface TagBadgeProps {
   onStartEdit?: () => void
   onCancelEdit?: () => void
   onApprove?: () => void
+  onClick?: () => void // Der Handler für externe Links
   isEditing?: boolean
   isApproving?: boolean
   isDeleting?: boolean
@@ -43,6 +44,7 @@ const TagBadge = ({
   icon,
   onApprove,
   isApproving,
+  onClick,
 }: TagBadgeProps) => {
   const isPrivate = !!tag.userId
   const isSuggestion = tag.status === 'SUGGESTION'
@@ -65,13 +67,11 @@ const TagBadge = ({
     }
   }
 
-  // Styling für das Badge
   const badgeClassName = cn(
     'inline-flex items-center uppercase gap-1 transition-all',
     size === 'sm' ? 'text-xxs! px-1.5 py-0 h-4' : 'text-xs px-2.5 py-0.5 h-6',
     isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
 
-    // Suggestion-Styling überschreibt normales Styling
     isSuggestion && 'border-dashed',
     isSuggestion && !onApprove && 'border-[3px]',
     isPrivate
@@ -88,7 +88,6 @@ const TagBadge = ({
     className,
   )
 
-  // Margins berechnen
   const divMr =
     size === 'sm'
       ? isHighlighted
@@ -97,7 +96,7 @@ const TagBadge = ({
       : isHighlighted
         ? 'mr-5'
         : 'mr-3'
-  const divMl = isSuggestion ? (size === 'sm' ? 'ml-1.5' : 'ml-2.5') : '' // Platz für Haken machen
+  const divMl = isSuggestion ? (size === 'sm' ? 'ml-1.5' : 'ml-2.5') : ''
 
   const xRight =
     size === 'sm'
@@ -109,21 +108,33 @@ const TagBadge = ({
         : '-right-2.5'
   const checkLeft = size === 'sm' ? '-left-1.5' : '-left-2.5'
 
+  const handleBadgeClick = () => {
+    if (isEditing) return
+
+    // Wenn ein externer Link hinterlegt ist
+    if (onClick) {
+      onClick()
+      return
+    }
+
+    // Wenn es sich um ein privates Tag handelt, das umbenannt werden darf
+    if (isPrivate && !isSuggestion && onStartEdit) {
+      onStartEdit()
+    }
+  }
+
+  const isClickable =
+    !!onClick || (isPrivate && !!onRename && !isEditing && !isSuggestion)
+
   return (
     <div
       className={cn(
         'relative w-fit group inline-flex',
         divMr,
         divMl,
-        isPrivate &&
-          onRename &&
-          !isEditing &&
-          !isSuggestion &&
-          'cursor-pointer',
+        isClickable && 'cursor-pointer',
       )}
-      onClick={() =>
-        !isEditing && isPrivate && !isSuggestion && onStartEdit?.()
-      }
+      onClick={handleBadgeClick}
     >
       <Badge variant="outline" className={badgeClassName} title={title}>
         <span className="truncate max-w-40 flex flex-row gap-0.5 items-center">
@@ -143,7 +154,6 @@ const TagBadge = ({
           )}
         </span>
 
-        {/* Delete / Reject Button (Rechts) */}
         {typeof onDelete === 'function' && !isEditing && (
           <Button
             type="button"
@@ -154,7 +164,6 @@ const TagBadge = ({
             }}
             className={cn(
               'absolute -top-1 rounded-full shadow-sm transition-colors border-2 cursor-pointer',
-              // Einheiltliches graues X, das beim Hovern rot wird
               'bg-background border-muted-foreground/20 text-muted-foreground hover:bg-red-500 hover:text-white hover:border-red-600 dark:hover:bg-red-600',
               size === 'sm' ? 'p-0 size-3.5' : 'p-0.5 size-5',
               xRight,
@@ -169,7 +178,6 @@ const TagBadge = ({
           </Button>
         )}
 
-        {/* Approve Button (Links) - Nur bei Suggestions */}
         {isSuggestion && typeof onApprove === 'function' && !isEditing && (
           <Button
             type="button"
