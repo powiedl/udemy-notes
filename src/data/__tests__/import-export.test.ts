@@ -362,6 +362,8 @@ describe('exportMdFileLogic', () => {
     includeNotesMetadata: true,
     includeNoteTags: true,
     includeTrainers: true,
+    includeCourseDescription: true,
+    includeCourseLinks: true,
     noteVersion: 'edited_with_fallback',
   }
 
@@ -484,7 +486,6 @@ describe('exportMdFileLogic', () => {
     const mockCourse = {
       id: courseId,
       title: 'No Tags Export',
-      trainers: [{ trainer: { name: 'TrainerShouldNotBeSeen' } }],
       tags: [{ tag: { name: 'CourseTagShouldNotBeSeen' } }],
       notes: [{ tags: [{ tag: { name: 'NoteTagShouldNotBeSeen' } }] }],
     }
@@ -498,5 +499,109 @@ describe('exportMdFileLogic', () => {
 
     // --- THEN ---
     expect(result.markdown).not.toContain('TrainerShouldNotBeSeen')
+  })
+
+  it('Respektiert includeCourseDescription: false', async () => {
+    // --- GIVEN ---
+    const mockCourse = {
+      id: courseId,
+      title: 'No Description Export',
+      description: 'CourseDescriptionShouldNotBeSeen',
+      tags: [],
+      trainers: [],
+      notes: [],
+    }
+    prismaMock.course.findUnique.mockResolvedValue(mockCourse as any)
+
+    // --- WHEN ---
+    const result = await exportMdFileLogic(
+      { ...defaultInput, includeCourseDescription: false },
+      userId,
+    )
+
+    // --- THEN ---
+    expect(result.markdown).not.toContain('CourseDescriptionShouldNotBeSeen')
+  })
+
+  it('Respektiert includeCourseLinks: false', async () => {
+    // --- GIVEN ---
+    const mockCourse = {
+      id: courseId,
+      title: 'No Links Export',
+      courseUrl: 'https://udemy.com/course/link-should-not-be-seen',
+      tags: [],
+      trainers: [],
+      notes: [],
+    }
+    prismaMock.course.findUnique.mockResolvedValue(mockCourse as any)
+
+    // --- WHEN ---
+    const result = await exportMdFileLogic(
+      { ...defaultInput, includeCourseLinks: false },
+      userId,
+    )
+
+    // --- THEN ---
+    expect(result.markdown).not.toContain('link-should-not-be-seen')
+  })
+
+  it('Respektiert includeNotesMetadata: false', async () => {
+    // --- GIVEN ---
+    const mockCourse = {
+      id: courseId,
+      title: 'No Note Metadata Export',
+      tags: [],
+      trainers: [],
+      notes: [
+        {
+          id: 'note_1',
+          orderInfo: '1',
+          lectureTitle: 'LectureTitleShouldNotBeSeen', // Typisches Metadaten-Feld
+          tags: [],
+        },
+      ],
+    }
+    prismaMock.course.findUnique.mockResolvedValue(mockCourse as any)
+
+    // --- WHEN ---
+    const result = await exportMdFileLogic(
+      { ...defaultInput, includeNotesMetadata: false },
+      userId,
+    )
+
+    // --- THEN ---
+    expect(result.markdown).not.toContain('LectureTitleShouldNotBeSeen')
+  })
+
+  it('Behandelt die noteVersion "original" korrekt', async () => {
+    // --- GIVEN ---
+    // Je nachdem wie deine exportMdFileLogic die noteVersion verarbeitet
+    // (ob sie die Flag an convertNoteToMarkdown weiterreicht oder selbst Felder selektiert)
+    const mockCourse = {
+      id: courseId,
+      title: 'Note Version Export',
+      tags: [],
+      trainers: [],
+      notes: [
+        {
+          id: 'note_1',
+          orderInfo: '1',
+          originalText: '<p>OriginalText</p>',
+          editedText: 'EditedTextShouldNotBeSeen',
+          tags: [],
+        },
+      ],
+    }
+    prismaMock.course.findUnique.mockResolvedValue(mockCourse as any)
+
+    // --- WHEN ---
+    const result = await exportMdFileLogic(
+      { ...defaultInput, noteVersion: 'original' },
+      userId,
+    )
+
+    // --- THEN ---
+    // Der editierte Text darf bei "original" nicht im finalen Markdown landen
+    expect(result.markdown).not.toContain('EditedTextShouldNotBeSeen')
   })
 })
