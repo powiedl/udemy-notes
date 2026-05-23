@@ -10,7 +10,9 @@ export const requestIdMiddleware = createMiddleware().server(
     const headers = getRequestHeaders()
 
     // Correlation ID vom Client oder neu
-    const correlationId = (headers['x-correlation-id'] as string) || uuidv4()
+    const correlationId =
+      (headers as unknown as Record<string, string>)['x-correlation-id'] ||
+      uuidv4()
     // Request ID immer neu für diesen Aufruf
     const requestId = uuidv4()
 
