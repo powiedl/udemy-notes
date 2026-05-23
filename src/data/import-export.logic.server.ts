@@ -810,6 +810,8 @@ export const exportMdFileLogic = async (
     includeCourseTags,
     includeTrainers,
     noteVersion,
+    includeCourseDescription,
+    includeCourseLinks,
   } = data
 
   const prismaParameters = {
@@ -847,6 +849,8 @@ export const exportMdFileLogic = async (
   if (!course) throw new ServerActionError('Course not found')
 
   // --- Markdown-Generierung ---
+
+  // 1. Standard Kurs-Metadaten (ohne URLs)
   const courseMetaData = {
     courseId: course.id,
     courseTitle: course.title,
@@ -860,15 +864,72 @@ export const exportMdFileLogic = async (
     JSON.stringify(courseMetaWithSig) +
     ' ' +
     HTML_COMMENT_END
-  let markdown = `${courseMetaTag}\n# ${course.title}\n\n`
+
+  // 2. Neue URL-Metadaten (inkl. Trainer-Links und Kurs-Bild)
+  const urlMetaData: {
+    courseUrl?: string
+    imageUrl?: string
+    trainers?: { name: string; url?: string }[]
+  } = {}
+
+  if (includeCourseLinks) {
+    if (course.courseUrl) {
+      urlMetaData.courseUrl = course.courseUrl
+    }
+    if (course.imageUrl) {
+      urlMetaData.imageUrl = course.imageUrl
+    }
+  }
+
+  if (includeTrainers) {
+    urlMetaData.trainers = course.trainers.map((t) => ({
+      name: t.trainer.name,
+      url:
+        includeCourseLinks && t.trainer.profileUrl
+          ? t.trainer.profileUrl
+          : undefined,
+    }))
+  }
+  const urlSignature = generateSignature(urlMetaData)
+  const urlMetaWithSig = { ...urlMetaData, sig: urlSignature }
+
+  const urlMetaTag =
+    HTML_COMMENT_START +
+    ' udemy-course-urls: ' +
+    JSON.stringify(urlMetaWithSig) +
+    ' ' +
+    HTML_COMMENT_END
+
+  // 3. Markdown zusammensetzen (Tags und Überschrift)
+  let markdown = `${courseMetaTag}\n${urlMetaTag}\n`
+
+  // H1 Überschrift: Entweder als Markdown-Link oder reiner Text
+  if (course.courseUrl && includeCourseLinks) {
+    markdown += `# [${course.title}](${course.courseUrl})\n\n`
+  } else {
+    markdown += `# ${course.title}\n\n`
+  }
+
+  // 4. Kursbeschreibung
+  if (includeCourseDescription && course.description) {
+    markdown += `${course.description}\n\n`
+  }
+
+  // 5. Trainer
   if (includeTrainers && course.trainers.length > 0) {
     markdown += `Trainers:\n`
     course.trainers.forEach((t) => {
-      if (t.trainer.name) markdown += `* ${t.trainer.name}\n`
+      // Prüfen, ob wir die Links generieren sollen und ob eine URL vorhanden ist
+      if (includeCourseLinks && t.trainer.profileUrl) {
+        markdown += `* [${t.trainer.name}](${t.trainer.profileUrl})\n`
+      } else if (t.trainer.name) {
+        markdown += `* ${t.trainer.name}\n`
+      }
     })
     markdown += '\n'
   }
 
+  // 6. Tags
   if (includeCourseTags) {
     if (course.tags.length > 0) {
       markdown += `Tags:\n`
@@ -879,6 +940,7 @@ export const exportMdFileLogic = async (
     }
   }
 
+  // 7. Notizen
   const notesMarkdownArray: string[] = []
 
   if (course.notes.length > 0) {
@@ -898,4 +960,5 @@ export const exportMdFileLogic = async (
   markdown = markdown.replace(/\n\n---\n\n$/, '')
   return { markdown }
 }
+
 // #endregion

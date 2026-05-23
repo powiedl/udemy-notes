@@ -1,0 +1,10 @@
+allowBuilds:
+  '@openrouter/sdk': false
+  '@prisma/engines': true
+  es5-ext: false
+  esbuild: true
+  msw: false
+  prisma: true
+  unrs-resolver: false
+overrides:
+  '@hono/node-server': '>=1.19.13'

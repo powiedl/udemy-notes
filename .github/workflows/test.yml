@@ -13,11 +13,11 @@ jobs:
       - name: Code auschecken
         uses: actions/checkout@v4
 
-      # 1. pnpm v10 installieren (passend zu deinem lokalen Setup)
+      # 1. pnpm v11 installieren (passend zu deinem neuen lokalen Setup)
       - name: pnpm installieren
         uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 11
 
       # 2. Node 24 aufsetzen und pnpm Cache aktivieren
       - name: Node.js aufsetzen
@@ -30,9 +30,11 @@ jobs:
       - name: Dependencies installieren
         run: pnpm install --frozen-lockfile
 
-      # 4. Tests ausführen
+      # 4. Sicherheits-Check (pnpm audit)
+      - name: Abhängigkeiten auf Sicherheitslücken prüfen
+        run: pnpm audit --audit-level=high
+        # Erklärung zu --audit-level weiter unten!
+
+      # 5. Tests ausführen
       - name: Tests ausführen
         run: pnpm run test
-        # Falls deine Tests eine Datenbank brauchen, einkommentieren:
-        # env:
-        #   DATABASE_URL: ${{ secrets.DATABASE_URL }}
