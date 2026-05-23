@@ -22,7 +22,7 @@ export const checkImportFileValidationSchema = withLogging(
 // #endregion
 
 export type AwaitedReturnTypeExportMdFile = Awaited<
-  ReturnType<typeof exportMdFile>
+  ReturnType<typeof exportMdFileFn>
 >
 export type AwaitedReturnTypeImportHtmlFile = Awaited<
   ReturnType<typeof importHtmlFile>
@@ -96,7 +96,7 @@ export const importMdFile = authFn
  * Dient als Entry-Point für das Frontend, validiert die Export-Optionen und
  * nutzt `exportMdFileLogic` zur Generierung des Inhalts.
  */
-export const exportMdFile = authFn
+export const exportMdFileFn = authFn
   .inputValidator(exportMdFileValidationSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')

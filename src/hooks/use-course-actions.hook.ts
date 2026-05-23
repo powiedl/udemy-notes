@@ -1,5 +1,5 @@
 import { useServerFn } from '@tanstack/react-start'
-import { exportMdFile } from '#/data/import-export.data'
+import { exportMdFileFn } from '#/data/import-export.data'
 import { createShareLinkFn, deleteCourseByIdFn } from '#/data/course.data'
 import { handleAction } from '#/lib/client-utils.lib'
 import { useRouter } from '@tanstack/react-router'
@@ -8,7 +8,7 @@ import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 export function useCourseActions() {
   const router = useRouter()
   // Wir sagen dem Hook explizit, welches Schema die Funktion hat
-  const exportFn = useServerFn<typeof exportMdFile>(exportMdFile)
+  const exportFn = useServerFn<typeof exportMdFileFn>(exportMdFileFn)
   const deleteFn = useServerFn<typeof deleteCourseByIdFn>(deleteCourseByIdFn)
   const shareFn = useServerFn<typeof createShareLinkFn>(createShareLinkFn)
 
@@ -66,6 +66,8 @@ export function useCourseActions() {
         includeNoteTags,
         includeNotesMetadata,
         includeTrainers,
+        includeCourseDescription,
+        includeCourseLinks,
         noteVersion,
       } = data
       // console.log('use-course-actions,data:', data)
@@ -77,6 +79,8 @@ export function useCourseActions() {
             includeCourseTags,
             includeTrainers,
             includeNoteTags,
+            includeCourseDescription,
+            includeCourseLinks,
             noteVersion,
             loggingMetadata: {
               component: 'CourseHeader',

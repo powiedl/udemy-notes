@@ -32,6 +32,8 @@ const initialFormValues: ExportMdFileSchema = {
   includeTrainers: true,
   includeNoteTags: true,
   includeNotesMetadata: true,
+  includeCourseDescription: true,
+  includeCourseLinks: true,
   noteVersion: 'edited_with_fallback',
 }
 const ExportCourseDialog = ({
@@ -169,6 +171,76 @@ const ExportCourseDialog = ({
                         className="font-normal cursor-pointer leading-none m-0"
                       >
                         Include trainers
+                      </FieldLabel>
+                    </div>
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+          </div>
+          <div className="flex flex-row gap-x-6">
+            {/* includeCourseDescription */}
+            <form.Field
+              name="includeCourseDescription"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <div className="flex flex-row items-center gap-x-2">
+                      <Checkbox
+                        id={field.name}
+                        name={field.name}
+                        checked={field.state.value}
+                        onBlur={field.handleBlur}
+                        onCheckedChange={(checked) =>
+                          field.handleChange(checked === true)
+                        }
+                        aria-invalid={isInvalid}
+                      />
+                      <FieldLabel
+                        htmlFor={field.name}
+                        className="font-normal cursor-pointer leading-none m-0"
+                      >
+                        Include course description
+                      </FieldLabel>
+                    </div>
+                    {/* Fehler erscheint brav in der Zeile darunter */}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                )
+              }}
+            />
+
+            {/* includeCourseTrainerLinks */}
+            <form.Field
+              name="includeCourseLinks"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <div className="flex flex-row items-center gap-x-2">
+                      <Checkbox
+                        id={field.name}
+                        name={field.name}
+                        checked={field.state.value}
+                        onBlur={field.handleBlur}
+                        onCheckedChange={(checked) =>
+                          field.handleChange(checked === true)
+                        }
+                        aria-invalid={isInvalid}
+                      />
+                      <FieldLabel
+                        htmlFor={field.name}
+                        className="font-normal cursor-pointer leading-none m-0"
+                      >
+                        Include links (course, image and trainer)
                       </FieldLabel>
                     </div>
                     {isInvalid && (
