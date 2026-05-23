@@ -91,12 +91,6 @@
     "vitest": "^3.0.5",
     "vitest-mock-extended": "^4.0.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss"
-    ]
-  },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   }
