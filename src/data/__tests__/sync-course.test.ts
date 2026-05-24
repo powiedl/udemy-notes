@@ -7,11 +7,17 @@ import { resolveTagIds } from '#/lib/tag-helpers.lib.server'
 import type { ImportFileSchema } from '#/schemas/import-file.schema'
 
 // --- 1. Mocks einrichten ---
+const prismaMock = vi.hoisted(() => ({
+  tag: { create: vi.fn() },
+  course: { findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
+  note: { findMany: vi.fn(), update: vi.fn(), create: vi.fn() },
+}))
+
 vi.mock('#/lib/db.lib.server', () => ({
   prisma: {
-    tag: { create: vi.fn() },
-    course: { findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
-    note: { findMany: vi.fn(), update: vi.fn(), create: vi.fn() },
+    ...prismaMock,
+    // Simuliert das Verhalten von Prisma Transactions im Unit-Test
+    $transaction: vi.fn(async (callback) => callback(prismaMock)),
   },
 }))
 
@@ -151,5 +157,56 @@ describe('syncCourseToDatabase', () => {
 
     // Da das Tag schon an der Notiz hängt, darf "create" leer sein!
     expect(createdNoteTags).toHaveLength(0)
+  })
+
+  it('4. Legacy-Import: Sucht den Kurs anhand des Titels, wenn keine courseId (DNA) übergeben wurde', async () => {
+    vi.mocked(prismaMock.course.findFirst).mockResolvedValue(null)
+
+    // Wir stellen sicher, dass keine courseId im formData ist
+    const legacyFormData = { ...formData, courseId: undefined }
+
+    await syncCourseToDatabase(parsedData, legacyFormData, userId)
+
+    // Prüfen, ob nach Titel gesucht wurde (Legacy-Verhalten)
+    expect(prismaMock.course.findFirst).toHaveBeenCalledTimes(1)
+    const findArgs = vi.mocked(prismaMock.course.findFirst).mock.calls[0][0]
+
+    expect(findArgs?.where).toEqual(
+      expect.objectContaining({
+        title: parsedData.title,
+        userId: userId,
+      }),
+    )
+  })
+
+  it('5. DNA-Import: Sucht den Kurs zwingend über die courseId, selbst wenn der Titel abweicht', async () => {
+    vi.mocked(prismaMock.course.findFirst).mockResolvedValue(null)
+
+    const dnaCourseId = 'eiserne-dna-id-123'
+    const dnaFormData = { ...formData, courseId: dnaCourseId }
+
+    // Der Titel im Markdown weicht absichtlich ab
+    const alteredParsedData = {
+      ...parsedData,
+      title: 'Ein völlig neuer Kursname',
+      courseId: dnaCourseId,
+    }
+
+    await syncCourseToDatabase(alteredParsedData, dnaFormData, userId)
+
+    expect(prismaMock.course.findFirst).toHaveBeenCalledTimes(1)
+    const findArgs = vi.mocked(prismaMock.course.findFirst).mock.calls[0][0]
+
+    // Der wichtigste Check: Es MUSS nach der ID gesucht werden, nicht nach dem Titel
+    expect(findArgs?.where).toEqual(
+      expect.objectContaining({
+        id: dnaCourseId,
+        userId: userId,
+      }),
+    )
+
+    // Absicherung: Der Titel darf nicht in der where-Klausel auftauchen,
+    // da sonst das Matching fehlschlägt, wenn der User den Kurs umbenannt hat.
+    expect(findArgs?.where).not.toHaveProperty('title')
   })
 })

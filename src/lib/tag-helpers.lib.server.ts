@@ -1,4 +1,5 @@
 import { prisma } from '#/lib/db.lib.server'
+import type { Prisma } from '#/lib/db.lib.server'
 
 type ExistingNoteOrCourseTag = {
   tag: {
@@ -12,6 +13,7 @@ export const resolveTagIds = async (
   tagNames: string[],
   userId: string,
   existingLinkedTags: ExistingNoteOrCourseTag[] = [],
+  dbClient: Prisma.TransactionClient = prisma,
 ): Promise<string[]> => {
   const finalTagIds: string[] = []
   const namesToResolve: string[] = []
@@ -33,7 +35,7 @@ export const resolveTagIds = async (
 
   // 2. Datenbank-Bulk-Abfrage für alle verbleibenden Tags
   // Wir suchen alle Tags, die diesen Namen haben UND entweder dem User gehören oder global sind.
-  const dbTags = await prisma.tag.findMany({
+  const dbTags = await dbClient.tag.findMany({
     where: {
       name: { in: namesToResolve },
       OR: [{ userId: userId }, { userId: null }],
@@ -67,7 +69,7 @@ export const resolveTagIds = async (
     // nicht die generierten IDs zurückgibt, wir diese aber für die Verknüpfung zwingend brauchen.
     const createdTags = await Promise.all(
       namesToCreate.map((name) =>
-        prisma.tag.create({
+        dbClient.tag.create({
           data: { name, userId },
           select: { id: true },
         }),

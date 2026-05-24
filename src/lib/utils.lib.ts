@@ -34,29 +34,36 @@ export function getNodeEnv(environment?: string): string | boolean {
  * @param obj The object to normalize.
  * @returns A new object with the same values, but with all keys sorted alphabetically.
  */
-export function normalizeObject<T extends Record<string, any>>(obj: T): T {
-  // 1. Sicherheitscheck: Wenn kein Objekt da ist, gib es einfach zurück.
-  if (typeof obj !== 'object' || Array.isArray(obj)) return obj
-
-  // 2. Alle Schlüssel extrahieren und alphabetisch sortieren.
-  // Das ist der entscheidende Schritt für die Deterministik!
-  const sortedKeys = Object.keys(obj).sort()
-
-  // 3. Ein neues, leeres Objekt erstellen.
-  const normalizedObj = {} as T
-
-  // 4. Die sortierten Schlüssel durchlaufen und die Werte übertragen.
-  for (const key of sortedKeys) {
-    const value = obj[key]
-
-    // 5. Rekursion (optional, aber empfohlen):
-    // Falls ein Wert selbst ein Objekt ist, wird auch dieses sortiert.
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      normalizedObj[key as keyof T] = normalizeObject(value)
-    } else {
-      normalizedObj[key as keyof T] = value
-    }
+export function normalizeObject(obj: any): any {
+  // 1. Arrays iterieren und Elemente rekursiv normalisieren
+  if (Array.isArray(obj)) {
+    return obj.map((item) => normalizeObject(item))
   }
 
-  return normalizedObj
+  // 2. Objekte alphabetisch sortieren
+  if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj)
+      .sort()
+      .reduce(
+        (acc, key) => {
+          acc[key] = normalizeObject(obj[key])
+          return acc
+        },
+        {} as Record<string, any>,
+      )
+  }
+
+  // 3. Primitive Werte (Strings, Numbers, etc.) unverändert zurückgeben
+  return obj
+}
+
+export function getVisualCourseTitle(headerContent: string): string {
+  const titleMatch = headerContent.match(/^#\s+(.+)$/m)
+
+  if (!titleMatch) {
+    return 'Unknown Course'
+  }
+
+  // Entfernt die Markdown-Link-Syntax und gibt nur den Text zurück: [Titel](URL) -> Titel
+  return titleMatch[1].replace(/\[([^\]]+)\]\([^)]+\)/, '$1').trim()
 }
