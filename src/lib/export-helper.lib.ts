@@ -3,6 +3,7 @@ import type { SingleNote } from '#/lib/prisma-types.lib'
 import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 import { HTML_COMMENT_END, HTML_COMMENT_START } from './constants.lib'
 import { SIGNING_SECRET } from './constants.lib.server'
+import { normalizeObject } from './utils.lib'
 
 export const parseMarkdownCourse = (mdContent: string) => {
   // 1. Text in Header und Notizen splitten (inkl. dynamischer Meta-Tags)
@@ -196,9 +197,11 @@ export function processNoteForMarkdown(
 
 export function generateSignature(data: object): string {
   const secret = SIGNING_SECRET
+  const normalizedData = normalizeObject(data)
+
   return crypto
     .createHmac('sha256', secret)
-    .update(JSON.stringify(data))
+    .update(JSON.stringify(normalizedData))
     .digest('hex')
-    .slice(0, 16) // 16 Zeichen reichen für diesen Zweck völlig aus
+    .slice(0, 16)
 }

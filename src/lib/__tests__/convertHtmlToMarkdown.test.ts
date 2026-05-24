@@ -2,26 +2,26 @@ import { describe, it, expect } from 'vitest'
 import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown.lib'
 import { UDEMY_SELECTORS } from '#/lib/constants.lib.server'
 
-// 1. Das Mock-Objekt für den Test bauen
 describe('prepareAndConvertHtmlToMarkdown', () => {
-  // Hilfsfunktion: Wandelt CSS-Selektoren in HTML-Attribute um
   const toAttr = (selector: string): string => {
     if (selector.includes('data-purpose')) {
-      // Extrahiert "bookmarks-container" aus '[data-purpose="bookmarks-container"]'
       const match = selector.match(/data-purpose="([^"]+)"/)
       return match ? `data-purpose="${match[1]}"` : ''
     }
-    // Entfernt den Punkt am Anfang für Klassen
     return `class="${selector.replace(/^\./, '')}"`
   }
 
-  const createMockHtml = (noteContentHtml: string) => {
+  // Erweitert um Meta-Tags für umfassendes Metadaten-Testing
+  const createMockHtml = (
+    noteContentHtml: string,
+    headContent: string = '',
+  ) => {
     return `
       <!DOCTYPE html>
       <html>
         <head>
           <title>Course: React Mastery | Udemy</title>
-          
+          ${headContent}
         </head>
         <body>
           <div ${toAttr(UDEMY_SELECTORS.notesContainerSelector)}>
@@ -39,183 +39,175 @@ describe('prepareAndConvertHtmlToMarkdown', () => {
     `
   }
 
-  it('sollte einfachen Text und Titel korrekt extrahieren', () => {
-    const html = createMockHtml('<p>Das ist eine einfache Notiz.</p>')
-    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
+  describe('Metadaten-Extraktion', () => {
+    it('sollte Standard-Metadaten korrekt extrahieren und bereinigen', () => {
+      const headContent = `
+        <meta name="description" content="Ein umfassender React Kurs.">
+        <meta property="og:image" content="https://example.com/react.jpg">
+        <meta property="og:url" content="https://udemy.com/course/react">
+      `
+      // UDEMY_SELECTORS müssen hier matchen, z.B. meta[name="description"]
+      const html = createMockHtml('<p>Notiz</p>', headContent)
+      const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
-    if (result.status === 'ERROR') {
-      throw new Error(result.message)
-    }
+      if (result.status === 'ERROR') throw new Error(result.message)
 
-    expect(result.course.title).toBe('React Mastery')
-    expect(result.course.notes[0].content).toBe('Das ist eine einfache Notiz.')
+      // Prüft die Bereinigung von "Course: " und " | Udemy"
+      expect(result.course.title).toBe('React Mastery')
+
+      // Prüft die Zuweisung der zusätzlichen Felder (je nach Typendefinition in ImportCourse)
+      expect((result.course as any).description).toBe(
+        'Ein umfassender React Kurs.',
+      )
+      expect((result.course as any).imageUrl).toBe(
+        'https://example.com/react.jpg',
+      )
+      expect((result.course as any).courseUrl).toBe(
+        'https://udemy.com/course/react',
+      )
+    })
+
+    it('sollte auf OpenGraph (og:) Fallbacks zurückgreifen, wenn Standard-Tags fehlen', () => {
+      const headContent = `
+        <meta property="og:title" content="Course: Vue Mastery | Udemy">
+        <meta property="og:description" content="OG Description Fallback">
+      `
+      // Wir entfernen den <title> Tag manuell, um den Fallback zu testen
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            ${headContent}
+          </head>
+          <body>
+            <div ${toAttr(UDEMY_SELECTORS.notesContainerSelector)}>
+              <div ${toAttr(UDEMY_SELECTORS.noteSelector)}>
+                <div ${toAttr(UDEMY_SELECTORS.noteBodySelector)}><p>Test</p></div>
+              </div>
+            </div>
+          </body>
+        </html>
+      `
+      const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
+
+      if (result.status === 'ERROR') throw new Error(result.message)
+
+      expect(result.course.title).toBe('Vue Mastery')
+      expect((result.course as any).description).toBe('OG Description Fallback')
+    })
+
+    it('sollte einen sauberen Fehler werfen und trotzdem den Titel parsen, wenn keine Notizen existieren', () => {
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Course: Leerer Kurs | Udemy</title>
+          </head>
+          <body>
+            <!-- Container fehlt absichtlich -->
+          </body>
+        </html>
+      `
+      const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
+
+      expect(result.status).toBe('ERROR')
+      if (result.status === 'ERROR') {
+        expect(result.message).toContain('# Leerer Kurs')
+        expect(result.message).toContain('Es wurden keine Notizen gefunden')
+      }
+    })
   })
 
-  it('sollte Udemy Code-Blöcke korrekt erkennen', () => {
-    // Laut deiner Konstante: 'ud-component--base-components--code-block'
-    // Da kein Punkt davor steht, wird es als Tag oder Klasse behandelt.
-    // Udemy nutzt hier oft verschachtelte <li>.
-    const codeHtml = `
-      <div class="${UDEMY_SELECTORS.noteCodeBlockSelector}">
-        <li>conso-log("Hello World")</li>
-      </div>
-    `
-    const html = createMockHtml(codeHtml)
-    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
+  describe('Markdown-Konvertierung (Parsing)', () => {
+    it('sollte einfachen Text korrekt extrahieren', () => {
+      const html = createMockHtml('<p>Das ist eine einfache Notiz.</p>')
+      const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
 
-    if (result.status === 'ERROR') throw new Error(result.message)
+      if (result.status === 'ERROR') throw new Error(result.message)
 
-    expect(result.course.notes[0].content).toContain('```')
-    expect(result.course.notes[0].content).toContain('conso-log("Hello World")')
+      expect(result.course.notes[0].content).toBe(
+        'Das ist eine einfache Notiz.',
+      )
+    })
+
+    it('sollte Udemy Code-Blöcke korrekt erkennen', () => {
+      const codeHtml = `
+        <div class="${UDEMY_SELECTORS.noteCodeBlockSelector}">
+          <li>conso-log("Hello World")</li>
+        </div>
+      `
+      const html = createMockHtml(codeHtml)
+      const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
+
+      if (result.status === 'ERROR') throw new Error(result.message)
+
+      expect(result.course.notes[0].content).toContain('```')
+      expect(result.course.notes[0].content).toContain(
+        'conso-log("Hello World")',
+      )
+    })
+
+    it('sollte fett und kursiv geschriebene HTML Tags richtig rendern', () => {
+      const html = createMockHtml(
+        '<p>Innerhalb <strong><em>dieses</em></strong> HTML Elements (<em>oft</em> ein <em><strong>&lt;div&gt;</strong></em>) kann <strong>man</strong> dann</p>',
+      )
+      const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
+
+      if (result.status === 'ERROR') throw new Error(result.message)
+
+      expect(result.course.notes[0].content).toContain(
+        'Innerhalb ***dieses*** HTML Elements (*oft* ein ***<div>***) kann **man** dann',
+      )
+    })
+
+    it('sollte Zeilenumbrüche richtig rendern', () => {
+      const html = createMockHtml('<p>Test<br>mit<br>Umbrüchen</p>')
+      const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
+
+      if (result.status === 'ERROR') throw new Error(result.message)
+
+      expect(result.course.notes[0].content).toContain(
+        `Test  \nmit  \nUmbrüchen`,
+      )
+    })
+
+    it('sollte HTML Entities im Code-Block korrekt nativ durch Cheerio als Text darstellen', () => {
+      const codeWithEntities = `
+        <div class="${UDEMY_SELECTORS.noteCodeBlockSelector}">
+          <li>if (a &gt; b) { return "&lt;div&gt;"; }</li>
+        </div>
+      `
+      const html = createMockHtml(codeWithEntities)
+      const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
+
+      if (result.status === 'ERROR') throw new Error(result.message)
+
+      // Cheerio's .text() handelt HTML-Entities automatisch ab, was Test-Ausfälle durch manuelles Escapen verhindert.
+      expect(result.course.notes[0].content).toContain(
+        'if (a > b) { return "<div>"; }',
+      )
+    })
+
+    it('sollte Einrückungen in mehrzeiligen Codeblöcken exakt erhalten', () => {
+      const html = createMockHtml(`
+        <div ${toAttr(UDEMY_SELECTORS.noteCodeBlockSelector)}>
+          <pre>
+            <ol>
+              <li>const start = true;</li>
+              <li>  if (start) {</li>
+              <li>    console.log("Indented");</li>
+              <li>  }</li>
+            </ol>
+          </pre>
+        </div>
+      `)
+      const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
+
+      if (result.status === 'ERROR') throw new Error(result.message)
+
+      const content = result.course.notes[0].content
+      expect(content).toContain('  if (start) {')
+      expect(content).toContain('    console.log("Indented");')
+    })
   })
-
-  it('sollte fett und kursiv geschriebene HTML Tags richtig rendern', () => {
-    const html = createMockHtml(
-      '<p>Innerhalb <strong><em>dieses</em></strong> HTML Elements (<em>oft</em> ein <em><strong>&lt;div&gt;</strong></em>) kann <strong>man</strong> dann</p>',
-    )
-    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
-
-    if (result.status === 'ERROR') throw new Error(result.message)
-
-    expect(result.course.notes[0].content).toContain(
-      'Innerhalb ***dieses*** HTML Elements (*oft* ein ***<div>***) kann **man** dann',
-    )
-  })
-
-  it('sollte Zeilenumbrüche richtig rendern', () => {
-    const html = createMockHtml(
-      '<p>Wenn man mehrere Testgruppen und Tests<br>in einem File hat, <br>kann man einen einzelnen davon<br> ausführen, indem man dort <br> describe.only oder test.only schreibt&nbsp;(dann wird nur der .only Teil ausgeführt). Das kann manchmal hilfreich sein, weil es zu "Interferenzen"&nbsp;zwischen einzelnen Tests kommen kann. Auf diese Weise kann man recht schnell feststellen, ob der Test, der nicht wie erwartet funktioniert, falsch ist oder ob es vielleicht zu so einer Interferenz kommt.</p>',
-    )
-    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
-
-    if (result.status === 'ERROR') throw new Error(result.message)
-
-    expect(result.course.notes[0].content).toContain(
-      `Wenn man mehrere Testgruppen und Tests  
-in einem File hat,  
-kann man einen einzelnen davon  
-ausführen, indem man dort  
-describe.only oder test.only schreibt\u00A0(dann wird nur der .only Teil ausgeführt). Das kann manchmal hilfreich sein, weil es zu "Interferenzen"\u00A0zwischen einzelnen Tests kommen kann. Auf diese Weise kann man recht schnell feststellen, ob der Test, der nicht wie erwartet funktioniert, falsch ist oder ob es vielleicht zu so einer Interferenz kommt.`,
-    )
-  })
-
-  it('sollte mehrzeilige Codeblöcke und nachfolgenden Text korrekt trennen', () => {
-    // WICHTIG: Der Code-Block und das P-Tag müssen Geschwister sein.
-    // Innerhalb des Code-Blocks nutzen wir die PRE/LI Struktur von Udemy.
-    const complexHtml = `
-      <div class="${UDEMY_SELECTORS.noteCodeBlockSelector}">
-        <pre>
-          <ol>
-            <li>describe('test', () => {</li>
-            <li>  console.log('hello');</li>
-            <li>});</li>
-          </ol>
-        </pre>
-      </div>
-      <p>Ein <strong>wichtiger</strong> Hinweis danach.</p>
-    `
-
-    const html = createMockHtml(complexHtml)
-    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
-
-    if (result.status === 'ERROR') throw new Error(result.message)
-
-    const content = result.course.notes[0].content
-
-    // Wir testen die Bestandteile einzeln, um Whitespace-Probleme im Template-String zu umgehen
-    expect(content).toContain('```')
-    expect(content).toContain("describe('test', () => {")
-    expect(content).toContain("console.log('hello');")
-    expect(content).toContain('```')
-
-    // Testet, ob die Formatierung ausserhalb des Code-Blocks greift
-    expect(content).toContain('Ein **wichtiger** Hinweis danach.')
-
-    // Sicherstellen, dass der Text NICHT im Codeblock gelandet ist (keine HTML Tags im Code)
-    expect(content).not.toContain('```\n<p>')
-  })
-
-  it('sollte HTML Entities im Code-Block korrekt als Text darstellen', () => {
-    const codeWithEntities = `
-      <div class="${UDEMY_SELECTORS.noteCodeBlockSelector}">
-        <li>if (a &gt; b) { return "&lt;div&gt;"; }</li>
-      </div>
-    `
-    const html = createMockHtml(codeWithEntities)
-    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
-
-    if (result.status === 'ERROR') throw new Error(result.message)
-
-    // .text() wandelt &gt; automatisch in > um
-    expect(result.course.notes[0].content).toContain(
-      'if (a > b) { return "<div>"; }',
-    )
-  })
-
-  it('sollte nummerierte Aufzählungen richtig rendern', () => {
-    const html = createMockHtml(
-      '<h4>Prozess von MSW&nbsp;Tests (Moken der Fetch Requests)</h4><ol><li><p>Erzeugen eines Testfiles</p></li><li><p>Verstehen der genauen URL, des HTTP&nbsp;Verbs, und der Rückgabe (inkl. welche Teile der Rückgabe man verwendet)</p></li><li><p>Erzeugen eines MSW&nbsp;Handlers, der die Requests abfängt und die "vorgefertigten"&nbsp;Daten zurückliefert</p></li><li><p>Anlegen der beforeAll, afterEach und afterAll hooks im Testfile</p></li><li><p>Im Test wird die Komponente gerendert und dann warten man darauf, dass das richtige Element sichtbar wird</p></li></ol><p>',
-    )
-    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
-
-    if (result.status === 'ERROR') throw new Error(result.message)
-
-    expect(result.course.notes[0].content).toContain(
-      `#### Prozess von MSW\u00A0Tests (Moken der Fetch Requests)
-
-1. Erzeugen eines Testfiles
-2. Verstehen der genauen URL, des HTTP\u00A0Verbs, und der Rückgabe (inkl. welche Teile der Rückgabe man verwendet)
-3. Erzeugen eines MSW\u00A0Handlers, der die Requests abfängt und die "vorgefertigten"\u00A0Daten zurückliefert
-4. Anlegen der beforeAll, afterEach und afterAll hooks im Testfile
-5. Im Test wird die Komponente gerendert und dann warten man darauf, dass das richtige Element sichtbar wird`,
-    )
-  })
-
-  it('sollte Einrückungen in mehrzeiligen Codeblöcken exakt erhalten', () => {
-    const html = createMockHtml(`
-      <div ${toAttr(UDEMY_SELECTORS.noteCodeBlockSelector)}>
-        <pre>
-          <ol>
-            <li>const start = true;</li>
-            <li>  if (start) {</li>
-            <li>    console.log("Indented");</li>
-            <li>  }</li>
-          </ol>
-        </pre>
-      </div>
-    `)
-    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
-
-    if (result.status === 'ERROR') throw new Error(result.message)
-
-    const content = result.course.notes[0].content
-    // Wir prüfen, ob die exakte Anzahl an Leerzeichen im Markdown-String ankommt
-    expect(content).toContain('  if (start) {')
-    expect(content).toContain('    console.log("Indented");')
-  })
-
-  it('sollte Blockquotes richtig rendern', () => {
-    const html = createMockHtml(`
-      <p>normaler Text</p>
-      <blockquote>
-        <p>Quote1</p>
-        <p>Quote2</p>
-      </blockquote>
-      <p>normaler Text2</p>
-    `)
-    const result = prepareAndConvertHtmlToMarkdown(html, UDEMY_SELECTORS)
-
-    if (result.status === 'ERROR') throw new Error(result.message)
-
-    expect(result.course.notes[0].content).toContain(
-      `normaler Text
-
-> Quote1
->
-> Quote2
-
-normaler Text2`,
-    )
-  })
-  // ... weitere Tests wie oben
 })

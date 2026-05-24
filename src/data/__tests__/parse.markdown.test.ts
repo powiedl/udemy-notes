@@ -292,3 +292,61 @@ Das ist der einzige Text (unbearbeitet).
     expect(note.parsedOriginalContent).toBeNull()
   })
 })
+
+describe('C) Parser: udemy-course-urls (Neue URL-Metadaten)', () => {
+  it('9. Sollte courseUrl, imageUrl und die trainerUrl (erstes Element) korrekt aus den Metadaten auslesen', () => {
+    // Hier nutzen wir echte URLs mit standard Zeichen, um den nativen Parsing-Flow zu testen
+    const md = [
+      HTML_COMMENT_START +
+        ' udemy-course-urls: {"courseUrl":"https://udemy.com/course/react-the-complete-guide","imageUrl":"https://img.udemy.com/course/123.jpg","trainers":[{"title":"Max Mustermann","url":"https://udemy.com/user/max-mustermann/"},{"title":"Erika Musterfrau","url":"https://udemy.com/user/erika/"}],"sig":"mock-signature-123"} ' +
+        HTML_COMMENT_END,
+      '# React - The Complete Guide',
+      '',
+      '## Note',
+    ].join('\n')
+
+    const result = parseMarkdownCourse(md)
+
+    expect(result.courseUrl).toBe(
+      'https://udemy.com/course/react-the-complete-guide',
+    )
+    expect(result.imageUrl).toBe('https://img.udemy.com/course/123.jpg')
+    // Es darf nur die URL des ersten Trainers extrahiert werden
+    expect(result.trainerUrl).toBe('https://udemy.com/user/max-mustermann/')
+  })
+
+  it('10. Sollte graceful fehlschlagen und undefined zurückgeben, wenn die Signatur ungültig ist', () => {
+    const md = [
+      HTML_COMMENT_START +
+        ' udemy-course-urls: {"courseUrl":"https://hacker.com/course","sig":"ungueltige-signatur"} ' +
+        HTML_COMMENT_END,
+      '# Hacker Kurs',
+      '',
+      '## Note',
+    ].join('\n')
+
+    const result = parseMarkdownCourse(md)
+
+    // Da die Signatur falsch ist, muss der gesamte Block ignoriert werden
+    expect(result.courseUrl).toBeUndefined()
+    expect(result.imageUrl).toBeUndefined()
+    expect(result.trainerUrl).toBeUndefined()
+  })
+
+  it('11. Sollte keine Fehler werfen, wenn das Trainers-Array leer ist oder fehlt', () => {
+    const md = [
+      HTML_COMMENT_START +
+        ' udemy-course-urls: {"courseUrl":"https://udemy.com/course/123","sig":"mock-signature-123"} ' +
+        HTML_COMMENT_END,
+      '# Kurs ohne Trainer URL',
+      '',
+      '## Note',
+    ].join('\n')
+
+    const result = parseMarkdownCourse(md)
+
+    expect(result.courseUrl).toBe('https://udemy.com/course/123')
+    // trainerUrl muss undefined bleiben, da kein Array übergeben wurde
+    expect(result.trainerUrl).toBeUndefined()
+  })
+})

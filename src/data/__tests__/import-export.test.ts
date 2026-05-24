@@ -173,6 +173,7 @@ describe('importHtmlFileLogic', () => {
   beforeEach(() => {
     mockReset(prismaMock)
     vi.clearAllMocks()
+    prismaMock.$transaction.mockImplementation(async (cb) => cb(prismaMock))
   })
 
   // HINWEIS: Die alten Validierungs-Tests wurden entfernt, da diese
@@ -305,6 +306,7 @@ describe('importMdFileLogic (Tabula Rasa & Sicherheit)', () => {
   beforeEach(() => {
     mockReset(prismaMock)
     vi.clearAllMocks()
+    prismaMock.$transaction.mockImplementation(async (cb) => cb(prismaMock))
   })
 
   it('1. Tabula Rasa: Sollte den Kurs und Notizen löschen, wenn forceReplace=true und der Kurs dem User gehört', async () => {

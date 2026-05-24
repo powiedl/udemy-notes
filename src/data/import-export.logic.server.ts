@@ -22,6 +22,7 @@ import { resolveTagIds } from '#/lib/tag-helpers.lib.server'
 import { UDEMY_SELECTORS } from '#/lib/constants.lib.server'
 import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown.lib'
 import type { AnalysisResult } from '#/types/import-export.type'
+import { getVisualCourseTitle } from '#/lib/utils.lib'
 
 // #region allgemeines
 export type IntegrityStatus =
@@ -95,7 +96,7 @@ export function checkConflict(
 export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
   let status: IntegrityStatus = 'NO_METADATA'
 
-  // 1. Text splitten (identisch zum Parser), um Blöcke sauber untersuchen zu können
+  // 1. Text splitten (identisch zum Parser)
   const noteSplitRegex = new RegExp(
     `(?:${HTML_COMMENT_START} udemy-note-meta:\\s*\\{.*?\\}\\s*${HTML_COMMENT_END}\\s*)?^##\\s+Note`,
     'gm',
@@ -115,10 +116,9 @@ export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
   )
   const courseMetaMatch = headerContent.match(courseMetaRegex)
 
-  // Visuellen Titel aus der H1 auslesen
+  // FIX: Visuellen Titel aus der H1 auslesen und eventuelle Markdown-Links bereinigen
   let courseTitle = 'Unbekannter Kurs'
-  const titleMatch = headerContent.match(/^#\s+(.+)$/m)
-  const visualCourseTitle = titleMatch ? titleMatch[1].trim() : ''
+  const visualCourseTitle = getVisualCourseTitle(headerContent)
 
   if (courseMetaMatch) {
     status = 'INTEGRITY_OK'
@@ -128,6 +128,7 @@ export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
       courseTitle = meta.courseTitle
 
       // Check A: Wurde die Signatur im JSON gebrochen?
+      // (generateSignature nutzt jetzt intern normalizeObject)
       if (sig !== generateSignature(dataWithoutSig)) {
         return {
           status: 'INTEGRITY_MISMATCH',
@@ -152,7 +153,6 @@ export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
       }
     }
   } else {
-    // Falls keine Kurs-Metadaten da sind, versuchen wir wenigstens den Titel zu retten
     courseTitle = visualCourseTitle || 'Unbekannter Kurs'
   }
 
@@ -165,7 +165,7 @@ export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
     const noteMetaMatch = block.match(noteMetaRegex)
 
     if (noteMetaMatch) {
-      status = 'INTEGRITY_OK' // Sobald eine Notiz Metadaten hat, gilt das File als signiert
+      status = 'INTEGRITY_OK'
       try {
         const meta = JSON.parse(noteMetaMatch[1])
         const { sig, ...dataWithoutSig } = meta
@@ -190,7 +190,7 @@ export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
         const visualLecture = lectureMatch ? lectureMatch[1].trim() : ''
         const visualTimestamp = timeMatch ? timeMatch[1].trim() : ''
 
-        // Check B: Kongruenz-Prüfung (Wurden Überschriften oder Zeiten visuell verändert?)
+        // Check B: Kongruenz-Prüfung
         if (meta.section && meta.section !== visualSection) {
           return {
             status: 'INTEGRITY_MISMATCH',
@@ -306,247 +306,254 @@ export const syncCourseToDatabase = async (
   data: ImportFileSchema,
   userId: string,
 ) => {
-  // 1. Trainer verschmelzen
-  const formTrainers = data.trainers
-    .filter((t): t is string => typeof t === 'string')
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0)
+  // Wir hüllen die gesamte Logik in eine interaktive Transaktion
+  return await prisma.$transaction(
+    async (tx) => {
+      // 1. Trainer verschmelzen
+      const formTrainers = data.trainers
+        .filter((t): t is string => typeof t === 'string')
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0)
 
-  let allTrainerNames = Array.from(
-    new Set([...formTrainers, ...parsedData.courseTrainers]),
-  )
+      let allTrainerNames = Array.from(
+        new Set([...formTrainers, ...parsedData.courseTrainers]),
+      )
 
-  // --- SICHERHEITS-CHECK FÜR DIE URL ---
-  const isSingleTrainer = allTrainerNames.length === 1
-  let finalTrainerUrl: string | undefined = undefined
+      // --- SICHERHEITS-CHECK FÜR DIE URL ---
+      const isSingleTrainer = allTrainerNames.length === 1
+      let finalTrainerUrl: string | undefined = undefined
 
-  if (isSingleTrainer && parsedData.trainerUrl) {
-    const existingTrainerByUrl = await prisma.trainer.findUnique({
-      where: { profileUrl: parsedData.trainerUrl },
-      select: { name: true },
-    })
+      if (isSingleTrainer && parsedData.trainerUrl) {
+        // Aufruf über tx!
+        const existingTrainerByUrl = await tx.trainer.findUnique({
+          where: { profileUrl: parsedData.trainerUrl },
+          select: { name: true },
+        })
 
-    if (existingTrainerByUrl) {
-      // Die URL gehört bereits einem Trainer in der DB.
-      // Wir verwerfen die aktuelle Eingabe und nutzen den korrekten DB-Namen.
-      allTrainerNames = [existingTrainerByUrl.name]
-    } else {
-      // Die URL ist uns noch unbekannt, wir können sie sicher anlegen.
-      finalTrainerUrl = parsedData.trainerUrl
-    }
-  }
-  // ---------------------------------------
+        if (existingTrainerByUrl) {
+          allTrainerNames = [existingTrainerByUrl.name]
+        } else {
+          finalTrainerUrl = parsedData.trainerUrl
+        }
+      }
+      // ---------------------------------------
 
-  // 2. Kurs laden (Der "Eiserne DNA-Check")
-  let existingCourse = null
+      // 2. Kurs laden (Der "Eiserne DNA-Check")
+      let existingCourse = null
 
-  if (parsedData.courseId) {
-    // A) Moderne Datei mit Signatur: Wir suchen AUSSCHLIESSLICH über die DNA-ID.
-    existingCourse = await prisma.course.findFirst({
-      where: { id: parsedData.courseId, userId },
-      include: {
-        tags: { include: { tag: true } },
-        trainers: { include: { trainer: true } },
-      },
-    })
-  } else {
-    // B) HTML-Import oder Legacy-Markdown ohne DNA: Hier ist die Suche nach Titel der einzige Weg.
-    existingCourse = await prisma.course.findFirst({
-      where: { userId, title: parsedData.title },
-      include: {
-        tags: { include: { tag: true } },
-        trainers: { include: { trainer: true } },
-      },
-    })
-  }
+      // KORREKTUR: Die courseId kommt aus dem form data Objekt (ImportFileSchema)
+      if (parsedData.courseId) {
+        existingCourse = await tx.course.findFirst({
+          where: { id: parsedData.courseId, userId },
+          include: {
+            tags: { include: { tag: true } },
+            trainers: { include: { trainer: true } },
+          },
+        })
+      } else {
+        existingCourse = await tx.course.findFirst({
+          where: { userId, title: parsedData.title },
+          include: {
+            tags: { include: { tag: true } },
+            trainers: { include: { trainer: true } },
+          },
+        })
+      }
 
-  // 3. Kurs-Tags verschmelzen
-  let formTagIds = [...data.tagIds]
-  if (data.newPrivateTags.length > 0) {
-    const createdTags = await Promise.all(
-      data.newPrivateTags.map((name) =>
-        prisma.tag.create({
-          data: { name, userId },
-          select: { id: true },
-        }),
-      ),
-    )
-    formTagIds = [...formTagIds, ...createdTags.map((t) => t.id)]
-  }
+      // 3. Kurs-Tags verschmelzen
+      let formTagIds = [...data.tagIds]
+      if (data.newPrivateTags.length > 0) {
+        const createdTags = await Promise.all(
+          data.newPrivateTags.map((name) =>
+            tx.tag.create({
+              data: { name, userId },
+              select: { id: true },
+            }),
+          ),
+        )
+        formTagIds = [...formTagIds, ...createdTags.map((t) => t.id)]
+      }
 
-  const resolvedParsedCourseTagIds = await resolveTagIds(
-    parsedData.courseTags,
-    userId,
-    existingCourse?.tags || [],
-  )
-
-  const allCourseTagIds = Array.from(
-    new Set([...formTagIds, ...resolvedParsedCourseTagIds]),
-  )
-
-  let finishedCourse
-  let existingNotes: any[] | null = null
-
-  // 4. Kurs Upsert
-  if (existingCourse) {
-    existingNotes = await prisma.note.findMany({
-      where: { courseId: existingCourse.id },
-      include: { tags: { include: { tag: true } } },
-    })
-
-    const existingCourseTagIds = existingCourse.tags.map((t) => t.tagId)
-    const courseTagsToCreate = allCourseTagIds.filter(
-      (id) => !existingCourseTagIds.includes(id),
-    )
-
-    const existingTrainerNames = existingCourse.trainers.map(
-      (t) => t.trainer.name,
-    )
-    const trainersToCreate = allTrainerNames.filter(
-      (name) => !existingTrainerNames.includes(name),
-    )
-
-    finishedCourse = await prisma.course.update({
-      where: { id: existingCourse.id },
-      data: {
-        // Wir schreiben den Titel aus parsedData (der dank unseres strengen Parsers
-        // nun immer der "echte" signierte Titel ist, niemals der gefälschte H1-Titel)
-        title: parsedData.title,
-        description: parsedData.description,
-        courseUrl: parsedData.courseUrl,
-        imageUrl: parsedData.imageUrl,
-        trainerUrl: parsedData.trainerUrl,
-        trainers: {
-          create: trainersToCreate.map((trainerName) => ({
-            trainer: {
-              connectOrCreate: {
-                where: { name: trainerName },
-                create: {
-                  name: trainerName,
-                  profileUrl: finalTrainerUrl, // Hier greift unsere bereinigte Variable
-                },
-              },
-            },
-          })),
-        },
-        tags: {
-          create: courseTagsToCreate.map((tagId) => ({ tagId })),
-        },
-      },
-    })
-  } else {
-    // Wenn es forceReplace war, wurde der Kurs vorher gelöscht. Er landet hier und wird neu erstellt.
-    finishedCourse = await prisma.course.create({
-      data: {
-        title: parsedData.title, // Auch hier: Das ist der vertrauenswürdige DNA-Titel
-        description: parsedData.description,
-        courseUrl: parsedData.courseUrl,
-        imageUrl: parsedData.imageUrl,
-        trainerUrl: parsedData.trainerUrl,
+      // WICHTIG: tx als Argument übergeben!
+      const resolvedParsedCourseTagIds = await resolveTagIds(
+        parsedData.courseTags,
         userId,
-        trainers: {
-          create: allTrainerNames.map((trainerName) => ({
-            trainer: {
-              connectOrCreate: {
-                where: { name: trainerName },
-                create: {
-                  name: trainerName,
-                  profileUrl: finalTrainerUrl, // Und auch hier
+        existingCourse?.tags || [],
+        tx, // <-- Der Transaktions-Client
+      )
+
+      const allCourseTagIds = Array.from(
+        new Set([...formTagIds, ...resolvedParsedCourseTagIds]),
+      )
+
+      let finishedCourse
+      let existingNotes: any[] | null = null
+
+      // 4. Kurs Upsert
+      if (existingCourse) {
+        existingNotes = await tx.note.findMany({
+          where: { courseId: existingCourse.id },
+          include: { tags: { include: { tag: true } } },
+        })
+
+        const existingCourseTagIds = existingCourse.tags.map((t) => t.tagId)
+        const courseTagsToCreate = allCourseTagIds.filter(
+          (id) => !existingCourseTagIds.includes(id),
+        )
+
+        const existingTrainerNames = existingCourse.trainers.map(
+          (t) => t.trainer.name,
+        )
+        const trainersToCreate = allTrainerNames.filter(
+          (name) => !existingTrainerNames.includes(name),
+        )
+
+        finishedCourse = await tx.course.update({
+          where: { id: existingCourse.id },
+          data: {
+            title: parsedData.title,
+            description: parsedData.description,
+            courseUrl: parsedData.courseUrl,
+            imageUrl: parsedData.imageUrl,
+            trainerUrl: parsedData.trainerUrl,
+            trainers: {
+              create: trainersToCreate.map((trainerName) => ({
+                trainer: {
+                  connectOrCreate: {
+                    where: { name: trainerName },
+                    create: {
+                      name: trainerName,
+                      profileUrl: finalTrainerUrl,
+                    },
+                  },
                 },
-              },
+              })),
             },
-          })),
-        },
-        tags: {
-          create: allCourseTagIds.map((tagId) => ({ tagId })),
-        },
-      },
-    })
-  }
-
-  const courseId = finishedCourse.id
-
-  // 5. Notizen-Verarbeitung (String-basiert, wie gehabt)
-  const notePromises = []
-  let numberOfConflicts = 0
-
-  for (const note of parsedData.notes) {
-    const finalOriginalContent =
-      note.parsedOriginalContent !== null
-        ? note.parsedOriginalContent
-        : note.parsedContent
-
-    const finalEditedContent =
-      note.parsedOriginalContent !== null ? note.parsedContent : ''
-
-    if (!finalOriginalContent.trim() && !finalEditedContent.trim()) {
-      continue
-    }
-
-    // Identifikation erfolgt auch hier nun über die eiserne DNA (Section, Lecture, Timestamp)
-    const existingNote = existingNotes?.find(
-      (n) =>
-        n.timestamp === note.timestamp &&
-        n.section === note.section &&
-        n.lecture === note.lecture,
-    )
-
-    const calculatedOrderInfo = orderInfo(
-      note.section,
-      note.lecture,
-      note.timestamp,
-    )
-
-    const resolvedTagIds = await resolveTagIds(
-      note.noteTags,
-      userId,
-      existingNote?.tags || [],
-    )
-
-    if (existingNote) {
-      const conflict = checkConflict(finalOriginalContent, existingNote)
-      if (conflict) numberOfConflicts++
-
-      const existingNoteTagIds = (existingNote.tags || []).map(
-        (t: any) => t.tagId,
-      )
-      const noteTagsToCreate = resolvedTagIds.filter(
-        (id) => !existingNoteTagIds.includes(id),
-      )
-
-      notePromises.push(
-        prisma.note.update({
-          where: { id: existingNote.id },
-          data: {
-            hasConflict: conflict,
-            originalContent: finalOriginalContent,
-            editedContent: finalEditedContent,
-            orderInfo: calculatedOrderInfo,
-            tags: { create: noteTagsToCreate.map((tagId) => ({ tagId })) },
+            tags: {
+              create: courseTagsToCreate.map((tagId) => ({ tagId })),
+            },
           },
-        }),
-      )
-    } else {
-      notePromises.push(
-        prisma.note.create({
+        })
+      } else {
+        finishedCourse = await tx.course.create({
           data: {
-            courseId,
+            title: parsedData.title,
+            description: parsedData.description,
+            courseUrl: parsedData.courseUrl,
+            imageUrl: parsedData.imageUrl,
+            trainerUrl: parsedData.trainerUrl,
             userId,
-            timestamp: note.timestamp,
-            section: note.section,
-            lecture: note.lecture,
-            originalContent: finalOriginalContent,
-            editedContent: finalEditedContent,
-            orderInfo: calculatedOrderInfo,
-            tags: { create: resolvedTagIds.map((tagId) => ({ tagId })) },
+            trainers: {
+              create: allTrainerNames.map((trainerName) => ({
+                trainer: {
+                  connectOrCreate: {
+                    where: { name: trainerName },
+                    create: {
+                      name: trainerName,
+                      profileUrl: finalTrainerUrl,
+                    },
+                  },
+                },
+              })),
+            },
+            tags: {
+              create: allCourseTagIds.map((tagId) => ({ tagId })),
+            },
           },
-        }),
-      )
-    }
-  }
+        })
+      }
 
-  await Promise.all(notePromises)
-  return { courseId, numberOfConflicts }
+      const courseId = finishedCourse.id
+
+      // 5. Notizen-Verarbeitung
+      const notePromises = []
+      let numberOfConflicts = 0
+
+      for (const note of parsedData.notes) {
+        const finalOriginalContent =
+          note.parsedOriginalContent !== null
+            ? note.parsedOriginalContent
+            : note.parsedContent
+
+        const finalEditedContent =
+          note.parsedOriginalContent !== null ? note.parsedContent : ''
+
+        if (!finalOriginalContent.trim() && !finalEditedContent.trim()) {
+          continue
+        }
+
+        const existingNote = existingNotes?.find(
+          (n) =>
+            n.timestamp === note.timestamp &&
+            n.section === note.section &&
+            n.lecture === note.lecture,
+        )
+
+        const calculatedOrderInfo = orderInfo(
+          note.section,
+          note.lecture,
+          note.timestamp,
+        )
+
+        // WICHTIG: tx auch hier übergeben!
+        const resolvedTagIds = await resolveTagIds(
+          note.noteTags,
+          userId,
+          existingNote?.tags || [],
+          tx, // <-- Der Transaktions-Client
+        )
+
+        if (existingNote) {
+          const conflict = checkConflict(finalOriginalContent, existingNote)
+          if (conflict) numberOfConflicts++
+
+          const existingNoteTagIds = (existingNote.tags || []).map(
+            (t: any) => t.tagId,
+          )
+          const noteTagsToCreate = resolvedTagIds.filter(
+            (id) => !existingNoteTagIds.includes(id),
+          )
+
+          notePromises.push(
+            tx.note.update({
+              where: { id: existingNote.id },
+              data: {
+                hasConflict: conflict,
+                originalContent: finalOriginalContent,
+                editedContent: finalEditedContent,
+                orderInfo: calculatedOrderInfo,
+                tags: { create: noteTagsToCreate.map((tagId) => ({ tagId })) },
+              },
+            }),
+          )
+        } else {
+          notePromises.push(
+            tx.note.create({
+              data: {
+                courseId,
+                userId,
+                timestamp: note.timestamp,
+                section: note.section,
+                lecture: note.lecture,
+                originalContent: finalOriginalContent,
+                editedContent: finalEditedContent,
+                orderInfo: calculatedOrderInfo,
+                tags: { create: resolvedTagIds.map((tagId) => ({ tagId })) },
+              },
+            }),
+          )
+        }
+      }
+
+      await Promise.all(notePromises)
+      return { courseId, numberOfConflicts }
+    },
+    {
+      // Erhöhtes Timeout: Schützt vor Abbrüchen bei großen Kursen mit Hunderten von Notizen
+      maxWait: 5000, // Maximale Wartezeit auf eine Datenbank-Verbindung
+      timeout: 20000, // Maximale Ausführungszeit (20 Sekunden)
+    },
+  )
 }
 
 // #region HTML
@@ -607,11 +614,15 @@ export const parseMarkdownCourse = (mdContent: string): ParsedCourseData => {
   const noteBlocks = parts.slice(1)
 
   // 2. Initialwerte aus dem sichtbaren Markdown (Fallbacks)
-  const titleMatch = headerContent.match(/^#\s+(.+)$/m)
-  let title = titleMatch ? titleMatch[1].trim() : 'Unbekannter Kurs'
-  let courseId: string | undefined = undefined
+  let title = getVisualCourseTitle(headerContent)
 
-  // 3. Kurs-Metadaten parsen (Die eiserne Wahrheit)
+  let courseId: string | undefined = undefined
+  let description: string | undefined = undefined
+  let courseUrl: string | undefined = undefined
+  let imageUrl: string | undefined = undefined
+  let trainerUrl: string | undefined = undefined
+
+  // 3a. Kurs-Metadaten parsen (IDs und Titel)
   const courseMetaRegex = new RegExp(
     `${HTML_COMMENT_START} udemy-course-meta:\\s*(\\{.*?\\})\\s*${HTML_COMMENT_END}`,
   )
@@ -622,22 +633,69 @@ export const parseMarkdownCourse = (mdContent: string): ParsedCourseData => {
       const meta = JSON.parse(courseMetaMatch[1])
       const { sig, ...dataWithoutSig } = meta
 
-      // Validierung: Nur wenn die Signatur stimmt, überschreiben wir die DNA
       if (sig === generateSignature(dataWithoutSig)) {
         courseId = meta.courseId ? String(meta.courseId) : undefined
-        // Philosophie: Der signierte Titel sticht den visuellen H1-Titel
-        if (meta.courseTitle) {
-          title = meta.courseTitle
-        }
+        if (meta.courseTitle) title = meta.courseTitle
+      } else {
+        console.warn('Signature verification failed for udemy-course-meta')
       }
     } catch (e) {
-      console.error('Fehler beim Parsen der Kurs-Metadaten', e)
+      console.error('Error parsing course metadata', e)
     }
   }
 
-  // 4. Trainer und Tags (Unsigniert, daher direkt aus dem Markdown)
+  // 3b. Kurs-URLs parsen (NEUER BLOCK)
+  const courseUrlsRegex = new RegExp(
+    `${HTML_COMMENT_START} udemy-course-urls:\\s*(\\{.*?\\})\\s*${HTML_COMMENT_END}`,
+  )
+  const courseUrlsMatch = headerContent.match(courseUrlsRegex)
+
+  if (courseUrlsMatch) {
+    try {
+      const meta = JSON.parse(courseUrlsMatch[1])
+      const { sig, ...dataWithoutSig } = meta
+
+      if (sig === generateSignature(dataWithoutSig)) {
+        if (meta.courseUrl) courseUrl = meta.courseUrl
+        if (meta.imageUrl) imageUrl = meta.imageUrl
+
+        // Die URL des ersten Trainers als Datenbank-Zuordnung nutzen
+        if (
+          meta.trainers &&
+          Array.isArray(meta.trainers) &&
+          meta.trainers.length > 0
+        ) {
+          trainerUrl = meta.trainers[0].url
+        }
+      } else {
+        console.warn('Signature verification failed for udemy-course-urls')
+      }
+    } catch (e) {
+      console.error('Error parsing course URLs', e)
+    }
+  }
+
+  // 4. Description extrahieren (Editierbarer Bereich im Markdown)
+  let textForDescription = headerContent
+  // Die komplette H1-Zeile entfernen, da titleMatch ausgelagert wurde
+  textForDescription = textForDescription.replace(/^#\s+.*$/m, '')
+
+  if (courseMetaMatch)
+    textForDescription = textForDescription.replace(courseMetaMatch[0], '')
+  if (courseUrlsMatch)
+    textForDescription = textForDescription.replace(courseUrlsMatch[0], '')
+
+  // Alles was vor "Trainers:" steht, ist die Description
+  const descriptionMatch = textForDescription.match(
+    /^\s*([\s\S]*?)(?=Trainers:|$)/i,
+  )
+  if (descriptionMatch && descriptionMatch[1].trim() !== '') {
+    description = descriptionMatch[1].trim()
+  }
+
+  // 5. Trainer und Tags (Unsigniert, direkt aus dem Markdown)
   const trainersSectionMatch = headerContent.match(
-    /Trainers:\s*([\s\S]*?)(?=Tags:|##|$)/i,
+    /Trainers:\s*([\s\S]*?)(?=Tags:|$)/i,
   )
   let courseTrainers: string[] = []
   if (trainersSectionMatch) {
@@ -645,12 +703,16 @@ export const parseMarkdownCourse = (mdContent: string): ParsedCourseData => {
       .split('\n')
       .map((line) => line.trim())
       .filter((line) => line.startsWith('-') || line.startsWith('*'))
-      .map((line) => line.replace(/^[-*]\s*/, '').trim())
+      .map((line) => {
+        // Falls der Trainer ein Link ist e.g. * [Name](Url), holen wir nur den Namen
+        const cleanLine = line.replace(/^[-*]\s*/, '').trim()
+        const linkMatch = cleanLine.match(/\[([^\]]+)\]/)
+        return linkMatch ? linkMatch[1] : cleanLine
+      })
   }
 
-  const tagsSectionMatch = headerContent.match(
-    /Tags:\s*([\s\S]*?)(?=Trainers:|##|$)/i,
-  )
+  // Tags laufen vom "Tags:" Keyword bis zum nächsten Metadaten-Block oder Dateiende
+  const tagsSectionMatch = headerContent.match(/Tags:\s*([\s\S]*?)(?=<!--|$)/i)
   let courseTags: string[] = []
   if (tagsSectionMatch) {
     courseTags = tagsSectionMatch[1]
@@ -658,15 +720,16 @@ export const parseMarkdownCourse = (mdContent: string): ParsedCourseData => {
       .map((line) => line.trim())
       .filter((line) => line.startsWith('-') || line.startsWith('*'))
       .map((line) => line.replace(/^[-*]\s*/, '').trim())
+      .filter((tag) => tag.toLowerCase() !== 'no tags') // Fix: "no tags" ignorieren
   }
 
-  // 5. Notizen parsen
+  // 6. Notizen parsen
   const noteMetaRegex = new RegExp(
     `${HTML_COMMENT_START} udemy-note-meta:\\s*(\\{.*?\\})\\s*${HTML_COMMENT_END}`,
   )
 
   const notes = noteBlocks.map((block) => {
-    // Sichtbare Fallbacks aus dem Markdown
+    // Sichtbare Fallbacks
     const sectionMatch = block.match(/\*\s*Section:\s*(.+)/)
     const lectureMatch = block.match(/\*\s*Lecture:\s*(.+)/)
     const timeMatch = block.match(
@@ -684,26 +747,24 @@ export const parseMarkdownCourse = (mdContent: string): ParsedCourseData => {
         const meta = JSON.parse(noteMetaMatch[1])
         const { sig, ...dataWithoutSig } = meta
 
-        // Wenn die Signatur stimmt, ignorieren wir die visuellen Änderungen
         if (sig === generateSignature(dataWithoutSig)) {
           if (meta.section) section = meta.section
           if (meta.lecture) lecture = meta.lecture
           if (meta.timestamp !== undefined) timestamp = String(meta.timestamp)
         }
       } catch (e) {
-        console.error('Fehler beim Parsen der Notiz-Metadaten', e)
+        console.error('Error parsing note metadata', e)
       }
     }
 
-    // Content und Original Content (dürfen verändert werden)
     const contentMatch = block.match(
       /###\s+Content\s*\n([\s\S]*?)(?=####\s+Original Content|$)/i,
     )
     const originalMatch = block.match(
       /####\s+Original Content[^\n]*\n([\s\S]*)$/i,
     )
-
     const noteTagsMatch = block.match(/\*\s*Tags:\s*([\s\S]*?)(?=###|$)/)
+
     let noteTags: string[] = []
     if (noteTagsMatch) {
       noteTags = noteTagsMatch[1]
@@ -711,6 +772,7 @@ export const parseMarkdownCourse = (mdContent: string): ParsedCourseData => {
         .map((line) => line.trim())
         .filter((line) => line.startsWith('-') || line.startsWith('*'))
         .map((line) => line.replace(/^[-*]\s*/, '').trim())
+        .filter((tag) => tag.toLowerCase() !== 'no tags') // Fix: "no tags" ignorieren
     }
 
     return {
@@ -723,7 +785,17 @@ export const parseMarkdownCourse = (mdContent: string): ParsedCourseData => {
     }
   })
 
-  return { courseId, title, courseTags, courseTrainers, notes }
+  return {
+    title,
+    courseId,
+    description,
+    courseUrl,
+    imageUrl,
+    trainerUrl,
+    courseTags,
+    courseTrainers,
+    notes,
+  }
 }
 
 export const importMdFileLogic = async (
