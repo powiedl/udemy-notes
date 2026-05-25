@@ -25,7 +25,7 @@ export function useCourseActions() {
             },
           },
         }),
-        { successToast: 'Kurs erfolgreich gelöscht' },
+        { successToast: 'Course deleted successfully' },
       )
       await router.invalidate()
     } catch (error) {

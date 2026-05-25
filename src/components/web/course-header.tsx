@@ -1,5 +1,5 @@
 import { Card } from '#/components/ui/card'
-import { useRouter, Link } from '@tanstack/react-router'
+import { useRouter, Link, useNavigate } from '@tanstack/react-router'
 import { Button } from '../ui/button'
 import {
   Sparkles,
@@ -233,6 +233,7 @@ const HeaderTagManager = () => {
 }
 
 const HeaderFooter = () => {
+  const navigate = useNavigate()
   const {
     readOnly,
     handleAITagging,
@@ -298,6 +299,10 @@ const HeaderFooter = () => {
           if (!onDelete) return
           startDeleteTransition(async () => {
             await onDelete(course.id)
+            await navigate({
+              to: '/courses',
+              search: { ...PAGINATION_DEFAULTS, tagIds: [], trainer: '' },
+            })
           })
         }}
         disabled={isPending}
