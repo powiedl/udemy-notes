@@ -7,7 +7,6 @@ import {
   Bookmark,
   BookOpenText,
   CloudUpload,
-  GithubIcon,
   Info,
   LogOut,
   NotebookPen,
@@ -62,7 +61,6 @@ const Navbar = ({ className }: { className: string }) => {
             rel="noreferrer"
             className="flex items-center gap-1 "
           >
-            <GithubIcon className="size-4" />
             <span className="hidden lg:inline">Github Repo</span>
           </a>
         </div>
