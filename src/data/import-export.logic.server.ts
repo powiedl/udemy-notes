@@ -320,20 +320,51 @@ export const syncCourseToDatabase = async (
       )
 
       // --- SICHERHEITS-CHECK FÜR DIE URL ---
-      const isSingleTrainer = allTrainerNames.length === 1
       let finalTrainerUrl: string | undefined = undefined
 
-      if (isSingleTrainer && parsedData.trainerUrl) {
-        // Aufruf über tx!
+      if (parsedData.trainerUrl) {
+        // Gehört diese URL schon jemandem in der DB?
         const existingTrainerByUrl = await tx.trainer.findUnique({
           where: { profileUrl: parsedData.trainerUrl },
           select: { name: true },
         })
 
         if (existingTrainerByUrl) {
+          // TEST 8: URL gehört wem anders -> Strikte Überschreibung aller Eingaben
           allTrainerNames = [existingTrainerByUrl.name]
         } else {
+          // URL ist neu. Wem geben wir sie?
           finalTrainerUrl = parsedData.trainerUrl
+
+          // Wir laden alle betroffenen Trainer aus der DB
+          const dbTrainers = await tx.trainer.findMany({
+            where: { name: { in: allTrainerNames } },
+            select: { name: true, profileUrl: true },
+          })
+
+          const knownNames = dbTrainers.map((t) => t.name)
+          const newNames = allTrainerNames.filter(
+            (n) => !knownNames.includes(n),
+          )
+          const existingWithoutUrl = dbTrainers.filter((t) => !t.profileUrl)
+
+          // Wie viele Trainer haben noch keine URL (weder in der DB noch als ganz neuer Trainer)?
+          const unmappedCount = newNames.length + existingWithoutUrl.length
+
+          if (unmappedCount === 1) {
+            if (existingWithoutUrl.length === 1) {
+              // TEST 6 & 7: Genau ein bestehender Trainer ohne URL -> gezieltes Update
+              await tx.trainer.update({
+                where: { name: existingWithoutUrl[0].name },
+                data: { profileUrl: finalTrainerUrl },
+              })
+            }
+            // Anmerkung: Wenn newNames.length === 1 ist, kümmert sich connectOrCreate
+            // später automatisch um das Speichern der URL beim Anlegen.
+          } else {
+            // Zu viele Kandidaten (z.B. 2 komplett neue Trainer) -> URL verwerfen um falsche Zuordnungen zu vermeiden
+            finalTrainerUrl = undefined
+          }
         }
       }
       // ---------------------------------------

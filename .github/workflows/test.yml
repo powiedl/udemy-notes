@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: ['master']
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
   test:
     name: Run Unit/Integration Tests
@@ -11,17 +13,17 @@ jobs:
 
     steps:
       - name: Code auschecken
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # 1. pnpm v11 installieren (passend zu deinem neuen lokalen Setup)
       - name: pnpm installieren
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 11
 
       # 2. Node 24 aufsetzen und pnpm Cache aktivieren
       - name: Node.js aufsetzen
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'pnpm'

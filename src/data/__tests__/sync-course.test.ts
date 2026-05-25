@@ -11,6 +11,7 @@ const prismaMock = vi.hoisted(() => ({
   tag: { create: vi.fn() },
   course: { findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
   note: { findMany: vi.fn(), update: vi.fn(), create: vi.fn() },
+  trainer: { findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn() },
 }))
 
 vi.mock('#/lib/db.lib.server', () => ({
@@ -208,5 +209,143 @@ describe('syncCourseToDatabase', () => {
     // Absicherung: Der Titel darf nicht in der where-Klausel auftauchen,
     // da sonst das Matching fehlschlägt, wenn der User den Kurs umbenannt hat.
     expect(findArgs?.where).not.toHaveProperty('title')
+  })
+
+  it('6. TDD: Ordnet die Trainer-URL dem einzigen passenden Trainer zu, wenn mehrere Trainer angegeben wurden', async () => {
+    // 1. Arrange: Wir bauen unser Edge-Case Szenario
+    const newCourseTrainerUrl = 'https://udemy.com/user/neuer-kurs-trainer'
+
+    // Die Metadaten des Kurses (HTML) enthalten die neue URL
+    const tddParsedData = {
+      ...parsedData,
+      courseTrainers: [],
+      trainerUrl: newCourseTrainerUrl,
+      courseId: 'irgendeine-id',
+    }
+
+    // Der User hat im Formular ZWEI Trainer ausgewählt
+    const tddFormData = {
+      ...formData,
+      trainers: ['Trainer Ohne URL', 'Trainer Mit Alter URL'],
+      courseId: 'irgendeine-id',
+    }
+
+    // Mock: Der Kurs existiert noch nicht (erzeugt weniger Rauschen im Test)
+    vi.mocked(prismaMock.course.findFirst).mockResolvedValue(null)
+    vi.mocked(prismaMock.course.create).mockResolvedValue({
+      id: 'new-course',
+    } as any)
+
+    // Mock: Die neue URL aus dem Kurs gehört noch zu KEINEM Trainer in der DB
+    vi.mocked(prismaMock.trainer.findUnique).mockResolvedValue(null)
+
+    // Mock: Wir simulieren die DB-Antwort, wenn nach den zwei Trainernamen gesucht wird
+    vi.mocked(prismaMock.trainer.findMany).mockResolvedValue([
+      { name: 'Trainer Ohne URL', profileUrl: null }, // Kandidat für die neue URL!
+      {
+        name: 'Trainer Mit Alter URL',
+        profileUrl: 'https://udemy.com/user/alt',
+      }, // Hat schon eine, scheidet aus
+    ] as any)
+
+    // 2. Act: Funktion ausführen
+    await syncCourseToDatabase(tddParsedData, tddFormData, userId)
+
+    // 3. Assert: Wir erwarten, dass der richtige Trainer geupdatet wird
+    // Dieser Check wird aktuell FEHLSCHLAGEN, weil unsere Logik das noch nicht kann!
+    expect(prismaMock.trainer.update).toHaveBeenCalledTimes(1)
+
+    expect(prismaMock.trainer.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { name: 'Trainer Ohne URL' },
+        data: { profileUrl: newCourseTrainerUrl },
+      }),
+    )
+  })
+
+  it('7. TDD: Single Trainer Update - Setzt die profileUrl, wenn der einzige angegebene Trainer noch keine hat', async () => {
+    // 1. Arrange
+    const newCourseTrainerUrl = 'https://udemy.com/user/einzel-trainer'
+
+    const tddParsedData = {
+      ...parsedData,
+      courseTrainers: [], // <-- WICHTIG: Verhindert, dass der globale 'MdTrainer' sich einmischt
+      trainerUrl: newCourseTrainerUrl,
+      courseId: 'irgendeine-id',
+    }
+
+    const tddFormData = {
+      ...formData,
+      trainers: ['Bekannter Trainer Ohne URL'],
+      courseId: 'irgendeine-id',
+    }
+
+    // Kurs-Mocks
+    vi.mocked(prismaMock.course.findFirst).mockResolvedValue(null)
+    vi.mocked(prismaMock.course.create).mockResolvedValue({
+      id: 'new-course',
+    } as any)
+
+    // Trainer-Mocks
+    vi.mocked(prismaMock.trainer.findUnique).mockResolvedValue(null)
+    vi.mocked(prismaMock.trainer.findMany).mockResolvedValue([
+      { name: 'Bekannter Trainer Ohne URL', profileUrl: null },
+    ] as any)
+
+    // 2. Act
+    await syncCourseToDatabase(tddParsedData, tddFormData, userId)
+
+    // 3. Assert
+    expect(prismaMock.trainer.update).toHaveBeenCalledTimes(1)
+    expect(prismaMock.trainer.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { name: 'Bekannter Trainer Ohne URL' },
+        data: { profileUrl: newCourseTrainerUrl },
+      }),
+    )
+  })
+
+  it('8. TDD: Sicherheits-Check - Korrigiert den Trainer, wenn die URL bereits einem ANDEREN Trainer gehört', async () => {
+    // 1. Arrange
+    const existingProfileUrl = 'https://udemy.com/user/echter-trainer'
+
+    const tddParsedData = {
+      ...parsedData,
+      courseTrainers: [],
+      trainerUrl: existingProfileUrl,
+      courseId: 'irgendeine-id',
+    }
+
+    // Der User gibt im Formular absichtlich oder versehentlich einen falschen Namen ein
+    const tddFormData = {
+      ...formData,
+      trainers: ['Falscher Eingabe Trainer'],
+      courseId: 'irgendeine-id',
+    }
+
+    vi.mocked(prismaMock.course.findFirst).mockResolvedValue(null)
+    vi.mocked(prismaMock.course.create).mockResolvedValue({
+      id: 'new-course',
+    } as any)
+
+    // Mock: Die URL gehört in der DB aber bereits "Echter Trainer"
+    vi.mocked(prismaMock.trainer.findUnique).mockResolvedValue({
+      name: 'Echter Trainer',
+    } as any)
+
+    // 2. Act
+    await syncCourseToDatabase(tddParsedData, tddFormData, userId)
+
+    // 3. Assert (Sollte grün sein!)
+    expect(prismaMock.course.create).toHaveBeenCalledTimes(1)
+
+    const createArgs = vi.mocked(prismaMock.course.create).mock.calls[0][0].data
+    const createdTrainers = createArgs.trainers?.create as any[]
+
+    // Wir erwarten, dass der Kurs mit "Echter Trainer" verknüpft wird, NICHT mit "Falscher Eingabe Trainer"
+    expect(createdTrainers).toHaveLength(1)
+    expect(createdTrainers[0].trainer.connectOrCreate.where.name).toBe(
+      'Echter Trainer',
+    )
   })
 })
