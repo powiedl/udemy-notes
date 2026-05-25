@@ -5,7 +5,6 @@ import {
   tagPaginationSchema,
 } from '#/schemas/search-params.schema'
 import { z } from 'zod'
-import { renameTagLogic } from './tag.logic.server'
 
 // #region validation schemas
 export const getAvailableTagsSchema = withLogging(tagPaginationSchema).default(
@@ -120,6 +119,7 @@ export const renameTagFn = authFn
   .inputValidator(renameTagSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
+    const { renameTagLogic } = await import('./tag.logic.server')
     return await wrapServerAction('renameTag', context, data, () =>
       renameTagLogic(data, context.session.user.id),
     )

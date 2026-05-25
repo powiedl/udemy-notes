@@ -80,15 +80,14 @@
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.2.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "dotenv-cli": "^11.0.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.8.3",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
-    "vite": "^7.3.3",
-    "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4",
+    "vite": "^8.0.14",
+    "vitest": "^4.1.7",
     "vitest-mock-extended": "^4.0.0"
   },
   "prisma": {
