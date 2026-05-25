@@ -1,8 +1,6 @@
 # Welcome to udemy-notes!
 
-This is a hobby project to work with your notes of your Udemy courses. Right now you can use it to convert your udemy notes to a .md file. Therefore you have to register with your email adress (right now also dummy mail addresses are working).
-
-If the app gets finished you will be able to import your course notes to the app, edit them inside the app, tag your notes, search your notes (and public notes from other users).
+This is a hobby project to work with your notes of your Udemy courses. To use this app you have to register with your email adress (right now also dummy mail addresses are working).
 
 You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.vercel.app)
 
@@ -10,12 +8,14 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 
 - You can import a html file with your Udemy course notes (during import you can assign tags and trainers to the course)
   - You can also import a previous exported markdown file (if you export the metadata this will be used to ensure that you can successfully update the course in the database - if the metadata is manipulated you will get a warning, that the import will delete the course in the database)
-- These courses ant the corresponding notes are stored in the database
+- These courses and the corresponding notes are stored in the database
 - You can view and edit your notes of the course - in the course details page
 - You can export your notes of the course - in the course details page
 - You can delete a course - in the course details and overview page
 - You can add tags to a course - in the course details and overview page
 - You can add tags to a single note - everywhere you see the note
+- You can create tag suggestions with an AI auto tagging feature
+- You can create a public link (which works for 7 days) of your course - so you can share your notes with your friends
 - You can create your own tags, rename and delete them
 - You can create trainers and assign them to your courses (but you cannot delete or rename them as they are shared between all users)
 - You can get a list of all notes from all your courses (and have multiple filtering and sorting options for this list)
