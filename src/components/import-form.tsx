@@ -65,9 +65,9 @@ import {
 import { cn } from '@/lib/utils.lib'
 
 import {
-  importHtmlFile,
+  importHtmlFileFn,
   importMdFileFn,
-  checkImportFile,
+  checkImportFileFn,
   analyzeHtmlPayloadFn, // NEU importiert
 } from '#/data/import-export.data'
 import { getTrainerSuggestionsFn } from '#/data/course.data'
@@ -108,9 +108,9 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
   const [isPending, startTransition] = useTransition()
 
   // Server Functions
-  const uploadHtmlFile = useServerFn(importHtmlFile)
+  const uploadHtmlFile = useServerFn(importHtmlFileFn)
   const uploadMdFile = useServerFn(importMdFileFn)
-  const checkFile = useServerFn(checkImportFile)
+  const checkFile = useServerFn(checkImportFileFn)
   const analyzeHtmlPayload = useServerFn(analyzeHtmlPayloadFn) // NEU
   const getTrainerSuggestions = useServerFn(getTrainerSuggestionsFn)
   const getTagsForSelector = useServerFn(getTagsForSelectorFn)

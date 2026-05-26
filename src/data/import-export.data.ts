@@ -20,10 +20,10 @@ export type AwaitedReturnTypeExportMdFile = Awaited<
   ReturnType<typeof exportMdFileFn>
 >
 export type AwaitedReturnTypeImportHtmlFile = Awaited<
-  ReturnType<typeof importHtmlFile>
+  ReturnType<typeof importHtmlFileFn>
 >
 
-export const checkImportFile = authFn
+export const checkImportFileFn = authFn
   .inputValidator(checkImportFileValidationSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
@@ -44,7 +44,7 @@ export const checkImportFile = authFn
  * Übernimmt die Validierung der Eingaben, stellt den Benutzerkontext bereit und
  * delegiert die Verarbeitung an `importHtmlFileLogic`.
  */
-export const importHtmlFile = authFn
+export const importHtmlFileFn = authFn
   .inputValidator(saveParsedCourseSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
