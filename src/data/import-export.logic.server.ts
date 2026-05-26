@@ -93,6 +93,21 @@ export function checkConflict(
 // #endregion
 
 // #region import
+/**
+ * Führt eine Integritätsprüfung für eine Markdown-Importdatei durch.
+ *
+ * Die Funktion prüft:
+ * 1. Ob die erforderlichen Metadaten (udemy-course-meta) vorhanden sind.
+ * 2. Ob die kryptografischen Signaturen (`sig`) der Metadaten mit dem Inhalt übereinstimmen.
+ * 3. Ob die visuell lesbaren Header (H1, Kurs-Sektionen) mit den versteckten Metadaten kongruent sind.
+ *
+ * Dies verhindert den Import von manuell manipulierten Dateien, die zu Datenkorruption
+ * in der Datenbank führen könnten.
+ *
+ * @param mdContent - Der rohe Textinhalt der Markdown-Datei.
+ * @returns Ein Objekt mit dem `status` (OK, Mismatch, No Metadata), der Anzahl der Notizen
+ *          und dem extrahierten Kurstitel.
+ */
 export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
   let status: IntegrityStatus = 'NO_METADATA'
 
@@ -228,6 +243,19 @@ export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
   return { status, totalNotes: noteBlocks.length, courseTitle }
 }
 
+/**
+ * Analysiert den HTML-Inhalt eines Udemy-Kurs-Payloads vor dem eigentlichen Import.
+ *
+ * Schritte:
+ * 1. Konvertierung des HTML in Markdown unter Verwendung der definierten CSS-Selektoren.
+ * 2. Prüfung, ob der Trainer des Kurses bereits global in der Datenbank existiert.
+ * 3. Ermittlung, wie viele Kurse der aktuelle Benutzer bereits von diesem Trainer besitzt.
+ *
+ * @param data - Die HTML-Payload und die geparste Trainer-URL.
+ * @param userId - Die ID des Benutzers zur Ermittlung der Trainer-Statistiken.
+ * @returns Ein Promise mit den geparsten Kursdaten und Details zum Trainer-Match für die UI.
+ * @throws ServerActionError wenn das HTML-Parsing fehlschlägt.
+ */
 export const analyzeHtmlPayloadLogic = async (
   data: AnalyzeHtmlPayloadSchema,
   userId: string,
@@ -301,6 +329,23 @@ export const analyzeHtmlPayloadLogic = async (
   }
 }
 
+/**
+ * Die zentrale "Workhorse"-Funktion zur Synchronisation von Kursdaten mit der Datenbank.
+ *
+ * Diese Funktion nutzt eine interaktive Prisma-Transaktion, um atomar:
+ * 1. Trainer-Daten abzugleichen und URLs sicher zuzuordnen (Schutz vor falschen Mappings).
+ * 2. Den Kurs per "Eisernem DNA-Check" (ID- oder Titel-Abgleich) zu finden oder zu erstellen.
+ * 3. Kurs-Tags und neu erstellte private Tags zu verschmelzen.
+ * 4. Notizen zu verarbeiten: Existierende Notizen werden aktualisiert (inkl. Konflikterkennung),
+ *    neue Notizen werden erstellt.
+ * 5. Tags auf Notiz-Ebene zu synchronisieren.
+ *
+ * @param parsedData - Die aus der Datei extrahierten strukturierten Daten.
+ * @param data - Die Metadaten aus dem Import-Formular (Trainer-Auswahl, Tag-IDs).
+ * @param userId - Die ID des Benutzers, dem der Kurs zugeordnet wird.
+ * @returns Ein Promise mit der `courseId` und der Anzahl der erkannten Inhaltskonflikte.
+ * @internal
+ */
 export const syncCourseToDatabase = async (
   parsedData: ParsedCourseData & { courseId?: string },
   data: ImportFileSchema,
@@ -588,6 +633,17 @@ export const syncCourseToDatabase = async (
 }
 
 // #region HTML
+/**
+ * Implementiert die Logik für den Import einer Udemy-HTML-Datei.
+ *
+ * Mappt den flachen UI-State des Import-Dialogs zurück in das interne
+ * `ParsedCourseData` Format und delegiert die eigentliche Speicherung an
+ * `syncCourseToDatabase`.
+ *
+ * @param payload - Der vom Benutzer bestätigte Import-Zustand.
+ * @param userId - Die ID des Benutzers.
+ * @returns Das Ergebnis der Synchronisation (IDs und Konfliktstatistik).
+ */
 export const importHtmlFileLogic = async (
   payload: SaveParsedCourseSchema, // Der bestätigte State aus dem Frontend
   userId: string,
@@ -629,6 +685,17 @@ export const importHtmlFileLogic = async (
 // #endregion
 
 // #region Markdown
+/**
+ * Zerlegt einen Markdown-String in ein strukturiertes Kurs-Objekt.
+ *
+ * Nutzt Regex-Parsing, um:
+ * - Kurs- und URL-Metadaten aus HTML-Kommentaren zu extrahieren.
+ * - Die Kursbeschreibung sowie Trainer- und Tag-Listen zu identifizieren.
+ * - Einzelne Notiz-Blöcke inklusive ihrer Metadaten und Inhalts-Sektionen zu parsen.
+ *
+ * @param mdContent - Der Inhalt der Markdown-Datei.
+ * @returns Ein strukturiertes `ParsedCourseData` Objekt.
+ */
 export const parseMarkdownCourse = (mdContent: string): ParsedCourseData => {
   // 1. Text in Header (vor der ersten Notiz) und Notizen splitten
   const noteSplitRegex = new RegExp(
@@ -829,6 +896,21 @@ export const parseMarkdownCourse = (mdContent: string): ParsedCourseData => {
   }
 }
 
+/**
+ * Implementiert die Logik für den Import einer Markdown-Datei.
+ *
+ * Ablauf:
+ * 1. Validierung der Dateigröße.
+ * 2. Parsing des Markdowns in strukturierte Daten.
+ * 3. Optional: "Tabula Rasa" Modus, bei dem ein existierender Kurs vor dem Re-Import
+ *    gelöscht wird (basierend auf der ID in den Metadaten).
+ * 4. Aufruf der Synchronisations-Logik.
+ *
+ * @param data - Enthält den Dateiinhalt und Flags (wie `forceReplace`).
+ * @param userId - Die ID des Benutzers.
+ * @returns Details zum Import-Vorgang für die Erfolgsmeldung im Frontend.
+ * @throws ServerActionError bei zu großen Dateien oder ungültigem Inhalt.
+ */
 export const importMdFileLogic = async (
   data: ImportFileSchema,
   userId: string,

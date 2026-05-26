@@ -6,6 +6,18 @@ import { ServerActionError } from '#/types/errors.type'
 import { mapNoteDisplayTags } from './note.logic.server'
 
 // #region helper functions
+/**
+ * Hilfsfunktion zum Validieren eines Share-Links und Abrufen der verknüpften Kurs-ID.
+ *
+ * Diese Funktion führt folgende Validierungen durch:
+ * 1. Existenzprüfung des Tokens in der Datenbank.
+ * 2. Prüfung des Ablaufdatums (expiresAt).
+ *
+ * @param id - Die ID (CUID) des Share-Tokens.
+ * @returns Ein Promise, das die `courseId` des zugehörigen Kurses zurückgibt.
+ * @throws ServerActionError wenn der Link nicht existiert oder bereits abgelaufen ist.
+ * @internal
+ */
 async function getCourseIdFromTokenId(id: string): Promise<string> {
   const courseToken = await prisma.courseShareToken.findUnique({
     where: { id },
@@ -22,6 +34,22 @@ async function getCourseIdFromTokenId(id: string): Promise<string> {
 // #endregion
 
 // #region Course
+/**
+ * Ruft die öffentlichen Details eines Kurses über einen Share-Link ab.
+ *
+ * Diese Funktion führt folgende Schritte aus:
+ * 1. Validierung des Tokens und Ermittlung der Kurs-ID.
+ * 2. Parallele Ausführung von zwei Abfragen zur Performance-Optimierung:
+ *    - Abruf der Kurs-Stammdaten (inkl. Trainer und Kurs-Tags).
+ *    - Aggregation aller Tags, die entweder am Kurs ODER an den zugehörigen Notizen verwendet werden.
+ *
+ * Dies ermöglicht es dem Frontend, Filter-Optionen für alle im Kurs vorkommenden Tags anzuzeigen,
+ * auch wenn diese nur auf Notiz-Ebene existieren.
+ *
+ * @param data - Objekt mit der `id` des Share-Tokens.
+ * @returns Ein Promise mit dem Kurs-Objekt (`course`) und einer Liste aller verfügbaren Tags (`availableTags`).
+ * @throws ServerActionError wenn der Kurs trotz gültigem Token nicht gefunden werden kann.
+ */
 export async function getCourseByTokenIdLogic(data: TokenIdInput) {
   const { id: tokenId } = data
   const courseId = await getCourseIdFromTokenId(tokenId)
@@ -80,6 +108,20 @@ export async function getCourseByTokenIdLogic(data: TokenIdInput) {
 // #endregion
 
 // #region Notes
+/**
+ * Ruft die paginierten und gefilterten Notizen eines Kurses über einen Share-Link ab.
+ *
+ * Der Prozess umfasst:
+ * 1. Validierung des Tokens und Abruf der Kurs-ID.
+ * 2. Aufbau einer dynamischen Where-Bedingung für die Suche (Sektion, Lektion, Content) und Tag-Filterung.
+ * 3. Paralleler Abruf der Notizen (mit Paging) und der Gesamtanzahl der Treffer.
+ * 4. Transformation jeder Notiz mittels `mapNoteDisplayTags`, um die Vererbung von Tags vom
+ *    übergeordneten Kurs zu berechnen (isInherited-Logik).
+ *
+ * @param tokenId - Die ID des Share-Tokens aus der URL.
+ * @param data - Such- und Pagination-Parameter (`page`, `pageSize`, `search`, `tagIds`).
+ * @returns Ein Promise mit den transformierten Notizen (`items`) und der Gesamtzahl (`totalCount`).
+ */
 export async function getNotesByTokenIdLogic(
   tokenId: string,
   data: CourseNotesSearchInput,

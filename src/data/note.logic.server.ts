@@ -20,8 +20,19 @@ type NoteWithTagsConstraint = {
 }
 
 /**
- * Kombiniert direkte Notiz-Tags und vererbte Kurs-Tags, dedupliziert sie
- * und fügt das Flag `isInherited` hinzu.
+ * Transformiert eine Notiz für die UI-Anzeige, indem direkte Tags und vom Kurs vererbte Tags zusammengeführt werden.
+ *
+ * Diese Funktion implementiert die "Tag-Vererbung":
+ * 1. Sie sammelt alle Tags, die direkt an der Notiz hängen.
+ * 2. Sie sammelt alle Tags des übergeordneten Kurses.
+ * 3. Sie dedupliziert die Tags (ein Tag erscheint nur einmal).
+ * 4. Sie bewahrt den Status (z.B. 'SUGGESTION' oder 'APPROVED').
+ * 5. Sie fügt Metadaten zur Herkunft hinzu (`isDirect`, `isFromCourse`), damit die UI z.B. vererbte Tags optisch absetzen kann.
+ * 6. Die resultierende Liste wird alphabetisch sortiert.
+ *
+ * @param note - Das Notiz-Objekt inklusive seiner Tags und der Kurs-Tags (Relationen).
+ * @returns Die Notiz, erweitert um das berechnete `displayTags` Array.
+ * @internal
  */
 export function mapNoteDisplayTags<T extends NoteWithTagsConstraint>(note: T) {
   // 1. Erstelle Sets für blitzschnellen O(1) Abgleich
@@ -61,9 +72,18 @@ export function mapNoteDisplayTags<T extends NoteWithTagsConstraint>(note: T) {
 }
 
 /**
- * Kern-Logik für den paginierten Abruf von Notizen.
- * Unterstützt Gruppierung (Sortierung nach Kurs), Volltextsuche und
- * eine Inklusiv-Suche für Tags (Notiz-Tag ODER Kurs-Tag).
+ * Kern-Logik für den globalen, paginierten Abruf von Notizen eines Benutzers.
+ *
+ * Besonderheiten:
+ * 1. Sicherheits-Check: Es werden nur Notizen abgerufen, deren Kurs dem Benutzer gehört (oder die öffentlich sind).
+ * 2. Case-insensitive Volltextsuche über Inhalt, Sektion und Lektion.
+ * 3. Komplexe Tag-Suche: Eine Notiz wird gefunden, wenn der Such-Tag direkt an ihr hängt ODER am Kurs (Vererbungs-Suche).
+ * 4. Parallele Ausführung von Daten-Abruf und Zählung (Performance).
+ * 5. Automatisches Mapping der Anzeige-Tags für jede Notiz.
+ *
+ * @param data - Die Such- und Sortierparameter (`page`, `pageSize`, `search`, `tagIds`, `sortBy`, `sortOrder`).
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Promise mit den transformierten Notizen (`items`) und der Gesamtanzahl (`totalCount`).
  */
 export async function getNotesLogic(data: NoteSearchInput, userId: string) {
   const { page, pageSize, search, tagIds, sortBy, sortOrder } = data
@@ -165,6 +185,17 @@ export async function getNotesLogic(data: NoteSearchInput, userId: string) {
   return { items: mappedItems, totalCount }
 }
 
+/**
+ * Spezifischer Abruf von Notizen für einen einzelnen Kurs.
+ *
+ * Im Gegensatz zur globalen Suche ist diese Funktion auf die Kurs-Ansicht optimiert.
+ * Sie prüft die Zugehörigkeit des Kurses zum Benutzer und wendet die kurs-spezifischen Filter an.
+ *
+ * @param courseId - Die ID des Kurses, dessen Notizen geladen werden sollen.
+ * @param data - Suchparameter innerhalb des Kurses.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Promise mit den gemappten Notizen und der Trefferanzahl.
+ */
 export async function getNotesForCourseLogic(
   courseId: string,
   data: CourseNotesSearchInput,
@@ -237,6 +268,14 @@ export async function getNotesForCourseLogic(
   return { items: mappedNotes, totalCount }
 }
 
+/**
+ * Steuert die Verknüpfung von Tags mit einer Notiz (Hinzufügen oder Entfernen).
+ *
+ * @param data - Objekt mit der `noteId`, `tagId` und der gewünschten `action`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung (Prüfung über den Kurs-Besitzer).
+ * @returns Ein Objekt mit `success: true`.
+ * @throws ServerActionError wenn die Notiz nicht gefunden wurde oder nicht dem User gehört.
+ */
 export async function toggleNoteTagLogic(
   data: { noteId: string; tagId: string; action: 'add' | 'remove' },
   userId: string,
@@ -281,6 +320,17 @@ export async function toggleNoteTagLogic(
   return { success: true }
 }
 
+/**
+ * Aktualisiert den manuell bearbeiteten Inhalt einer Notiz.
+ *
+ * Da eine manuelle Bearbeitung als Auflösung eines potenziellen Konflikts (nach einem Re-Import)
+ * gewertet wird, setzt diese Funktion das `hasConflict` Flag automatisch zurück auf `false`.
+ *
+ * @param data - Objekt mit `noteId` und dem neuen `content`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Das aktualisierte Notiz-Objekt.
+ * @throws ServerActionError wenn die Berechtigung fehlt oder die Notiz nicht existiert.
+ */
 export async function updateNoteContentLogic(
   data: UpdateNoteContentInput,
   userId: string,

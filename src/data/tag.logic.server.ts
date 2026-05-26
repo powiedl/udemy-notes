@@ -27,12 +27,29 @@ const defaultTags = [
   'nest-js',
 ]
 
+/**
+ * Erstellt einen Satz von Standard-Tags in der Datenbank.
+ *
+ * Diese Tags sind global verfügbar (userId = null) und dienen als Grundstock
+ * für neue Installationen. Bestehende Tags mit gleichem Namen werden übersprungen.
+ *
+ * @returns Ein Promise mit einem Erfolgsobjekt.
+ */
 export const createDefaultTagsLogic = async () => {
   const data = defaultTags.map((t) => ({ name: t }))
   await prisma.tag.createMany({ data, skipDuplicates: true })
   return { success: true }
 }
 
+/**
+ * Ruft eine paginierte Liste von verfügbaren Tags für die Tag-Verwaltung ab.
+ *
+ * Berücksichtigt sowohl globale Tags als auch private Tags des Benutzers.
+ *
+ * @param data - Such- und Pagination-Parameter (`search`, `page`, `pageSize`).
+ * @param userId - Die ID des Benutzers.
+ * @returns Ein Promise mit den Tags (`items`) und der Gesamtanzahl (`totalCount`).
+ */
 export const getAvailableTagsLogic = async (
   data: GetAvailableTagsInput,
   userId: string,
@@ -66,6 +83,17 @@ export const getAvailableTagsLogic = async (
   return { items, totalCount }
 }
 
+/**
+ * Liefert eine bereinigte Liste von Tags für UI-Selektoren (z.B. Comboboxen).
+ *
+ * Implementiert eine "Private-Wins"-Strategie: Wenn ein Tag sowohl global als auch
+ * privat für den Benutzer existiert, wird nur die private Version zurückgegeben.
+ * Dies ermöglicht es Benutzern, globale Tags durch eigene Definitionen zu "überlagern".
+ *
+ * @param _data - Aktuell ungenutzte Eingabedaten.
+ * @param userId - Die ID des Benutzers.
+ * @returns Ein Promise mit dem sortierten Array eindeutiger Tags.
+ */
 export const getTagsForSelectorLogic = async (
   _data: GetTagsForSelectorInput,
   userId: string,
@@ -102,6 +130,14 @@ export const getTagsForSelectorLogic = async (
   )
 }
 
+/**
+ * Löscht einen privaten Tag des Benutzers.
+ *
+ * @param data - Objekt mit der `id` des Tags.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Eine Erfolgsmeldung.
+ * @throws ServerActionError wenn der Tag nicht gefunden wurde (oder global ist).
+ */
 export const deleteTagLogic = async (data: DeleteTagInput, userId: string) => {
   const { id } = data
   const tag = await prisma.tag.findUnique({
@@ -114,6 +150,17 @@ export const deleteTagLogic = async (data: DeleteTagInput, userId: string) => {
   return 'tag deleted successfully'
 }
 
+/**
+ * Erstellt einen neuen Tag (falls nicht vorhanden) und verknüpft ihn mit einem Ziel (Kurs oder Notiz).
+ *
+ * Prüft die Berechtigungen für das Zielobjekt, bevor die Verknüpfung erstellt wird.
+ * Nutzt `connectOrCreate` für den Tag, um Duplikate zu vermeiden.
+ *
+ * @param data - Ziel-ID, Ziel-Typ und der Tag-Name.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Promise mit `success: true`.
+ * @throws ServerActionError wenn das Ziel nicht gefunden wurde oder der Zugriff verweigert wird.
+ */
 export async function createAndLinkTagLogic(
   data: CreateAndLinkTagToTargetInput,
   userId: string,
@@ -163,6 +210,14 @@ export async function createAndLinkTagLogic(
   return { success: true }
 }
 
+/**
+ * Benennt einen existierenden privaten Tag um.
+ *
+ * @param data - Objekt mit der `id` und dem `newName`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Promise mit dem aktualisierten Tag.
+ * @throws ServerActionError wenn der Tag nicht gefunden wurde oder der neue Name bereits vergeben ist.
+ */
 export const renameTagLogic = async (data: RenameTagInput, userId: string) => {
   const { id, newName } = data
   const trimmedNewName = newName.trim().toLowerCase()
@@ -192,6 +247,13 @@ export const renameTagLogic = async (data: RenameTagInput, userId: string) => {
   return { success: true, tag: updatedTag }
 }
 
+/**
+ * Ermittelt, wie oft ein Tag in Kursen und Notizen verwendet wird.
+ *
+ * @param id - Die ID des Tags.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Objekt mit den Counts (`courses`, `notes`).
+ */
 export const getTagUsageCountLogic = async (id: string, userId: string) => {
   // const { prisma } = await import('#/lib/db.lib.server')
 
@@ -213,8 +275,18 @@ export const getTagUsageCountLogic = async (id: string, userId: string) => {
 }
 
 // --- Hilfsfunktion: Tags in der DB anlegen/finden ---
-// Wird genutzt, um sicherzustellen, dass die von der KI vorgeschlagenen Notiz-Tags
-// physisch in der Tag-Tabelle existieren, bevor wir sie als NoteTag verknüpfen.
+/**
+ * Stellt sicher, dass eine Liste von Tag-Namen physisch in der Datenbank existiert.
+ *
+ * Folgt dem "1-2-3-Gesetz":
+ * 1. Prüfe, ob das Tag bereits privat für den User existiert.
+ * 2. Prüfe, ob das Tag global existiert.
+ * 3. Falls beides nicht zutrifft: Erstelle es als neues privates Tag für den User.
+ *
+ * @param tagNames - Liste der sicherzustellenden Namen.
+ * @param userId - Die ID des Benutzers.
+ * @returns Die Liste der gefundenen oder erstellten Tag-Datensätze.
+ */
 export async function ensureTagsExist(tagNames: string[], userId: string) {
   if (tagNames.length === 0) return []
 
@@ -263,6 +335,21 @@ export async function ensureTagsExist(tagNames: string[], userId: string) {
 }
 
 // --- Haupt-Logik: Batch-Processing für einen gesamten Kurs ---
+/**
+ * Analysiert einen Kurs und alle zugehörigen Notizen mittels KI, um Tag-Vorschläge zu generieren.
+ *
+ * Der Ablauf ist hochoptimiert:
+ * 1. Sammelt Kurs- und Notizdaten sowie den Kontext existierender Tags.
+ * 2. Sendet einen einzigen Batch-Request an den KI-Service.
+ * 3. Speichert die Vorschläge für Notizen direkt als `SUGGESTION` in der Datenbank.
+ * 4. Bereinigt Redundanzen (z.B. wenn ein privates Tag ein globales "shadowed").
+ * 5. Gibt die Vorschläge für die Kurs-Ebene an das Frontend zurück (für den Review-Dialog).
+ *
+ * @param data - Objekt mit der `courseId`.
+ * @param userId - Die ID des Benutzers.
+ * @returns Ein Objekt mit den Kurs-Tag-Vorschlägen und der Anzahl verarbeiteter Notizen.
+ * @throws ServerActionError wenn der Kurs nicht gefunden wurde.
+ */
 export async function autoTagCourseBatchLogic(
   data: AutoTagCourseBatchInput,
   userId: string,
@@ -452,6 +539,20 @@ export async function autoTagCourseBatchLogic(
   }
 }
 
+/**
+ * Bestätigt eine Liste von Tag-Vorschlägen für einen Kurs in einem Batch-Vorgang.
+ *
+ * Beinhaltet einen "Redundanz-Killer": Wenn ein Tag auf Kurs-Ebene bestätigt wird,
+ * werden alle identischen `SUGGESTION` Tags auf den Notizen dieses Kurses gelöscht,
+ * da diese das Tag nun ohnehin über den Kurs vererbt bekommen.
+ *
+ * Verhindert zudem "Shadowing", indem globale Verknüpfungen gelöscht werden,
+ * falls ein gleichnamiges privates Tag bestätigt wird.
+ *
+ * @param data - Kurs-ID und Liste der Tag-Namen.
+ * @param userId - Die ID des Benutzers.
+ * @returns Ein Erfolgsobjekt inklusive Statistik über gelöschte redundante Notiz-Tags.
+ */
 export async function approveCourseTagsBatchLogic(
   data: { courseId: string; tagNames: string[] },
   userId: string,
@@ -516,6 +617,14 @@ export async function approveCourseTagsBatchLogic(
   return { success: true, removedRedundantSuggestions }
 }
 
+/**
+ * Bestätigt einen einzelnen Tag-Vorschlag an einer Notiz.
+ *
+ * @param data - Objekt mit `noteId` und `tagId`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Promise mit `success: true`.
+ * @throws ServerActionError wenn die Notiz nicht gefunden wurde.
+ */
 export async function approveNoteTagLogic(
   data: NoteTagActionInput,
   userId: string,
@@ -534,6 +643,14 @@ export async function approveNoteTagLogic(
   return { success: true }
 }
 
+/**
+ * Verwirft einen einzelnen Tag-Vorschlag an einer Notiz.
+ *
+ * @param data - Objekt mit `noteId` und `tagId`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Promise mit `success: true`.
+ * @throws ServerActionError wenn die Notiz nicht gefunden wurde.
+ */
 export async function rejectNoteTagLogic(
   data: NoteTagActionInput,
   userId: string,
