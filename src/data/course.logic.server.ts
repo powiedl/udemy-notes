@@ -16,7 +16,19 @@ import { env } from '#/lib/env.lib.server'
 // import { mapNoteDisplayTags } from './note.logic.server'
 
 /**
- * Kern-Logik für den Abruf von Kursen (paginiert & gefiltert).
+ * Kern-Logik für den paginierten Abruf von Kursen eines Benutzers.
+ *
+ * Diese Funktion führt folgende Schritte aus:
+ * 1. Berechnung der Pagination-Parameter (skip/take).
+ * 2. Aufbau einer komplexen Where-Bedingung:
+ *    - Filtert strikt nach der `userId`.
+ *    - Implementiert eine case-insensitive Suche über den Kurs-Titel ODER den Namen der Trainer.
+ *    - Filtert optional nach einer Liste von Tags (OR-Logik).
+ * 3. Parallele Ausführung der Datenbankabfragen (Datenabruf + Zählung der Gesamtergebnisse) zur Performance-Optimierung.
+ *
+ * @param data - Objekt mit den Feldern `page`, `pageSize`, `search` und `tagIds`.
+ * @param userId - Die ID des Benutzers, dessen Kurse abgerufen werden sollen.
+ * @returns Ein Promise, das ein Objekt mit den Kursen (`items`) und der Gesamtanzahl (`totalCount`) zurückgibt.
  */
 export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
   // Beachte: Wir destrukturieren hier auch tagIds (bzw. greifen darauf zu)
@@ -79,7 +91,15 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
 }
 
 /**
- * Ruft einen spezifischen Kurs anhand seiner ID ab.
+ * Ruft die Details eines spezifischen Kurses anhand seiner ID ab.
+ *
+ * Stellt sicher, dass der Kurs dem anfragenden Benutzer gehört und inkludiert
+ * Metadaten wie Tags, Trainer und die Anzahl der zugehörigen Notizen.
+ *
+ * @param data - Objekt mit der `id` des Kurses.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Promise, das die Kursdaten zurückgibt.
+ * @throws ServerActionError wenn der Kurs nicht gefunden wurde.
  */
 export async function getCourseByIdLogic(data: CourseIdInput, userId: string) {
   const { id } = data
@@ -111,7 +131,12 @@ export async function getCourseByIdLogic(data: CourseIdInput, userId: string) {
 }
 
 /**
- * Löscht einen Kurs.
+ * Löscht einen Kurs und alle damit verbundenen Daten (Kaskadierung über DB-Schema).
+ *
+ * @param data - Objekt mit der `id` des zu löschenden Kurses.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Eine Erfolgsmeldung als String.
+ * @throws ServerActionError wenn der Kurs nicht gefunden wurde oder nicht dem User gehört.
  */
 export async function deleteCourseByIdLogic(
   data: CourseIdInput,
@@ -128,7 +153,13 @@ export async function deleteCourseByIdLogic(
 }
 
 /**
- * Liefert Trainer-Vorschläge (Unikate).
+ * Liefert Trainer-Vorschläge basierend auf einer Suchanfrage.
+ *
+ * Filtert generische Platzhalter aus und sortiert die Ergebnisse nach der
+ * Popularität (Anzahl der Kurse) der Trainer in der Datenbank.
+ *
+ * @param data - Objekt mit dem Suchstring `query`.
+ * @returns Ein Promise mit einer Liste von Vorschlägen und einem `hasMore` Flag für UI-Zwecke.
  */
 export async function getTrainerSuggestionsLogic(
   data: GetTrainerSuggestionsInput,
@@ -182,7 +213,12 @@ export async function getTrainerSuggestionsLogic(
   }
 }
 /**
- * Security-Check & Löschen einer Tag-Verknüpfung.
+ * Entfernt die Verknüpfung zwischen einem Tag und einem Kurs.
+ *
+ * @param data - Objekt mit `courseId` und `tagId`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Objekt mit `success: true`.
+ * @throws ServerActionError wenn der Kurs nicht gefunden wurde oder nicht dem User gehört.
  */
 export async function removeTagFromCourseLogic(
   data: RemoveTagFromCourseInput,
@@ -202,7 +238,12 @@ export async function removeTagFromCourseLogic(
 }
 
 /**
- * Security-Check & Verknüpfen eines Tags.
+ * Verknüpft einen bereits existierenden Tag mit einem Kurs.
+ *
+ * @param data - Objekt mit `courseId` und `tagId`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Objekt mit `success: true`.
+ * @throws ServerActionError wenn der Kurs nicht gefunden wurde oder nicht dem User gehört.
  */
 export async function linkTagToCourseLogic(
   data: LinkTagToCourseInput,
@@ -220,7 +261,14 @@ export async function linkTagToCourseLogic(
 }
 
 /**
- * Security-Check, Erstellen & Verknüpfen eines Tags.
+ * Erstellt einen neuen Tag (falls nicht vorhanden) und verknüpft ihn mit einem Kurs.
+ *
+ * Nutzt `connectOrCreate`, um Duplikate zu vermeiden und Tags benutzerbezogen zu verwalten.
+ *
+ * @param data - Objekt mit `courseId` und dem Namen des Tags `tagName`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung und Tag-Zuordnung.
+ * @returns Ein Objekt mit `success: true`.
+ * @throws ServerActionError wenn der Kurs nicht gefunden wurde.
  */
 export async function createAndLinkTagToCourseLogic(
   data: CreateAndLinkTagToCourseInput,
@@ -245,6 +293,14 @@ export async function createAndLinkTagToCourseLogic(
   return { success: true }
 }
 
+/**
+ * Verknüpft einen existierenden Trainer mit einem Kurs.
+ *
+ * @param data - Objekt mit `courseId` und `trainerId`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung des Kurses.
+ * @returns Ein Objekt mit `success: true`.
+ * @throws ServerActionError wenn der Kurs/Trainer nicht gefunden wurde oder die Verknüpfung bereits existiert.
+ */
 export async function addTrainerToCourseLogic(
   data: TrainerToCourseInput,
   userId: string,
@@ -282,6 +338,14 @@ export async function addTrainerToCourseLogic(
   return { success: true }
 }
 
+/**
+ * Entfernt die Verknüpfung zwischen einem Trainer und einem Kurs.
+ *
+ * @param data - Objekt mit `courseId` und `trainerId`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Objekt mit `success: true`.
+ * @throws ServerActionError wenn der Kurs nicht gefunden wurde oder der Trainer nicht zugeordnet war.
+ */
 export async function removeTrainerFromCourseLogic(
   data: TrainerToCourseInput,
   userId: string,
@@ -312,6 +376,14 @@ export async function removeTrainerFromCourseLogic(
   return { success: true }
 }
 
+/**
+ * Erstellt einen neuen Trainer (falls nicht vorhanden) und verknüpft ihn mit einem Kurs.
+ *
+ * @param data - Objekt mit `courseId` und dem Namen des Trainers `trainerName`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Objekt mit `success: true`.
+ * @throws ServerActionError wenn der Kurs nicht gefunden wurde oder nicht dem User gehört.
+ */
 export async function createAndLinkTrainerToCourseLogic(
   data: CreateAndLinkTrainerToCourseInput,
   userId: string,
@@ -335,6 +407,14 @@ export async function createAndLinkTrainerToCourseLogic(
   return { success: true }
 }
 
+/**
+ * Erstellt oder aktualisiert einen Freigabe-Link (Token) für einen Kurs.
+ *
+ * @param data - Objekt mit `courseId` und optionalem `expiresAt`.
+ * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
+ * @returns Ein Promise mit dem Token-ID, dem Ablaufdatum und der Kurs-ID.
+ * @throws ServerActionError wenn der Kurs nicht gefunden wurde.
+ */
 export async function createShareLinkLogic(
   data: CreateShareLinkInput,
   userId: string,
