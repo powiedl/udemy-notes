@@ -32,6 +32,7 @@ import {
   useState,
   useTransition,
 } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 export const Route = createFileRoute('/_content/tags/')({
   component: RouteComponent,
@@ -44,6 +45,7 @@ export const Route = createFileRoute('/_content/tags/')({
 
 function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const result = use(data)
 
   // Server Functions
@@ -111,6 +113,8 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
         if (success) {
           setDeleteCandidate(null)
           setUsageStats(null)
+          await queryClient.invalidateQueries({ queryKey: ['availableTags'] })
+          router.clearCache()
           router.invalidate()
         }
       } catch (error) {
@@ -143,6 +147,8 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
 
     if (res.success) {
       setEditingId(null)
+      await queryClient.invalidateQueries({ queryKey: ['availableTags'] })
+      router.clearCache()
       router.invalidate()
     }
   }

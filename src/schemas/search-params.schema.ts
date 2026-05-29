@@ -26,7 +26,7 @@ export const paginationSchema = z.object({
 // Für Tags eigene Defaults (pageSize)
 export const TAG_PAGINATION_DEFAULTS = {
   ...PAGINATION_DEFAULTS,
-  pageSize: 10,
+  pageSize: 50,
 } as const
 
 export const tagPaginationSchema = paginationSchema.extend({
