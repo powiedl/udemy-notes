@@ -1,3 +1,4 @@
+import './prism-setup'
 import {
   MDXEditor,
   headingsPlugin,
