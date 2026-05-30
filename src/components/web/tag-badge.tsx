@@ -26,6 +26,7 @@ export interface TagBadgeProps {
   isHighlighted?: boolean
   isInherited?: boolean
   icon?: React.ReactNode
+  DeleteIcon?: React.ElementType
 }
 
 const TagBadge = ({
@@ -45,6 +46,7 @@ const TagBadge = ({
   onApprove,
   isApproving,
   onClick,
+  DeleteIcon = X,
 }: TagBadgeProps) => {
   const isPrivate = !!tag.userId
   const isSuggestion = tag.status === 'SUGGESTION'
@@ -173,7 +175,7 @@ const TagBadge = ({
             {isDeleting ? (
               <Loader2 className="animate-spin size-3" />
             ) : (
-              <X className="size-3.5" />
+              <DeleteIcon className="size-3.5" />
             )}
           </Button>
         )}
