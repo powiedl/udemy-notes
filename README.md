@@ -138,3 +138,28 @@ If you try to solve linting errors in the generated code of TanStack Start you'r
       '*.output/**',         // add this line
     ],
 ```
+
+#### difference between React.ReactNode and React.ElementType
+
+`React.ReactNode` is a complete React node. All properties (e.g. className) are under the control of the calling component. Whereas `React.ElementType` is just the Type of the node, all properties are under control of the called component. You can see the difference in the `TagBadge` component:
+
+```typescript
+export interface TagBadgeProps {
+  ...
+  icon?: React.ReactNode
+  DeleteIcon?: React.ElementType
+}
+...
+  <Badge variant="outline" className={badgeClassName} title={title}>
+    <span className="truncate max-w-40 flex flex-row gap-0.5 items-center">
+      {icon} // the icon Node is just presented (the TagBadge component can't add things to it)
+...
+    <DeleteIcon className="size-3.5" /> // "everything" (className) is controlled by the TagBadge component
+...
+```
+
+Call of the TagBade component - where you can also see the difference
+
+```typescript
+  <TagBadge icon={<Link2 className='size-3'>} DeleteIcon={Trash2}>
+```
