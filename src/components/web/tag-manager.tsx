@@ -179,8 +179,6 @@ export function TagManager({
                         'active:scale-[0.98]',
                       )}
                     >
-                      {/* --- 2. DAS LAYOUT --- */}
-                      {/* Linker Teil: flex-1 zwingt diesen Container, allen verfügbaren Platz einzunehmen */}
                       <div className="flex items-center min-w-0 flex-1">
                         <Plus className="mr-2 h-3.5 w-3.5 opacity-80 shrink-0" />
                         <span className="text-xs truncate">
