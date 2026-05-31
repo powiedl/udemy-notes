@@ -19,6 +19,7 @@ model User {
   updatedAt     DateTime  @updatedAt @map("updated_at")
   sessions      Session[]
   accounts      Account[]
+  settings      Json      @default("{}")
   courses       Course[]
   notes         Note[]
   tags          Tag[]
