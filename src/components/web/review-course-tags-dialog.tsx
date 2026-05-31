@@ -10,7 +10,7 @@ import {
 } from '#/components/ui/dialog'
 import { Button } from '#/components/ui/button'
 import { Badge } from '#/components/ui/badge'
-import { Loader2, Sparkles, Check } from 'lucide-react'
+import { Loader2, Sparkles, Check, X } from 'lucide-react'
 import { cn } from '#/lib/utils.lib'
 
 export type AITagSuggestionForDialog = {
@@ -68,8 +68,21 @@ export function ReviewCourseTagsDialog({
             Suggested Course Tags
           </DialogTitle>
           <DialogDescription>
-            Select the tags you want to apply to this course. Unselect the ones
-            that don't fit.
+            <p>
+              Select the tags you want to apply to this course. Unselect the
+              ones that don't fit.
+            </p>
+            <p>
+              The notes of this course will also get tag suggestions, which you
+              can approve afterwards (by clicking the{' '}
+              <Check
+                className="size-3.5 inline brightness-150"
+                strokeWidth={3}
+              />
+              ) or remove (by clicking the{' '}
+              <X className="size-3.5 inline brightness-150" strokeWidth={3} />)
+              at the tag in the header of each note).
+            </p>
           </DialogDescription>
         </DialogHeader>
 

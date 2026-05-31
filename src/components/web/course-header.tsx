@@ -269,6 +269,7 @@ const HeaderFooter = () => {
         onClick={handleAITagging}
         disabled={isPending}
         className="hover:cursor-pointer"
+        title="The course itself and it's notes will be tagged"
       >
         {isAITagging ? (
           <Loader2 className="size-4 mr-1 animate-spin" />
