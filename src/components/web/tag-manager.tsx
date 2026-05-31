@@ -67,6 +67,7 @@ export function TagManager({
       {tags.length === 0 && (onAddTag || onCreateTag) && (
         <span className="text-muted-foreground">add a tag</span>
       )}
+      {/* list of assigned tags */}
       {tags.map((tag) => (
         <TagBadge
           key={tag.id}
@@ -94,6 +95,7 @@ export function TagManager({
         />
       ))}
 
+      {/* + button to add more tags */}
       {(onAddTag || onRemoveTag || onCreateTag) && (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -121,6 +123,13 @@ export function TagManager({
           </PopoverTrigger>
           <PopoverContent className="w-64 p-0" align="start">
             <Command
+              filter={(value, search) => {
+                // Eine simple, strikte Teilstring-Suche
+                if (value.includes(search)) {
+                  return 1 // 1 = Item wird angezeigt
+                }
+                return 0 // 0 = Item wird ausgeblendet
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && showCreateOption && onCreateTag) {
                   e.preventDefault()
@@ -130,6 +139,7 @@ export function TagManager({
                 }
               }}
             >
+              {/* search query for the tags */}
               <CommandInput
                 placeholder="search tag ..."
                 value={query}
@@ -137,9 +147,11 @@ export function TagManager({
               />
               <CommandList>
                 <CommandEmpty className="p-2 text-xs text-muted-foreground text-center">
+                  {/* if no tag matches the search query */}
                   No tag found.
                 </CommandEmpty>
                 <CommandGroup>
+                  {/* list of available tags */}
                   {availableTags
                     .filter(
                       (t) => !tags.some((existing) => existing.id === t.id),
@@ -159,6 +171,7 @@ export function TagManager({
                       </CommandItem>
                     ))}
 
+                  {/* create new tag "button" */}
                   {showCreateOption && (
                     <CommandItem
                       key="create-new-tag"
