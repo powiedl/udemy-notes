@@ -454,7 +454,7 @@ const CourseHeader = (props: CourseHeaderProps) => {
         if (result.courseTagsSuggested.length > 0) {
           setReviewTags(result.courseTagsSuggested)
         } else {
-          toast.info('Für den Kurs selbst wurden keine neuen Tags gefunden.')
+          toast.info('For the course itself no suitable tags were found')
         }
       } catch (error) {}
     })
