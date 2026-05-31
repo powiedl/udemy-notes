@@ -27,6 +27,17 @@ import type { AITagSuggestionForDialog } from './review-course-tags-dialog'
 import { toast } from 'sonner'
 import { useServerFn } from '@tanstack/react-start'
 import { ActionIconButton } from '../ui/action-icon-button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '#/components/ui/alert-dialog'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
@@ -258,6 +269,7 @@ const HeaderFooter = () => {
         onClick={handleAITagging}
         disabled={isPending}
         className="hover:cursor-pointer"
+        title="The course itself and it's notes will be tagged"
       >
         {isAITagging ? (
           <Loader2 className="size-4 mr-1 animate-spin" />
@@ -292,33 +304,57 @@ const HeaderFooter = () => {
         </>
       </ExportCourseDialog>
 
-      <Button
-        type="button"
-        variant="destructive"
-        onClick={() => {
-          if (!onDelete) return
-          startDeleteTransition(async () => {
-            await onDelete(course.id)
-            await navigate({
-              to: '/courses',
-              search: { ...PAGINATION_DEFAULTS, tagIds: [], trainer: '' },
-            })
-          })
-        }}
-        disabled={isPending}
-        className="hover:cursor-pointer"
-      >
-        {isDeleting ? (
-          <Loader2 className={cn('size-4 animate-spin mr-1 inline')} />
-        ) : (
-          <Trash2 className="size-4 mr-1" />
-        )}
-        <span
-          className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
-        >
-          {isDeleting ? 'Deleting' : 'Delete'}
-        </span>
-      </Button>
+      {/* Delete Button - with a "are you sure" confirmation dialog */}
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={isPending}
+            className="hover:cursor-pointer"
+          >
+            {isDeleting ? (
+              <Loader2 className={cn('size-4 animate-spin mr-1 inline')} />
+            ) : (
+              <Trash2 className="size-4 mr-1" />
+            )}
+            <span
+              className={cn('hidden', singleCourse ? 'sm:inline' : 'md:inline')}
+            >
+              {isDeleting ? 'Deleting' : 'Delete'}
+            </span>
+          </Button>
+        </AlertDialogTrigger>
+
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Course?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be reverted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="cursor-pointer">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
+              onClick={() => {
+                if (!onDelete) return
+                startDeleteTransition(async () => {
+                  await onDelete(course.id)
+                  await navigate({
+                    to: '/courses',
+                    search: { ...PAGINATION_DEFAULTS, tagIds: [], trainer: '' },
+                  })
+                })
+              }}
+            >
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -419,7 +455,7 @@ const CourseHeader = (props: CourseHeaderProps) => {
         if (result.courseTagsSuggested.length > 0) {
           setReviewTags(result.courseTagsSuggested)
         } else {
-          toast.info('Für den Kurs selbst wurden keine neuen Tags gefunden.')
+          toast.info('For the course itself no suitable tags were found')
         }
       } catch (error) {}
     })

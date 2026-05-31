@@ -26,7 +26,7 @@ export interface TagDisplay {
 
 interface TagManagerProps {
   tags: TagDisplay[]
-  availableTags: { id: string; name: string }[]
+  availableTags: { id: string; name: string; userId?: string }[]
   onAddTag?: (id: string) => void
   onRemoveTag?: (id: string) => void
   onCreateTag?: (name: string) => void
@@ -54,6 +54,12 @@ export function TagManager({
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
+  const exactMatchExists = availableTags.some(
+    (t) => t.name.toLowerCase() === query.trim().toLowerCase() && t.userId,
+  )
+  const showCreateOption =
+    onCreateTag && query.trim().length > 0 && !exactMatchExists
+
   return (
     <div
       className={cn('flex flex-wrap gap-1.5 mt-1.5 items-center', className)}
@@ -61,17 +67,17 @@ export function TagManager({
       {tags.length === 0 && (onAddTag || onCreateTag) && (
         <span className="text-muted-foreground">add a tag</span>
       )}
+      {/* list of assigned tags */}
       {tags.map((tag) => (
         <TagBadge
           key={tag.id}
-          tag={tag} // TagBadge liest jetzt tag.status automatisch aus!
+          tag={tag}
           size="sm"
           onDelete={
             tag.isDeletable && onRemoveTag
               ? () => onRemoveTag(tag.id)
               : undefined
           }
-          // NEU: Approve-Handler weiterreichen
           onApprove={
             tag.status === 'SUGGESTION' && onApproveTag
               ? () => onApproveTag(tag.id)
@@ -89,52 +95,14 @@ export function TagManager({
         />
       ))}
 
+      {/* + button to add more tags */}
       {(onAddTag || onRemoveTag || onCreateTag) && (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            {/* <Button
-              type="button"
-              // Wir steuern die Basis-Farben über den Variant,
-              // aber wir zwingen unseren EIGENEN Hover-Effekt auf.
-              variant={addIconVariant === 'purple' ? 'default' : 'outline'}
-              size="icon"
-              disabled={isPending}
-              title="add a tag"
-              className={cn(
-                // Basis-Klassen (Form, Abstand, Transition)
-                'h-4 w-6 rounded-md transition-all duration-200 cursor-pointer ml-1',
-
-                // Bedingte Klassen basierend auf der Variante
-                addIconVariant === 'purple'
-                  ? [
-                      // Wir deaktivieren den Shadcn-Hover, indem wir den Background fix auf primary setzen (auch beim Hover)
-                      'bg-primary hover:bg-primary border-transparent shadow-sm',
-                      // Stattdessen machen wir den Button beim Hover leicht durchscheinend
-                      // ODER wir nutzen brightness, aber ohne den störenden Hintergrund-Wechsel
-                      'hover:brightness-110 active:scale-95',
-                    ]
-                  : 'border-dashed hover:border-primary',
-              )}
-            >
-              {isPending ? (
-                <Loader2 className="h-2.5 w-2.5 animate-spin" />
-              ) : (
-                <Plus
-                  className={cn(
-                    'h-3 w-3 transition-opacity duration-200',
-                    // Im Purple-Modus machen wir das Plus beim Hovern zu 100% sichtbar (leuchtend), sonst 70%
-                    addIconVariant === 'purple'
-                      ? 'opacity-80 hover:opacity-100'
-                      : 'opacity-60 hover:opacity-100',
-                  )}
-                  strokeWidth={addIconVariant === 'purple' ? 2.5 : 2} // Purple darf ruhig etwas kräftiger sein
-                />
-              )}
-            </Button> */}
             <ActionIconButton
               actionVariant={addIconVariant === 'purple' ? 'purple' : 'outline'}
               actionSize="sm"
-              className="ml-1" // Den Abstand fügen wir spezifisch hier hinzu
+              className="ml-1"
               disabled={isPending}
               title="add a tag"
             >
@@ -155,60 +123,35 @@ export function TagManager({
           </PopoverTrigger>
           <PopoverContent className="w-64 p-0" align="start">
             <Command
+              filter={(value, search) => {
+                // Eine simple, strikte Teilstring-Suche
+                if (value.includes(search)) {
+                  return 1 // 1 = Item wird angezeigt
+                }
+                return 0 // 0 = Item wird ausgeblendet
+              }}
               onKeyDown={(e) => {
-                // Enter-Logik für neues Tag
-                if (
-                  e.key === 'Enter' &&
-                  query.length > 0 &&
-                  onCreateTag &&
-                  !availableTags.some((t) => t.name === query)
-                ) {
-                  onCreateTag(query)
+                if (e.key === 'Enter' && showCreateOption && onCreateTag) {
+                  e.preventDefault()
+                  onCreateTag(query.trim())
                   setQuery('')
                   setOpen(false)
                 }
               }}
             >
+              {/* search query for the tags */}
               <CommandInput
                 placeholder="search tag ..."
                 value={query}
                 onValueChange={setQuery}
               />
               <CommandList>
-                <CommandEmpty className="p-1">
-                  {/* Dein schöner Create-Button, wenn nichts gefunden wurde */}
-                  {query.length > 0 && onCreateTag ? (
-                    <button
-                      type="button"
-                      className={cn(
-                        'flex w-full items-center justify-between px-3 py-2 rounded-md transition-all',
-                        'bg-primary text-primary-foreground shadow-sm',
-                        'hover:bg-primary/90 cursor-pointer active:scale-[0.98]',
-                      )}
-                      onClick={() => {
-                        onCreateTag(query)
-                        setQuery('')
-                        setOpen(false)
-                      }}
-                    >
-                      <Plus className="mr-2 h-3.5 w-3.5 opacity-80" />
-                      <span className="text-xs truncate mr-2">
-                        <span className="opacity-70 font-light">
-                          Create tag{' '}
-                        </span>
-                        <span className="font-semibold italic">"{query}"</span>
-                      </span>
-                      <div className="flex items-center gap-1 opacity-80 shrink-0">
-                        <CornerDownLeft className="h-3 w-3" />
-                      </div>
-                    </button>
-                  ) : (
-                    <div className="p-2 text-xs text-muted-foreground text-center">
-                      No tag found.
-                    </div>
-                  )}
+                <CommandEmpty className="p-2 text-xs text-muted-foreground text-center">
+                  {/* if no tag matches the search query */}
+                  No tag found.
                 </CommandEmpty>
                 <CommandGroup>
+                  {/* list of available tags */}
                   {availableTags
                     .filter(
                       (t) => !tags.some((existing) => existing.id === t.id),
@@ -227,6 +170,45 @@ export function TagManager({
                         {tag.name}
                       </CommandItem>
                     ))}
+
+                  {/* create new tag "button" */}
+                  {showCreateOption && (
+                    <CommandItem
+                      key="create-new-tag"
+                      value={query}
+                      onSelect={() => {
+                        if (onCreateTag) {
+                          onCreateTag(query.trim())
+                          setQuery('')
+                          setOpen(false)
+                        }
+                      }}
+                      className={cn(
+                        'flex w-full items-center mt-1 cursor-pointer transition-all rounded-md px-3 py-2',
+
+                        'bg-primary text-primary-foreground shadow-sm',
+
+                        'data-[selected=true]:bg-primary/90 data-[selected=true]:text-primary-foreground',
+                        'active:scale-[0.98]',
+                      )}
+                    >
+                      <div className="flex items-center min-w-0 flex-1">
+                        <Plus className="mr-2 h-3.5 w-3.5 opacity-80 shrink-0" />
+                        <span className="text-xs truncate">
+                          <span className="opacity-70 font-light">
+                            Create tag{' '}
+                          </span>
+                          <span className="font-semibold italic">
+                            "{query}"
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="ml-auto flex items-center opacity-80 shrink-0 pl-3">
+                        <CornerDownLeft className="h-3 w-3" />
+                      </div>
+                    </CommandItem>
+                  )}
                 </CommandGroup>
               </CommandList>
             </Command>

@@ -23,7 +23,7 @@ import {
   useRouterState,
 } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { Info, Loader2, AlertTriangle } from 'lucide-react' // NEU: AlertTriangle
+import { Info, Loader2, AlertTriangle, Trash2 } from 'lucide-react' // NEU: AlertTriangle
 import {
   Suspense,
   use,
@@ -177,6 +177,7 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
             onStartEdit={() => setEditingId(t.id)}
             onCancelEdit={() => setEditingId(null)}
             onRename={(newName) => handleRenameTag(t.id, newName)}
+            DeleteIcon={Trash2}
           />
         ))}
       </div>

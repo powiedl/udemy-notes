@@ -10,7 +10,9 @@ export default function Footer({ className = '' }: { className?: string }) {
       )}
     >
       <div className="flex flex-col items-center justify-between gap-4 text-center sm:text-left">
-        <p className="mt-0 text-sm">&copy; 2026 Roland</p>
+        <p className="mt-0 text-sm">
+          &copy; 2026 <a href="mailto:udemy-notes@streber24.de">Roland</a>
+        </p>
       </div>
     </footer>
   )
