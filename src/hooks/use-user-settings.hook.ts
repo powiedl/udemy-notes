@@ -4,7 +4,7 @@ import {
   userSettingsQueryOptions,
   updateUserSettingsFn,
 } from '#/data/user.data'
-import { UserSettings } from '#/schemas/settings.schema'
+import type { UserSettings } from '#/schemas/settings.schema'
 import { handleAction } from '#/lib/client-utils.lib'
 
 export function useSettings() {
@@ -24,10 +24,8 @@ export function useSettings() {
       })
     },
     onSuccess: (data) => {
-      if (data) {
-        queryClient.setQueryData(['userSettings'], data)
-        queryClient.invalidateQueries({ queryKey: ['userSettings'] })
-      }
+      queryClient.setQueryData(['userSettings'], data)
+      queryClient.invalidateQueries({ queryKey: ['userSettings'] })
     },
   })
 

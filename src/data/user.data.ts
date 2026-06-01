@@ -45,8 +45,8 @@ export const userSettingsQueryOptions = () =>
       const response = await getUserSettingsFn({ data: {} })
 
       // Error-Handling, damit React Query im Fehlerfall in den 'error' State geht
-      if (!response || !response.success) {
-        throw new Error(response?.error || 'Failed to fetch user settings')
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to fetch user settings')
       }
       return response.data
     },

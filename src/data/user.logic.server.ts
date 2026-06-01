@@ -1,6 +1,8 @@
 import { prisma } from '#/lib/db.lib.server'
-import { UserSettings, userSettingsSchema } from '#/schemas/settings.schema'
+import { userSettingsSchema } from '#/schemas/settings.schema'
+import type { UserSettings } from '#/schemas/settings.schema'
 import { DEFAULT_EXPORT_SETTINGS } from '#/lib/constants.lib'
+import { ServerActionError } from '#/types/errors.type'
 
 export async function getUserSettingsLogic(
   userId: string,
@@ -9,8 +11,9 @@ export async function getUserSettingsLogic(
     where: { id: userId },
     select: { settings: true },
   })
+  if (!user) throw new ServerActionError('User not found')
 
-  const dbSettings = (user?.settings as Record<string, any>) || {}
+  const dbSettings = user.settings as Record<string, any>
 
   const mergedSettings = {
     export: {
