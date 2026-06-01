@@ -1,14 +1,8 @@
 import { z } from 'zod'
+import { exportSettingsSchema } from '#/schemas/settings.schema'
 
-export const exportMdFileSchema = z.object({
-  courseId: z.string(), // .max(10),
-  includeCourseTags: z.boolean(),
-  includeCourseDescription: z.boolean(),
-  includeCourseLinks: z.boolean(),
-  includeNotesMetadata: z.boolean(),
-  includeNoteTags: z.boolean(),
-  includeTrainers: z.boolean(),
-  noteVersion: z.enum(['original', 'edited_with_fallback', 'both']),
+export const exportMdFileSchema = exportSettingsSchema.extend({
+  courseId: z.string(), // .max(10) falls du das wieder einkommentieren willst
 })
 
 export type ExportMdFileSchema = z.infer<typeof exportMdFileSchema>

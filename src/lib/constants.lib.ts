@@ -11,3 +11,13 @@ export const EMPTY_CLIENT_LOGGING_METADATA: ClientLoggingMetadata = {
 
 export const HTML_COMMENT_START = '<!--'
 export const HTML_COMMENT_END = '-->'
+
+export const DEFAULT_EXPORT_SETTINGS = {
+  includeCourseTags: true,
+  includeTrainers: true,
+  includeNoteTags: true,
+  includeNotesMetadata: true,
+  includeCourseDescription: true,
+  includeCourseLinks: true,
+  noteVersion: 'edited_with_fallback' as const,
+}

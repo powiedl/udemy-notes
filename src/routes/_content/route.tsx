@@ -3,6 +3,7 @@ import Footer from '#/components/Footer'
 import { SidebarInset, SidebarProvider } from '#/components/ui/sidebar'
 import { getSessionFn } from '#/data/session.data'
 import { getTagsForSelectorFn } from '#/data/tag.data'
+import { userSettingsQueryOptions } from '#/data/user.data'
 import { queryOptions } from '@tanstack/react-query'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 
@@ -33,17 +34,20 @@ export const Route = createFileRoute('/_content')({
       throw new Error(sessionResult.error || 'Session could not be loaded')
     }
 
-    // 2. Tags über TanStack Query laden!
+    // 2. Daten über Tanstack Query parallel laden
     // 'ensureQueryData' ist magisch: Wenn die Tags schon im Cache sind,
     // gibt es sie sofort zurück. Wenn nicht, ruft es die Server Function auf.
-    const availableTags =
-      await context.queryClient.ensureQueryData(tagsQueryOptions)
+    const [availableTags, userSettings] = await Promise.all([
+      context.queryClient.ensureQueryData(tagsQueryOptions),
+      context.queryClient.ensureQueryData(userSettingsQueryOptions()), // <-- NEU
+    ])
 
     // 3. Die Daten aus dem .data Feld extrahieren
     // result.data ist hier vom Typ 'Session'
     return {
       user: sessionResult.data.user,
       availableTags,
+      userSettings,
     }
   },
 })
