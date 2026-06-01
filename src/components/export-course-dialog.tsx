@@ -12,6 +12,8 @@ import { Button } from './ui/button'
 import { useForm } from '@tanstack/react-form'
 import { exportMdFileSchema } from '#/schemas/export-file.schema'
 import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
+import { DEFAULT_EXPORT_SETTINGS } from '#/lib/constants.lib'
+import { useSettings } from '#/hooks/use-user-settings.hook' // <-- NEU: Unser Custom Hook
 import { Field, FieldError, FieldLabel } from './ui/field'
 import { Input } from './ui/input'
 import { Checkbox } from './ui/checkbox'
@@ -26,16 +28,7 @@ type ExportCourseDialogProps = {
   disabled: boolean
   onExportSubmit: (data: ExportMdFileSchema) => void
 }
-const initialFormValues: ExportMdFileSchema = {
-  courseId: 'this-courseId-comes-from-initialFormValues-in-ExportCourseDialog',
-  includeCourseTags: true,
-  includeTrainers: true,
-  includeNoteTags: true,
-  includeNotesMetadata: true,
-  includeCourseDescription: true,
-  includeCourseLinks: true,
-  noteVersion: 'edited_with_fallback',
-}
+
 const ExportCourseDialog = ({
   courseId,
   isAdmin = false,
@@ -45,23 +38,34 @@ const ExportCourseDialog = ({
   onExportSubmit,
 }: ExportCourseDialogProps) => {
   const [open, setOpen] = useState(false)
+
+  // 1. Settings und Mutations-Funktion aus unserem Hook holen
+  const { settings, updateSettings, isUpdating } = useSettings()
+
   const form = useForm({
+    // 2. defaultValues dynamisch zusammensetzen (Konstante -> DB Settings -> prop)
     defaultValues: {
-      ...initialFormValues,
+      ...DEFAULT_EXPORT_SETTINGS,
+      ...(settings?.export || {}),
       courseId,
     },
     validators: {
       onChange: exportMdFileSchema,
       onMount: exportMdFileSchema,
-      // onSubmit: exportMdFileSchema,
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
+      // 3. courseId abspalten, da wir nur die reinen Settings in der DB speichern wollen
+      const { courseId: _, ...exportSettingsToSave } = value
+
+      // 4. Einstellungen asynchron im Hintergrund speichern (Cache updatet sich automatisch!)
+      await updateSettings({ export: exportSettingsToSave })
+
       setOpen(false)
-      // console.log('form.onSubmit values:', value)
+      // 5. Den eigentlichen Export-Vorgang anstoßen
       onExportSubmit(value)
     },
   })
-  // console.log('ExportCourseDialog, courseId:', courseId)
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger disabled={disabled} asChild>
@@ -78,20 +82,18 @@ const ExportCourseDialog = ({
         </DialogHeader>
         <form
           onSubmit={(e) => {
-            // console.log('form.onSubmit called')
             e.preventDefault()
             e.stopPropagation()
             form.handleSubmit()
           }}
           className="space-y-6"
         >
-          {/* courseId */}
+          {/* courseId (Hidden aber Teil des Forms) */}
           <form.Field
             name="courseId"
             children={(field) => {
               const isInvalid =
                 field.state.meta.isTouched && !field.state.meta.isValid
-              // console.log('field courseId value:', field.state.value)
               return (
                 <Field data-invalid={isInvalid} className="hidden">
                   <FieldLabel htmlFor={field.name}>Course Id</FieldLabel>
@@ -138,7 +140,6 @@ const ExportCourseDialog = ({
                         Include course tags
                       </FieldLabel>
                     </div>
-                    {/* Fehler erscheint brav in der Zeile darunter */}
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}
@@ -208,7 +209,6 @@ const ExportCourseDialog = ({
                         Include course description
                       </FieldLabel>
                     </div>
-                    {/* Fehler erscheint brav in der Zeile darunter */}
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}
@@ -217,7 +217,7 @@ const ExportCourseDialog = ({
               }}
             />
 
-            {/* includeCourseTrainerLinks */}
+            {/* includeCourseLinks */}
             <form.Field
               name="includeCourseLinks"
               children={(field) => {
@@ -328,17 +328,13 @@ const ExportCourseDialog = ({
                 field.state.meta.isTouched && !field.state.meta.isValid
               return (
                 <Field data-invalid={isInvalid}>
-                  {/* Haupt-Label für die ganze Gruppe */}
                   <FieldLabel>Note Version to Export</FieldLabel>
-
-                  {/* Der Wrapper steuert den gesamten State! */}
                   <RadioGroup
                     onValueChange={(value) => field.handleChange(value as any)}
                     defaultValue={field.state.value}
                     onBlur={field.handleBlur}
                     className="flex flex-col space-y-2 mt-2"
                   >
-                    {/* Option 1 */}
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem
                         value="original"
@@ -352,7 +348,6 @@ const ExportCourseDialog = ({
                       </label>
                     </div>
 
-                    {/* Option 2 */}
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem
                         value="edited_with_fallback"
@@ -366,7 +361,6 @@ const ExportCourseDialog = ({
                       </label>
                     </div>
 
-                    {/* Option 3 */}
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="both" id={`${field.name}-both`} />
                       <label
@@ -387,14 +381,10 @@ const ExportCourseDialog = ({
             <Button
               type="submit"
               className={className}
-              disabled={disabled}
-              // onClick={(e) => {
-              //   e.preventDefault()
-              //   setOpen(false)
-              //   onClick(e)
-              // }}
+              // Button wird deaktiviert, wenn das Formular speichert ODER die Server Function gerade schreibt
+              disabled={disabled || form.state.isSubmitting || isUpdating}
             >
-              {children}
+              {isUpdating ? 'Saving...' : children}
             </Button>
           </div>
           {isAdmin && <FormDebugger form={form} schema={exportMdFileSchema} />}
