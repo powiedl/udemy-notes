@@ -4,7 +4,7 @@ import {
   userSettingsQueryOptions,
   updateUserSettingsFn,
 } from '#/data/user.data'
-import type { UserSettings } from '#/schemas/settings.schema'
+import type { UpdateUserSettingsInput } from '#/schemas/settings.schema'
 import { handleAction } from '#/lib/client-utils.lib'
 
 export function useSettings() {
@@ -18,7 +18,7 @@ export function useSettings() {
 
   // 3. Mutation definieren (Write)
   const mutation = useMutation({
-    mutationFn: async (newSettings: UserSettings) => {
+    mutationFn: async (newSettings: UpdateUserSettingsInput) => {
       return await handleAction(boundUpdateFn({ data: newSettings }), {
         showSuccessToast: false, // UI kümmert sich ggf. selbst um den Toast
       })

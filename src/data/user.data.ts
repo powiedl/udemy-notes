@@ -1,4 +1,4 @@
-import { userSettingsSchema } from '#/schemas/settings.schema'
+import { updateUserSettingsSchema } from '#/schemas/settings.schema'
 import { authFn, authGetFn } from '#/lib/rpc.lib'
 import { withLogging } from '#/schemas/api-utils.schema'
 import z from 'zod'
@@ -21,7 +21,7 @@ export const getUserSettingsFn = authGetFn({ method: 'GET' })
   })
 
 export const updateUserSettingsFn = authFn({ method: 'POST' })
-  .inputValidator(withLogging(userSettingsSchema))
+  .inputValidator(withLogging(updateUserSettingsSchema))
   .handler(async ({ context, data }) => {
     const userId = context.session.user.id
 
