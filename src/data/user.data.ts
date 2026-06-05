@@ -41,14 +41,13 @@ export const userSettingsQueryOptions = () =>
   queryOptions({
     queryKey: ['userSettings'],
     queryFn: async () => {
-      // TanStack entscheidet automatisch: SSR = direkter Aufruf, Client = Fetch
-      const response = await getUserSettingsFn({ data: {} })
-
-      // Error-Handling, damit React Query im Fehlerfall in den 'error' State geht
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch user settings')
+      try {
+        const response = await getUserSettingsFn({ data: {} })
+        return response.success ? response.data : null
+      } catch (error) {
+        // Fängt harte 401 Unauthorized oder Netzwerk-Fehler ab
+        return null
       }
-      return response.data
     },
     // Da Settings sich selten ändern, cachen wir sie für 10 Minuten
     staleTime: 1000 * 60 * 10,

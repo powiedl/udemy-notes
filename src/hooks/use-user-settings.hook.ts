@@ -21,6 +21,7 @@ export function useSettings() {
     mutationFn: async (newSettings: UpdateUserSettingsInput) => {
       return await handleAction(boundUpdateFn({ data: newSettings }), {
         showSuccessToast: false, // UI kümmert sich ggf. selbst um den Toast
+        showErrorToast: false,
       })
     },
     onSuccess: (data) => {

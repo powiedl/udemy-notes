@@ -1,5 +1,5 @@
 import type { ClientLoggingMetadata } from '#/types/api.type'
-import { UITheme } from '#/types/ui.type'
+import type { UITheme } from '#/types/ui.type'
 
 export const MAX_FILE_SIZE_UPLOAD = 5 * 1024 * 1024 // 5 MB
 
