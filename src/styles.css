@@ -116,10 +116,21 @@
   box-sizing: border-box;
 }
 
+/* no transitions during initial page load (class is added in __root.tsx and removed after initial load has finished) */
+.preload * {
+  transition: none !important;
+}
+
 html,
 body,
 #app {
   min-height: 100%;
+}
+
+html {
+  background-color: var(
+    --bg-base
+  ); /* Verhindert den weißen Blitz absolut zuverlässig! */
 }
 
 body {
@@ -127,7 +138,7 @@ body {
   color: var(--sea-ink);
   font-family: var(--font-sans);
   background-color: var(--bg-base);
-  background:
+  background-image:
     radial-gradient(1100px 620px at -8% -10%, var(--hero-a), transparent 58%),
     radial-gradient(1050px 620px at 112% -12%, var(--hero-b), transparent 62%);
   /* radial-gradient(
@@ -408,7 +419,7 @@ a {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
   }
   html {
     @apply font-sans;

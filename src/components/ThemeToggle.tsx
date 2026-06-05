@@ -25,10 +25,16 @@ function applyThemeMode(mode: UITheme) {
 }
 
 export default function ThemeToggle() {
+  // console.log('ThemeToggle')
   const { settings, updateSettings, isLoading } = useSettings()
   const [fallbackMode, setFallbackMode] = useState<UITheme>('system')
   // 2. Aktuellen Modus ableiten (Fallback auf 'system', falls nicht eingeloggt oder ladend)
   const mode = settings?.ui.theme || fallbackMode
+
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -80,6 +86,7 @@ export default function ThemeToggle() {
       ? 'Theme mode: system. Click to switch to light mode.'
       : `Theme mode: ${mode}. Click to switch mode.`
 
+  if (!mounted) return <div className="w-8 h-4" />
   return (
     <button
       type="button"

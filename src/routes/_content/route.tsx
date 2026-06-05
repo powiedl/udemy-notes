@@ -4,8 +4,10 @@ import { SidebarInset, SidebarProvider } from '#/components/ui/sidebar'
 import { getSessionFn } from '#/data/session.data'
 import { getTagsForSelectorFn } from '#/data/tag.data'
 import { userSettingsQueryOptions } from '#/data/user.data'
+import { useSettings } from '#/hooks/use-user-settings.hook'
 import { queryOptions } from '@tanstack/react-query'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 
 export const tagsQueryOptions = queryOptions({
   queryKey: ['availableTags'],
@@ -54,10 +56,25 @@ export const Route = createFileRoute('/_content')({
 
 function RouteComponent() {
   const { user } = Route.useLoaderData()
+  const { settings, updateSettings } = useSettings()
+  const [mounted, setMounted] = useState(false)
+  const isSidebarOpen = settings?.ui.sidebar
+    ? !settings.ui.sidebar.collapsed
+    : true
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return <div className="w-32 h-8" />
 
   return (
     <>
-      <SidebarProvider className="h-full">
+      <SidebarProvider
+        className="h-full"
+        open={isSidebarOpen} // Zwinge den State
+        onOpenChange={(isOpen) => {
+          updateSettings({ ui: { sidebar: { collapsed: !isOpen } } }).catch(
+            () => {},
+          )
+        }}
+      >
         <AppSidebar user={user} />
         <SidebarInset className="flex flex-col w-full h-full overflow-hidden bg-transparent">
           <div className="flex-1 overflow-y-auto flex flex-col mt-4">
