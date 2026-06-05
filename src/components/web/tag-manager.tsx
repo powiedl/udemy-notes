@@ -26,7 +26,7 @@ export interface TagDisplay {
 
 interface TagManagerProps {
   tags: TagDisplay[]
-  availableTags: { id: string; name: string; userId?: string }[]
+  availableTags: { id: string; name: string; userId?: string | null }[]
   onAddTag?: (id: string) => void
   onRemoveTag?: (id: string) => void
   onCreateTag?: (name: string) => void
@@ -131,9 +131,9 @@ export function TagManager({
                 return 0 // 0 = Item wird ausgeblendet
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && showCreateOption && onCreateTag) {
+                if (e.key === 'Enter' && showCreateOption) {
                   e.preventDefault()
-                  onCreateTag(query.trim())
+                  onCreateTag(query.trim()) // onCreateTag must be valid, otherwise showCreateOption can't be true
                   setQuery('')
                   setOpen(false)
                 }
@@ -177,11 +177,9 @@ export function TagManager({
                       key="create-new-tag"
                       value={query}
                       onSelect={() => {
-                        if (onCreateTag) {
-                          onCreateTag(query.trim())
-                          setQuery('')
-                          setOpen(false)
-                        }
+                        onCreateTag(query.trim()) // onCreateTag must be valid, otherwise showCreateOption can't be true
+                        setQuery('')
+                        setOpen(false)
                       }}
                       className={cn(
                         'flex w-full items-center mt-1 cursor-pointer transition-all rounded-md px-3 py-2',

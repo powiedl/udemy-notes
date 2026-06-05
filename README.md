@@ -163,3 +163,18 @@ Call of the TagBade component - where you can also see the difference
 ```typescript
   <TagBadge icon={<Link2 className='size-3'>} DeleteIcon={Trash2}>
 ```
+
+#### zod Validation of a string literal union type (type Themes = 'light' | 'dark' | 'system')
+
+If you define the Typescript type like it is done in the heading, then you get a problem if you also want to use a zod validation (because zod is active at runtime, but Typescript is active at development time and the Typescript type Themes is "gone" at runtime).
+
+To solve this issue, you can "flip" the definition (so create a Javascript Array with the valid names and infer the Typescript type from this array):
+
+```typescript
+const THEMES = ['light', 'dark', 'system'] as const
+const Themes = typeof THEMES[number]
+
+const themeSchema = z.enum(THEMES)
+```
+
+With this you have the type safety, you only have to change one place to change the themes (the Javascript array THEMES) and you have a zodSchema which can validate the themes. The example is simplified, normally the schema for the theme would be a part of a "bigger" Schema (e. g. settingsSchema).

@@ -12,8 +12,9 @@ import { Toaster } from 'sonner'
 import Navbar from '#/components/web/nav-bar'
 import type { QueryClient } from '@tanstack/react-query'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { useEffect } from 'react'
 
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
+// const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -53,11 +54,30 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const { queryClient } = Route.useRouteContext()
+  useEffect(() => document.documentElement.classList.remove('preload'), [])
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var stored = window.localStorage.getItem('theme-cache');
+                var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var theme = stored || 'system';
+                var resolved = theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme;
+                
+                document.documentElement.classList.add(resolved);
+                document.documentElement.classList.add('preload');
+                if (theme !== 'system') {
+                  document.documentElement.setAttribute('data-theme', theme);
+                }
+                document.documentElement.style.colorScheme = resolved;
+              } catch (e) {}
+            `,
+          }}
+        />
       </head>
       {/* h-full und overflow-hidden auf dem body verhindert das "Wackeln" des gesamten Fensters */}
       <body className="font-sans antialiased wrap-anywhere selection:bg-violet-200 bg-linear-60 from-hero-a to-hero-b h-full overflow-hidden">

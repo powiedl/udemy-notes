@@ -17,9 +17,11 @@ import {
   PAGINATION_DEFAULTS,
   TAG_PAGINATION_DEFAULTS,
 } from '#/schemas/search-params.schema'
+import { useEffect, useState } from 'react'
 
 const Navbar = ({ className }: { className: string }) => {
   const { data: session, isPending } = authClient.useSession()
+  const [mounted, setMounted] = useState(false)
   const pathname = useLocation({ select: (s) => s.pathname })
   const isCoursesActive =
     pathname.startsWith('/courses') && pathname !== '/courses/import'
@@ -35,6 +37,10 @@ const Navbar = ({ className }: { className: string }) => {
       },
     })
   }
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  if (!mounted) return <div className="w-4 h-4" />
   return (
     <nav
       className={cn(

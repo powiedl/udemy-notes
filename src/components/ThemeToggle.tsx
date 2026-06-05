@@ -1,28 +1,21 @@
 import { useEffect, useState } from 'react'
+import { useSettings } from '#/hooks/use-user-settings.hook'
+import type { UITheme } from '#/types/ui.type' // Passe den Pfad an, wo deine UITheme Typen liegen
 
-type ThemeMode = 'light' | 'dark' | 'auto'
+// Helper-Funktion bleibt, nur 'auto' wurde zu 'system'
+function applyThemeMode(mode: UITheme) {
+  // SSR Check: Wenn window nicht definiert ist, tun wir am Server nichts.
+  if (typeof window === 'undefined') return
 
-function getInitialMode(): ThemeMode {
-  if (typeof window === 'undefined') {
-    return 'auto'
-  }
+  window.localStorage.setItem('theme-cache', mode)
 
-  const stored = window.localStorage.getItem('theme')
-  if (stored === 'light' || stored === 'dark' || stored === 'auto') {
-    return stored
-  }
-
-  return 'auto'
-}
-
-function applyThemeMode(mode: ThemeMode) {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  const resolved = mode === 'auto' ? (prefersDark ? 'dark' : 'light') : mode
+  const resolved = mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode
 
   document.documentElement.classList.remove('light', 'dark')
   document.documentElement.classList.add(resolved)
 
-  if (mode === 'auto') {
+  if (mode === 'system') {
     document.documentElement.removeAttribute('data-theme')
   } else {
     document.documentElement.setAttribute('data-theme', mode)
@@ -32,41 +25,68 @@ function applyThemeMode(mode: ThemeMode) {
 }
 
 export default function ThemeToggle() {
-  const [mode, setMode] = useState<ThemeMode>('auto')
+  // console.log('ThemeToggle')
+  const { settings, updateSettings, isLoading } = useSettings()
+  const [fallbackMode, setFallbackMode] = useState<UITheme>('system')
+  // 2. Aktuellen Modus ableiten (Fallback auf 'system', falls nicht eingeloggt oder ladend)
+  const mode = settings?.ui.theme || fallbackMode
 
+  const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    const initialMode = getInitialMode()
-    setMode(initialMode)
-    applyThemeMode(initialMode)
+    setMounted(true)
   }, [])
 
   useEffect(() => {
-    if (mode !== 'auto') {
-      return
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('theme-cache')
+
+      if (stored === 'light' || stored === 'dark' || stored === 'system') {
+        setFallbackMode(stored)
+      }
     }
+  }, [])
+
+  useEffect(() => {
+    // Verhindert das "Zurückfallen auf System", während der Cache/DB noch lädt.
+    // Das Script im <head> hat die UI ohnehin schon gerettet.
+    if (isLoading) return
+
+    applyThemeMode(mode)
+  }, [mode, isLoading]) // isLoading als Dependency hinzufügen
+
+  useEffect(() => {
+    if (mode !== 'system' || typeof window === 'undefined') return
 
     const media = window.matchMedia('(prefers-color-scheme: dark)')
-    const onChange = () => applyThemeMode('auto')
+    const onChange = () => {
+      // WICHTIG: Auch beim OS-Wechsel darf es nicht vom Loading-State blockiert werden
+      if (!isLoading) applyThemeMode('system')
+    }
 
     media.addEventListener('change', onChange)
     return () => {
       media.removeEventListener('change', onChange)
     }
-  }, [mode])
+  }, [mode, isLoading])
 
   function toggleMode() {
-    const nextMode: ThemeMode =
-      mode === 'light' ? 'dark' : mode === 'dark' ? 'auto' : 'light'
-    setMode(nextMode)
+    // Nächsten State berechnen: light -> dark -> system -> light
+    const nextMode: UITheme =
+      mode === 'light' ? 'dark' : mode === 'dark' ? 'system' : 'light'
     applyThemeMode(nextMode)
-    window.localStorage.setItem('theme', nextMode)
+    setFallbackMode(nextMode)
+
+    // Einfach an den Server schicken!
+    // Der Hook updatet optimistisch den Cache -> Komponente rendert neu -> useEffect greift -> Theme ändert sich.
+    updateSettings({ ui: { theme: nextMode } }).catch(() => {}) // der .catch is nur dazu da, den Fehler - falls wir nicht angemeldet sind - zu ignorieren (dann ist klar, dass wir es nicht in die Datenbank schreiben können ...)
   }
 
   const label =
-    mode === 'auto'
-      ? 'Theme mode: auto (system). Click to switch to light mode.'
+    mode === 'system'
+      ? 'Theme mode: system. Click to switch to light mode.'
       : `Theme mode: ${mode}. Click to switch mode.`
 
+  if (!mounted) return <div className="w-8 h-4" />
   return (
     <button
       type="button"
@@ -75,7 +95,7 @@ export default function ThemeToggle() {
       title={label}
       className="rounded-full border border-(--chip-line) bg-(--chip-bg) px-3 py-1.5 text-sm font-semibold text-(--sea-ink) shadow-[0_8px_22px_rgba(30,90,72,0.08)] transition hover:-translate-y-0.5 hover:cursor-pointer"
     >
-      {mode === 'auto' ? 'Auto' : mode === 'dark' ? 'Dark' : 'Light'}
+      {mode === 'system' ? 'System' : mode === 'dark' ? 'Dark' : 'Light'}
     </button>
   )
 }
