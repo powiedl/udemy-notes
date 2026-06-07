@@ -77,7 +77,8 @@ import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants.lib'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params.schema'
 import { prepareMdPayload, prepareHtmlPayload } from '#/lib/import-helpers.lib'
 import type { UdemySelectors } from '#/types/api.type'
-import type { AnalysisResult } from '#/types/import-export.type'
+// import type { AnalysisResult } from '#/types/import-export.type'
+import type { AnalyzeHtmlResponseSchema } from '#/schemas/import-file.schema'
 
 // --- TYPEN ---
 
@@ -118,9 +119,8 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
   // --- STATES ---
   // Workflow States
   const [step, setStep] = useState<'input' | 'preview'>('input')
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
-    null,
-  )
+  const [analysisResult, setAnalysisResult] =
+    useState<AnalyzeHtmlResponseSchema | null>(null)
   const [htmlImportCache, setHtmlImportCache] = useState<{
     content: string
     value: any
@@ -238,12 +238,13 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
               selectors,
             )
 
-            const analysis = await handleAction<AnalysisResult>(
+            const analysis = await handleAction<AnalyzeHtmlResponseSchema>(
               analyzeHtmlPayload({ data: payload }),
               { showSuccessToast: false, showErrorToast: true },
             )
 
             setAnalysisResult(analysis)
+            // console.log('ImportForm,analysis:', analysis)
             // Wir cachen die absolut frischen Daten
             setHtmlImportCache({ content: fileContent, value: currentValues })
             setStep('preview')
@@ -304,8 +305,13 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
   // --- RENDER PREVIEW STEP ---
   if (step === 'preview' && analysisResult && htmlImportCache) {
     const { parsedCourse, trainerMatch } = analysisResult
-    // Alle Trainernamen aus dem Cache holen
+    // Alle Trainernamen aus dem Cache holen (für Legacy)
     const trainersToShow = htmlImportCache.value.trainers
+
+    // Prüfen, ob wir im neuen Beta-Format sind und exakte Trainer-Daten haben
+    const hasExtractedInstructors =
+      parsedCourse.extractedInstructors &&
+      parsedCourse.extractedInstructors.length > 0
 
     return (
       <Card className="max-w-md w-full mx-auto shadow-lg">
@@ -356,11 +362,32 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
-              Trainer Mapping
+              {hasExtractedInstructors
+                ? 'Instructors (Auto-Detected)'
+                : 'Trainer Mapping'}
             </h4>
 
-            {/* Beginn des Ternary-Operators – gibt ENTWEDER den Single-Block ODER den Multi-Block zurück */}
-            {htmlImportCache.value.trainers.length === 1 ? (
+            {hasExtractedInstructors ? (
+              /* --- NEU: Ansicht für das BETA-Format --- */
+              <div className="p-3 rounded-md border text-sm bg-blue-50 border-blue-200">
+                <div className="flex items-center gap-2 text-blue-800 font-bold mb-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Exact Instructors Found</span>
+                </div>
+                <p className="text-xs text-blue-700 leading-relaxed mb-2">
+                  The following instructors were automatically extracted from
+                  the course data. No manual mapping is required.
+                </p>
+                <ul className="list-disc list-inside text-xs text-blue-800 font-medium">
+                  {parsedCourse.extractedInstructors?.map(
+                    (inst: any, idx: number) => (
+                      <li key={idx}>{inst.name}</li>
+                    ),
+                  )}
+                </ul>
+              </div>
+            ) : /* --- ALT: Fallback für das LEGACY-Format --- */
+            htmlImportCache.value.trainers.length === 1 ? (
               <div
                 className={cn(
                   'p-3 rounded-md border text-sm',
@@ -422,20 +449,19 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
                 </ul>
               </div>
             )}
-            {/* Ende des Ternary-Operators */}
           </div>
         </CardContent>
 
         <CardFooter className="flex gap-3">
           <Button
             variant="outline"
-            className="flex-1"
+            className="flex-1 cursor-pointer"
             onClick={() => setStep('input')}
           >
             Back
           </Button>
           <Button
-            className="flex-1"
+            className="flex-1 cursor-pointer"
             onClick={() =>
               executeFinalImport(
                 htmlImportCache.content,

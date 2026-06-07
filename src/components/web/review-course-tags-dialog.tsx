@@ -67,22 +67,24 @@ export function ReviewCourseTagsDialog({
             <Sparkles className="h-5 w-5 text-amber-500" />
             Suggested Course Tags
           </DialogTitle>
-          <DialogDescription>
-            <p>
-              Select the tags you want to apply to this course. Unselect the
-              ones that don't fit.
-            </p>
-            <p>
-              The notes of this course will also get tag suggestions, which you
-              can approve afterwards (by clicking the{' '}
-              <Check
-                className="size-3.5 inline brightness-150"
-                strokeWidth={3}
-              />
-              ) or remove (by clicking the{' '}
-              <X className="size-3.5 inline brightness-150" strokeWidth={3} />)
-              at the tag in the header of each note).
-            </p>
+          <DialogDescription asChild>
+            <div className="space-y-4">
+              <p>
+                Select the tags you want to apply to this course. Unselect the
+                ones that don't fit.
+              </p>
+              <p>
+                The notes of this course will also get tag suggestions, which
+                you can approve afterwards (by clicking the{' '}
+                <Check
+                  className="size-3.5 inline brightness-150"
+                  strokeWidth={3}
+                />
+                ) or remove (by clicking the{' '}
+                <X className="size-3.5 inline brightness-150" strokeWidth={3} />
+                ) at the tag in the header of each note).
+              </p>
+            </div>
           </DialogDescription>
         </DialogHeader>
 

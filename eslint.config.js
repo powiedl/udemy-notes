@@ -20,6 +20,7 @@ export default [
       'prettier.config.js',
       '**/routeTree.gen.ts',
       '*.output/**',
+      'src/scripts/**/*', // ignore scripts - these are not called in the app, they are just for little helpers
     ],
   },
 ]

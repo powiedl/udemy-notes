@@ -44,7 +44,15 @@ describe('analyzeHtmlPayloadLogic', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockReset(prismaMock) // Wichtig für saubere DB-Mocks pro Test
+    mockReset(prismaMock)
+
+    // WICHTIG: Das upsert muss hier definiert werden, damit es bei jedem Test verfügbar ist
+    prismaMock.trainer.upsert = vi
+      .fn()
+      .mockImplementation(async (args: any) => {
+        const name = args.create?.name || args.where?.name || 'unknown'
+        return { id: `trainer-id-${name}` }
+      }) as any
   })
 
   describe('Validierung & Fehler', () => {
@@ -100,6 +108,7 @@ describe('analyzeHtmlPayloadLogic', () => {
       expect(convertMock).toHaveBeenCalledWith(
         defaultInput.content,
         expect.anything(),
+        undefined,
       )
 
       // Prüfen, ob die Trainer-Abfrage abgesetzt wurde
@@ -173,7 +182,17 @@ describe('importHtmlFileLogic', () => {
   beforeEach(() => {
     mockReset(prismaMock)
     vi.clearAllMocks()
+
+    // WICHTIG: Typsicherheit für das Callback in transaction herstellen
     prismaMock.$transaction.mockImplementation(async (cb) => cb(prismaMock))
+
+    // WICHTIG: upsert muss nach mockReset hier erneut definiert werden!
+    prismaMock.trainer.upsert = vi
+      .fn()
+      .mockImplementation(async (args: any) => {
+        const name = args.create?.name || args.where?.name || 'unknown'
+        return { id: `trainer-id-${name}` }
+      }) as any
   })
 
   // HINWEIS: Die alten Validierungs-Tests wurden entfernt, da diese
@@ -306,7 +325,17 @@ describe('importMdFileLogic (Tabula Rasa & Sicherheit)', () => {
   beforeEach(() => {
     mockReset(prismaMock)
     vi.clearAllMocks()
+
+    // WICHTIG: Typsicherheit für das Callback in transaction herstellen
     prismaMock.$transaction.mockImplementation(async (cb) => cb(prismaMock))
+
+    // WICHTIG: upsert muss nach mockReset hier erneut definiert werden!
+    prismaMock.trainer.upsert = vi
+      .fn()
+      .mockImplementation(async (args: any) => {
+        const name = args.create?.name || args.where?.name || 'unknown'
+        return { id: `trainer-id-${name}` }
+      }) as any
   })
 
   it('1. Tabula Rasa: Sollte den Kurs und Notizen löschen, wenn forceReplace=true und der Kurs dem User gehört', async () => {

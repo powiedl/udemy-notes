@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio'
 import type { ImportCourse, ImportNote } from '#/types/course.type'
 import type { UdemySelectors } from '#/types/api.type'
+import type { HtmlFormat } from '#/schemas/import-file.schema'
 
 interface ConvertResultSuccess {
   markdown: string
@@ -14,26 +15,27 @@ interface ConvertResultError {
 export type ConvertResult = ConvertResultSuccess | ConvertResultError
 
 type CheerioAPI = cheerio.CheerioAPI
-// Reason: Cheerio's .contents().each() yields an AnyNode union type.
-// TypeScript's control flow analysis cannot narrow these types (e.g., via `el.type === 'text'`)
-// within the callback without extensive type assertions like `(el as Element)`.
-// We use `any` here specifically to keep the parser logic readable and maintainable.
 type CheerioNode = any
 type CheerioSelection = cheerio.Cheerio<CheerioNode>
 
 export function prepareAndConvertHtmlToMarkdown(
   htmlContent: string,
   selectors: UdemySelectors,
+  format: HtmlFormat = 'legacy', // NEU: Format-Parameter mit Default
 ): ConvertResult {
   const $ = cheerio.load(htmlContent)
   const rawTitle =
     $(selectors.headTitleSelector).text() ||
     $(selectors.metaTitleSelector).attr('content') ||
     $(selectors.ogTitleSelector).attr('content') ||
-    'Meine Kurs-Notizen' // aus head title oder dem einen oder anderen meta property oder ein Default
+    $('head title').text() || // Fallback auf das generierte HTML
+    'Meine Kurs-Notizen'
+
   const title = rawTitle
-    .replace(/^Course:\s*/, '')
-    .replace(/\s*\|\s*Udemy$/, '')
+    .replace(/^Course:\s*/i, '')
+    .replace(/\s*\|\s*Udemy$/i, '')
+    .trim()
+
   const description: string | undefined =
     $(selectors.metaDescriptionSelector).attr('content') ||
     $(selectors.ogDescriptionSelector).attr('content')
@@ -47,7 +49,15 @@ export function prepareAndConvertHtmlToMarkdown(
     'content',
   )
 
-  const notesContainer = $(selectors.notesContainerSelector)
+  // Container abhängig vom Format ermitteln
+  let notesContainer: CheerioSelection
+  if (format === 'beta') {
+    notesContainer = $(
+      '.notes-drawer-module-scss-module__M_NRBW__notes-drawer, #content-drawer-notes',
+    )
+  } else {
+    notesContainer = $(selectors.notesContainerSelector)
+  }
 
   if (!notesContainer.length) {
     return {
@@ -56,12 +66,14 @@ export function prepareAndConvertHtmlToMarkdown(
     }
   }
 
+  // Button-Cleanup lassen wir zur Sicherheit für beide Formate drinnen
   notesContainer.find('button').remove()
 
   return convertToMarkdown(
     $,
     { title, description, imageUrl, courseUrl, trainerUrl },
     selectors,
+    format, // Format weiterreichen
   )
 }
 
@@ -69,56 +81,134 @@ export function convertToMarkdown(
   $: CheerioAPI,
   courseMetaData: string | Omit<ImportCourse, 'notes'>,
   selectors: UdemySelectors,
+  format: HtmlFormat = 'legacy', // NEU: Format-Parameter
 ): ConvertResult {
-  const container = $(selectors.notesContainerSelector)
-
-  if (!container.length)
-    return {
-      status: 'ERROR',
-      message: "Fehler: 'bookmarks-container' nicht gefunden.",
-    }
-
   let resultCourseMetadata: Omit<ImportCourse, 'notes'> = { title: '' }
   if (!(typeof courseMetaData === 'object')) {
     resultCourseMetadata.title = courseMetaData
   } else resultCourseMetadata = courseMetaData
+
   let markdown = `# ${resultCourseMetadata.title}\n\n`
   const course: ImportCourse = { ...resultCourseMetadata, notes: [] }
 
-  const notes = container.find(selectors.noteSelector)
-
-  notes.each((_, el: CheerioNode) => {
-    const noteElement = $(el)
-    const duration =
-      noteElement.find(selectors.durationSelector).text().trim() || '0:00'
-    const section =
-      noteElement.find(selectors.sectionSelector).text().trim() || ''
-    const lecture =
-      noteElement.find(selectors.lectureSelector).text().trim() || ''
-    const bodyContainer = noteElement.find(selectors.noteBodySelector)
-    const note: ImportNote = {
-      timestamp: duration,
-      section,
-      lecture,
-      content: '',
+  // ==========================================
+  // WEICHE: Abhängig vom Format iterieren
+  // ==========================================
+  if (format === 'beta') {
+    const container = $(
+      '.notes-drawer-module-scss-module__M_NRBW__notes-drawer, #content-drawer-notes',
+    )
+    if (!container.length) {
+      return {
+        status: 'ERROR',
+        message: 'Fehler: Beta-Notizen-Container nicht gefunden.',
+      }
     }
 
-    markdown += `## Notiz bei ${duration}\n`
-    markdown += `* **Zeitpunkt:** ${duration}\n`
-    markdown += `* **Sektion:** ${section}\n`
-    markdown += `* **Lektion:** ${lecture}\n\n`
+    const SECTION_SELECTOR =
+      '.section-group-module-scss-module__CmJ1TG__section-group__title'
+    const LECTURE_SELECTOR =
+      '.curriculum-item-group-module-scss-module__fu8uYW__curriculum-item-group__header'
+    const NOTE_SELECTOR = '.note-card-module-scss-module__PRvuDG__note-card'
+    const TIMESTAMP_SELECTOR = '.udemy-notes-timestamp'
+    const NOTE_BODY_SELECTOR = '._rich-text-viewer-wrapper_znlt2_30'
 
-    let noteMarkdown = ''
-    if (bodyContainer.length) {
-      noteMarkdown += processNode(bodyContainer, $, selectors)
+    const sections = container.find(SECTION_SELECTOR)
+    const sectionNumberRegex = /^(?:Abschnitt|Section)\s+(\d+):\s+(.*)$/
+
+    sections.each((_, sectionEl: CheerioNode) => {
+      let section = $(sectionEl).text().trim().replace(/\s+/g, ' ')
+      section = section.replace(sectionNumberRegex, '$1. $2').trim()
+
+      const sectionContainer = $(sectionEl).closest('section')
+      const lectures = sectionContainer.find(LECTURE_SELECTOR)
+
+      lectures.each((_lectureElIndex, lectureEl: CheerioNode) => {
+        let lecture = $(lectureEl).text().trim().replace(/\s+/g, ' ')
+        lecture = lecture.trim()
+
+        const lectureContainer = $(lectureEl).closest(
+          '.curriculum-item-group-module-scss-module__fu8uYW__curriculum-item-group',
+        )
+        const notesFound = lectureContainer.find(NOTE_SELECTOR)
+
+        notesFound.each((_noteElIndex, noteEl: CheerioNode) => {
+          const noteElement = $(noteEl)
+          const duration =
+            noteElement.find(TIMESTAMP_SELECTOR).text().trim() || '0:00'
+          const bodyContainer = noteElement.find(NOTE_BODY_SELECTOR)
+
+          const note: ImportNote = {
+            timestamp: duration,
+            section,
+            lecture,
+            content: '',
+          }
+
+          markdown += `## Notiz bei ${duration}\n`
+          markdown += `* **Zeitpunkt:** ${duration}\n`
+          markdown += `* **Sektion:** ${section}\n`
+          markdown += `* **Lektion:** ${lecture}\n\n`
+
+          let noteMarkdown = ''
+          if (bodyContainer.length) {
+            noteMarkdown += processNode(bodyContainer, $, selectors)
+          }
+
+          const finalNoteContent = cleanUpMarkdown(noteMarkdown)
+          note.content = finalNoteContent
+          course.notes.push(note)
+
+          markdown = markdown + finalNoteContent + '\n---\n\n'
+        })
+      })
+    })
+  } else {
+    // --- LEGACY FORMAT ---
+    const container = $(selectors.notesContainerSelector)
+    if (!container.length) {
+      return {
+        status: 'ERROR',
+        message: "Fehler: Legacy 'bookmarks-container' nicht gefunden.",
+      }
     }
 
-    const finalNoteContent = cleanUpMarkdown(noteMarkdown)
-    note.content = finalNoteContent
-    course.notes.push(note)
+    const notesFound = container.find(selectors.noteSelector)
 
-    markdown = markdown + finalNoteContent + '\n---\n\n'
-  })
+    notesFound.each((_, el: CheerioNode) => {
+      const noteElement = $(el)
+      const duration =
+        noteElement.find(selectors.durationSelector).text().trim() || '0:00'
+      const section =
+        noteElement.find(selectors.sectionSelector).text().trim() || ''
+      const lecture =
+        noteElement.find(selectors.lectureSelector).text().trim() || ''
+      const bodyContainer = noteElement.find(selectors.noteBodySelector)
+
+      const note: ImportNote = {
+        timestamp: duration,
+        section,
+        lecture,
+        content: '',
+      }
+
+      markdown += `## Notiz bei ${duration}\n`
+      markdown += `* **Zeitpunkt:** ${duration}\n`
+      markdown += `* **Sektion:** ${section}\n`
+      markdown += `* **Lektion:** ${lecture}\n\n`
+
+      let noteMarkdown = ''
+      if (bodyContainer.length) {
+        noteMarkdown += processNode(bodyContainer, $, selectors)
+      }
+
+      const finalNoteContent = cleanUpMarkdown(noteMarkdown)
+      note.content = finalNoteContent
+      course.notes.push(note)
+
+      markdown = markdown + finalNoteContent + '\n---\n\n'
+    })
+  }
 
   const cleanMarkdown = cleanUpMarkdown(markdown)
 
@@ -172,13 +262,8 @@ function processNode(
     } else if (tagName === 'P') {
       result += `${processInlineFormatting(child, $)}\n\n`
     } else if (tagName === 'BLOCKQUOTE') {
-      // 1. Inhalt des Blockquotes rekursiv verarbeiten
       const innerText = processNode(child, $, selectors)
-
-      // 2. Überschüssige Newlines am Ende entfernen
       const trimmedInner = innerText.replace(/\n+$/, '')
-
-      // 3. Jede Zeile mit '> ' präfixen
       const blockquoteText = trimmedInner
         .split('\n')
         .map((line) => (line.trim() === '' ? '>' : `> ${line}`))
@@ -252,13 +337,9 @@ function processInlineFormatting(
     }
   })
 
-  // Whitespace-Normalisierung:
-  // Wir ersetzen alle Tabulatoren und mehrfache Leerzeichen durch ein einzelnes Leerzeichen.
-  // Wir trimmen NICHT zeilenweise, da dies Zeilenanfänge innerhalb eines Absatzes verschieben kann.
-  // Stattdessen entfernen wir nur führende/schleppende Newlines des gesamten Blocks.
   return result
     .replace(/[ \t]+/g, ' ')
-    .replace(/\s*__BR__\s*/g, '__BR__') // Platzhalter von Leerzeichen isolieren
+    .replace(/\s*__BR__\s*/g, '__BR__')
     .trim()
 }
 
@@ -271,34 +352,25 @@ function cleanUpMarkdown(markdown: string): string {
   const processedLines = lines.map((line) => {
     const trimmedLine = line.trim()
 
-    // Prüfen, ob wir einen Code-Block betreten oder verlassen
     if (trimmedLine.startsWith('```')) {
       inCodeBlock = !inCodeBlock
-      return line.trimStart() // Die Backticks selbst dürfen links bündig sein
+      return line.trimStart()
     }
 
-    // Wenn wir im Code-Block sind, nichts verändern (Einrückung erhalten)
     if (inCodeBlock) {
       return line
     }
 
-    // Außerhalb von Code-Blöcken: Standard-Cleanup (HTML-Einrückungen entfernen)
     return line.trimStart()
   })
 
-  return (
-    processedLines
-      .join('\n')
-      // 1. Platzhalter in Markdown-Linebreaks umwandeln
-      .replace(/__BR__/g, '  \n')
-      // 2. Mehr als zwei Newlines zu zwei Newlines reduzieren
-      .replace(/\n{3,}/g, '\n\n')
-      // 4. Einzelne Leerzeichen am Zeilenende entfernen (außer gewollte 2 Leerzeichen)
-      .replace(/(?<! ) {1}\n/g, '\n')
-      // 5. Überschriften und Listenpunkte säubern
-      .replace(/^(#+ .*?) {2}\n/gm, '$1\n')
-      .replace(/^(\* .*?) {2}\n/gm, '$1\n')
-      .replace(/^(\d+\. .*?) {2}\n/gm, '$1\n')
-      .trim()
-  )
+  return processedLines
+    .join('\n')
+    .replace(/__BR__/g, '  \n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/(?<! ) {1}\n/g, '\n')
+    .replace(/^(#+ .*?) {2}\n/gm, '$1\n')
+    .replace(/^(\* .*?) {2}\n/gm, '$1\n')
+    .replace(/^(\d+\. .*?) {2}\n/gm, '$1\n')
+    .trim()
 }

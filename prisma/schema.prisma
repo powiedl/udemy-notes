@@ -82,21 +82,23 @@ model Verification {
 // #region Udemy Notes
 
 model Course {
-  id          String             @id @default(uuid())
-  title       String
-  trainers    CourseTrainer[]
-  userId      String             @map("user_id")
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  description String?
-  imageUrl    String?            @map("image_url")
-  courseUrl   String?            @map("course_url")
-  trainerUrl  String?            @map("trainer_url")
-  notes       Note[]
-  tags        CourseTag[]
-  shares      CourseShareToken[]
-  createdAt   DateTime           @default(now()) @map("created_at")
-  updatedAt   DateTime           @updatedAt @map("updated_at")
+  id            String             @id @default(uuid())
+  udemyCourseId String?            @map("udemy_course_id")
+  title         String
+  trainers      CourseTrainer[]
+  userId        String             @map("user_id")
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  description   String?
+  imageUrl      String?            @map("image_url")
+  courseUrl     String?            @map("course_url")
+  trainerUrl    String?            @map("trainer_url")
+  notes         Note[]
+  tags          CourseTag[]
+  shares        CourseShareToken[]
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
 
+  @@unique([userId, udemyCourseId])
   @@map("course")
 }
 
@@ -135,6 +137,7 @@ model Trainer {
   id         String          @id @default(cuid())
   name       String          @unique // Damit "Maximilian Müller" nur einmal existiert
   profileUrl String?         @unique @map("profile_url")
+  imageUrl   String?         @map("image_url")
   courses    CourseTrainer[]
 
   createdAt DateTime @default(now()) @map("created_at")

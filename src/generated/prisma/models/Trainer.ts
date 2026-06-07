@@ -28,6 +28,7 @@ export type TrainerMinAggregateOutputType = {
   id: string | null
   name: string | null
   profileUrl: string | null
+  imageUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -36,6 +37,7 @@ export type TrainerMaxAggregateOutputType = {
   id: string | null
   name: string | null
   profileUrl: string | null
+  imageUrl: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -44,6 +46,7 @@ export type TrainerCountAggregateOutputType = {
   id: number
   name: number
   profileUrl: number
+  imageUrl: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -54,6 +57,7 @@ export type TrainerMinAggregateInputType = {
   id?: true
   name?: true
   profileUrl?: true
+  imageUrl?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -62,6 +66,7 @@ export type TrainerMaxAggregateInputType = {
   id?: true
   name?: true
   profileUrl?: true
+  imageUrl?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -70,6 +75,7 @@ export type TrainerCountAggregateInputType = {
   id?: true
   name?: true
   profileUrl?: true
+  imageUrl?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -151,6 +157,7 @@ export type TrainerGroupByOutputType = {
   id: string
   name: string
   profileUrl: string | null
+  imageUrl: string | null
   createdAt: Date
   updatedAt: Date
   _count: TrainerCountAggregateOutputType | null
@@ -180,6 +187,7 @@ export type TrainerWhereInput = {
   id?: Prisma.StringFilter<"Trainer"> | string
   name?: Prisma.StringFilter<"Trainer"> | string
   profileUrl?: Prisma.StringNullableFilter<"Trainer"> | string | null
+  imageUrl?: Prisma.StringNullableFilter<"Trainer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Trainer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Trainer"> | Date | string
   courses?: Prisma.CourseTrainerListRelationFilter
@@ -189,6 +197,7 @@ export type TrainerOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   profileUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   courses?: Prisma.CourseTrainerOrderByRelationAggregateInput
@@ -201,6 +210,7 @@ export type TrainerWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.TrainerWhereInput | Prisma.TrainerWhereInput[]
   OR?: Prisma.TrainerWhereInput[]
   NOT?: Prisma.TrainerWhereInput | Prisma.TrainerWhereInput[]
+  imageUrl?: Prisma.StringNullableFilter<"Trainer"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Trainer"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Trainer"> | Date | string
   courses?: Prisma.CourseTrainerListRelationFilter
@@ -210,6 +220,7 @@ export type TrainerOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   profileUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  imageUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.TrainerCountOrderByAggregateInput
@@ -224,6 +235,7 @@ export type TrainerScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Trainer"> | string
   name?: Prisma.StringWithAggregatesFilter<"Trainer"> | string
   profileUrl?: Prisma.StringNullableWithAggregatesFilter<"Trainer"> | string | null
+  imageUrl?: Prisma.StringNullableWithAggregatesFilter<"Trainer"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Trainer"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Trainer"> | Date | string
 }
@@ -232,6 +244,7 @@ export type TrainerCreateInput = {
   id?: string
   name: string
   profileUrl?: string | null
+  imageUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   courses?: Prisma.CourseTrainerCreateNestedManyWithoutTrainerInput
@@ -241,6 +254,7 @@ export type TrainerUncheckedCreateInput = {
   id?: string
   name: string
   profileUrl?: string | null
+  imageUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   courses?: Prisma.CourseTrainerUncheckedCreateNestedManyWithoutTrainerInput
@@ -250,6 +264,7 @@ export type TrainerUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   profileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   courses?: Prisma.CourseTrainerUpdateManyWithoutTrainerNestedInput
@@ -259,6 +274,7 @@ export type TrainerUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   profileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   courses?: Prisma.CourseTrainerUncheckedUpdateManyWithoutTrainerNestedInput
@@ -268,6 +284,7 @@ export type TrainerCreateManyInput = {
   id?: string
   name: string
   profileUrl?: string | null
+  imageUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -276,6 +293,7 @@ export type TrainerUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   profileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -284,6 +302,7 @@ export type TrainerUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   profileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -292,6 +311,7 @@ export type TrainerCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   profileUrl?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -300,6 +320,7 @@ export type TrainerMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   profileUrl?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -308,6 +329,7 @@ export type TrainerMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   profileUrl?: Prisma.SortOrder
+  imageUrl?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -335,6 +357,7 @@ export type TrainerCreateWithoutCoursesInput = {
   id?: string
   name: string
   profileUrl?: string | null
+  imageUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -343,6 +366,7 @@ export type TrainerUncheckedCreateWithoutCoursesInput = {
   id?: string
   name: string
   profileUrl?: string | null
+  imageUrl?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -367,6 +391,7 @@ export type TrainerUpdateWithoutCoursesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   profileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -375,6 +400,7 @@ export type TrainerUncheckedUpdateWithoutCoursesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   profileUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  imageUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -414,6 +440,7 @@ export type TrainerSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   id?: boolean
   name?: boolean
   profileUrl?: boolean
+  imageUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   courses?: boolean | Prisma.Trainer$coursesArgs<ExtArgs>
@@ -424,6 +451,7 @@ export type TrainerSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   id?: boolean
   name?: boolean
   profileUrl?: boolean
+  imageUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["trainer"]>
@@ -432,6 +460,7 @@ export type TrainerSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   id?: boolean
   name?: boolean
   profileUrl?: boolean
+  imageUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["trainer"]>
@@ -440,11 +469,12 @@ export type TrainerSelectScalar = {
   id?: boolean
   name?: boolean
   profileUrl?: boolean
+  imageUrl?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TrainerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "profileUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["trainer"]>
+export type TrainerOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "profileUrl" | "imageUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["trainer"]>
 export type TrainerInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   courses?: boolean | Prisma.Trainer$coursesArgs<ExtArgs>
   _count?: boolean | Prisma.TrainerCountOutputTypeDefaultArgs<ExtArgs>
@@ -461,6 +491,7 @@ export type $TrainerPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     id: string
     name: string
     profileUrl: string | null
+    imageUrl: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["trainer"]>
@@ -890,6 +921,7 @@ export interface TrainerFieldRefs {
   readonly id: Prisma.FieldRef<"Trainer", 'String'>
   readonly name: Prisma.FieldRef<"Trainer", 'String'>
   readonly profileUrl: Prisma.FieldRef<"Trainer", 'String'>
+  readonly imageUrl: Prisma.FieldRef<"Trainer", 'String'>
   readonly createdAt: Prisma.FieldRef<"Trainer", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Trainer", 'DateTime'>
 }

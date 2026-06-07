@@ -14,6 +14,8 @@ import {
 import type { ExportMdFileSchema } from '#/schemas/export-file.schema'
 import type {
   AnalyzeHtmlPayloadSchema,
+  AnalyzeHtmlResponseSchema,
+  ExtractedCourseMetadata,
   ImportFileSchema,
   SaveParsedCourseSchema,
 } from '#/schemas/import-file.schema'
@@ -21,8 +23,8 @@ import { orderInfo } from '#/lib/udemy.lib'
 import { resolveTagIds } from '#/lib/tag-helpers.lib.server'
 import { UDEMY_SELECTORS } from '#/lib/constants.lib.server'
 import { prepareAndConvertHtmlToMarkdown } from '#/lib/convertHtmlToMarkdown.lib'
-import type { AnalysisResult } from '#/types/import-export.type'
 import { getVisualCourseTitle } from '#/lib/utils.lib'
+// import { imageUploadHandler$ } from '@mdxeditor/editor'
 
 // #region allgemeines
 export type IntegrityStatus =
@@ -34,6 +36,7 @@ export interface CheckImportResult {
   status: IntegrityStatus
   totalNotes: number
   courseTitle: string
+  udemyCourseId?: string
 }
 
 type ExportCoursePayload = Prisma.CourseGetPayload<{
@@ -52,10 +55,12 @@ type ExportCoursePayload = Prisma.CourseGetPayload<{
 export type ParsedCourseData = {
   title: string
   courseId?: string
+  udemyCourseId?: string
   description?: string
   courseUrl?: string
   imageUrl?: string
   trainerUrl?: string
+  extractedInstructors?: ExtractedCourseMetadata['instructors']
   courseTags: string[]
   courseTrainers: string[]
   notes: {
@@ -248,21 +253,18 @@ export const checkImportFileLogic = (mdContent: string): CheckImportResult => {
  *
  * Schritte:
  * 1. Konvertierung des HTML in Markdown unter Verwendung der definierten CSS-Selektoren.
- * 2. Prüfung, ob der Trainer des Kurses bereits global in der Datenbank existiert.
- * 3. Ermittlung, wie viele Kurse der aktuelle Benutzer bereits von diesem Trainer besitzt.
- *
- * @param data - Die HTML-Payload und die geparste Trainer-URL.
- * @param userId - Die ID des Benutzers zur Ermittlung der Trainer-Statistiken.
- * @returns Ein Promise mit den geparsten Kursdaten und Details zum Trainer-Match für die UI.
- * @throws ServerActionError wenn das HTML-Parsing fehlschlägt.
+ * 2. Daten-Merge: Überschreiben von ungenauen Scraping-Daten mit präzisen JSON-Metadaten (Beta-Format).
+ * 3. Prüfung, ob der Trainer des Kurses bereits global in der Datenbank existiert.
+ * 4. Ermittlung, wie viele Kurse der aktuelle Benutzer bereits von diesem Trainer besitzt.
  */
 export const analyzeHtmlPayloadLogic = async (
   data: AnalyzeHtmlPayloadSchema,
   userId: string,
-): Promise<AnalysisResult> => {
+): Promise<AnalyzeHtmlResponseSchema> => {
   const conversionResult = prepareAndConvertHtmlToMarkdown(
     data.content,
     UDEMY_SELECTORS,
+    data.format,
   )
 
   if (conversionResult.status === 'ERROR') {
@@ -273,14 +275,45 @@ export const analyzeHtmlPayloadLogic = async (
 
   const { course } = conversionResult
 
+  // ==========================================
+  // 🟢 SCHRITT 1: Daten-Merge (Metadaten schlagen DOM-Scraping)
+  // ==========================================
+  if (data.courseMetadata) {
+    const { courseMetadata } = data
+
+    // Die echte Udemy-ID für spätere Kurs-Aktualisierungen (Deduplizierung)
+    if (courseMetadata.udemyCourseId) {
+      // Da wir in `ImportCourse` evtl. noch kein `courseId` haben,
+      // übergeben wir es direkt weiter unten ins Return-Objekt
+    }
+
+    if (courseMetadata.courseTitle) {
+      // Der echte Titel aus der API (ohne lästige "Course: " Präfixe)
+      course.title = courseMetadata.courseTitle
+    }
+
+    if (courseMetadata.images?.px480x270) {
+      // Hochauflösendes Bild direkt aus den Metadaten übernehmen
+      course.imageUrl = courseMetadata.images.px480x270
+    }
+  }
+
+  // ==========================================
+  // 🟢 SCHRITT 2: Trainer-Logik (mit Beta-Support)
+  // ==========================================
   let knownTrainer = false
   let relatedCoursesCount = 0
   let matchedTrainerName: string | undefined = undefined
 
-  if (data.parsedTrainerUrl) {
+  // Wir nutzen primär die URL des ERSTEN Trainers aus den Metadaten (Beta),
+  // mit Fallback auf die geparste URL aus dem Legacy-Format.
+  const primaryTrainerUrl =
+    data.courseMetadata?.instructors?.[0]?.url || data.parsedTrainerUrl
+
+  if (primaryTrainerUrl) {
     // 1. Zuerst prüfen: Existiert die URL global in der Trainer-Tabelle?
     const existingTrainer = await prisma.trainer.findUnique({
-      where: { profileUrl: data.parsedTrainerUrl },
+      where: { profileUrl: primaryTrainerUrl },
       select: { name: true },
     })
 
@@ -289,14 +322,14 @@ export const analyzeHtmlPayloadLogic = async (
       knownTrainer = true
       matchedTrainerName = existingTrainer.name
 
-      // 2. Dann prüfen: Wie viele Kurse hat DIESER User schon mit diesem Trainer? (Für die UI-Info)
+      // 2. Dann prüfen: Wie viele Kurse hat DIESER User schon mit diesem Trainer?
       relatedCoursesCount = await prisma.course.count({
         where: {
           userId: userId,
           trainers: {
             some: {
               trainer: {
-                profileUrl: data.parsedTrainerUrl,
+                profileUrl: primaryTrainerUrl,
               },
             },
           },
@@ -307,11 +340,13 @@ export const analyzeHtmlPayloadLogic = async (
 
   return {
     parsedCourse: {
+      udemyCourseId: data.courseMetadata?.udemyCourseId, // NEU: Wir schleifen die ID durch!
       courseTitle: course.title,
       courseDescription: course.description,
       courseUrl: course.courseUrl,
       imageUrl: course.imageUrl,
-      trainerUrl: course.trainerUrl,
+      trainerUrl: primaryTrainerUrl, // NEU: Aktualisierte Trainer-URL
+      extractedInstructors: data.courseMetadata?.instructors,
       notes: course.notes.map((note: any) => ({
         section: note.section,
         lecture: note.lecture,
@@ -321,7 +356,7 @@ export const analyzeHtmlPayloadLogic = async (
       notesCount: course.notes.length,
     },
     trainerMatch: {
-      url: data.parsedTrainerUrl,
+      url: primaryTrainerUrl,
       isKnown: knownTrainer,
       existingCoursesCount: relatedCoursesCount,
       nameInDb: matchedTrainerName,
@@ -333,110 +368,191 @@ export const analyzeHtmlPayloadLogic = async (
  * Die zentrale "Workhorse"-Funktion zur Synchronisation von Kursdaten mit der Datenbank.
  *
  * Diese Funktion nutzt eine interaktive Prisma-Transaktion, um atomar:
- * 1. Trainer-Daten abzugleichen und URLs sicher zuzuordnen (Schutz vor falschen Mappings).
- * 2. Den Kurs per "Eisernem DNA-Check" (ID- oder Titel-Abgleich) zu finden oder zu erstellen.
+ * 1. Trainer-Daten abzugleichen: Bevorzugt hochpräzise Beta-Metadaten, Fallback auf Legacy-URL-Check.
+ * 2. Den Kurs per "Eisernem DNA-Check" (interne ID -> Udemy ID -> Titel) zu finden oder zu erstellen.
  * 3. Kurs-Tags und neu erstellte private Tags zu verschmelzen.
- * 4. Notizen zu verarbeiten: Existierende Notizen werden aktualisiert (inkl. Konflikterkennung),
- *    neue Notizen werden erstellt.
+ * 4. Notizen zu verarbeiten: Existierende Notizen werden aktualisiert (inkl. Konflikterkennung).
  * 5. Tags auf Notiz-Ebene zu synchronisieren.
  *
- * @param parsedData - Die aus der Datei extrahierten strukturierten Daten.
+ * @param parsedData - Die aus der Datei extrahierten strukturierten Daten (inkl. neuer Beta-Felder).
  * @param data - Die Metadaten aus dem Import-Formular (Trainer-Auswahl, Tag-IDs).
  * @param userId - Die ID des Benutzers, dem der Kurs zugeordnet wird.
  * @returns Ein Promise mit der `courseId` und der Anzahl der erkannten Inhaltskonflikte.
  * @internal
  */
 export const syncCourseToDatabase = async (
-  parsedData: ParsedCourseData & { courseId?: string },
+  parsedData: ParsedCourseData,
   data: ImportFileSchema,
   userId: string,
 ) => {
-  // Wir hüllen die gesamte Logik in eine interaktive Transaktion
+  // console.log('syncCourseToDatabase,parsedData:', parsedData)
   return await prisma.$transaction(
     async (tx) => {
-      // 1. Trainer verschmelzen
-      const formTrainers = data.trainers
-        .filter((t): t is string => typeof t === 'string')
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0)
+      // ==========================================
+      // 1. TRAINER LOGIK (Beta vs. Legacy)
+      // ==========================================
+      const trainerIdsToConnect: string[] = []
 
-      let allTrainerNames = Array.from(
-        new Set([...formTrainers, ...parsedData.courseTrainers]),
-      )
+      if (
+        parsedData.extractedInstructors &&
+        parsedData.extractedInstructors.length > 0
+      ) {
+        // 🟢 NEUES BETA-FORMAT: Wir haben perfekte Daten, also Smart-Lookup!
+        for (const inst of parsedData.extractedInstructors) {
+          // 1. Smart-Lookup: Zuerst nach URL suchen (sicherster Match)
+          let existingTrainer = null
 
-      // --- SICHERHEITS-CHECK FÜR DIE URL ---
-      let finalTrainerUrl: string | undefined = undefined
+          if (inst.url) {
+            existingTrainer = await tx.trainer.findUnique({
+              where: { profileUrl: inst.url },
+            })
+          }
 
-      if (parsedData.trainerUrl) {
-        // Gehört diese URL schon jemandem in der DB?
-        const existingTrainerByUrl = await tx.trainer.findUnique({
-          where: { profileUrl: parsedData.trainerUrl },
-          select: { name: true },
-        })
+          // 2. Fallback-Lookup: Wenn die URL leicht anders war (z.B. fehlender Slash am Ende)
+          // oder noch gar keine URL in der DB war, suchen wir nach dem Namen.
+          if (!existingTrainer) {
+            existingTrainer = await tx.trainer.findUnique({
+              where: { name: inst.name },
+            })
+          }
 
-        if (existingTrainerByUrl) {
-          // TEST 8: URL gehört wem anders -> Strikte Überschreibung aller Eingaben
-          allTrainerNames = [existingTrainerByUrl.name]
-        } else {
-          // URL ist neu. Wem geben wir sie?
-          finalTrainerUrl = parsedData.trainerUrl
+          let trainerId: string
 
-          // Wir laden alle betroffenen Trainer aus der DB
-          const dbTrainers = await tx.trainer.findMany({
-            where: { name: { in: allTrainerNames } },
-            select: { name: true, profileUrl: true },
+          if (existingTrainer) {
+            // 3a. Trainer gefunden -> Sanftes Update
+            const updatedTrainer = await tx.trainer.update({
+              where: { id: existingTrainer.id },
+              data: {
+                name: inst.name, // Name aktualisieren (falls Schreibweise geändert)
+                ...(inst.url && { profileUrl: inst.url }), // URL reparieren (z.B. Trailing-Slash korrigieren)
+                ...(inst.image && { imageUrl: inst.image }), // Bild ergänzen, falls neues da ist
+              },
+            })
+            trainerId = updatedTrainer.id
+          } else {
+            // 3b. Trainer ist komplett neu -> Create
+            const newTrainer = await tx.trainer.create({
+              data: {
+                name: inst.name,
+                profileUrl: inst.url,
+                imageUrl: inst.image,
+              },
+            })
+            trainerId = newTrainer.id
+          }
+
+          trainerIdsToConnect.push(trainerId)
+        }
+      } else {
+        // 🟠 ALTES LEGACY-FORMAT (oder Markdown-Import): Die bekannte Logik
+        const formTrainers = data.trainers
+          .filter((t): t is string => typeof t === 'string')
+          .map((t) => t.trim())
+          .filter((t) => t.length > 0)
+
+        let allTrainerNames = Array.from(
+          new Set([...formTrainers, ...parsedData.courseTrainers]),
+        )
+
+        let finalTrainerUrl: string | undefined = undefined
+
+        if (parsedData.trainerUrl) {
+          const existingTrainerByUrl = await tx.trainer.findUnique({
+            where: { profileUrl: parsedData.trainerUrl },
+            select: { name: true },
           })
 
-          const knownNames = dbTrainers.map((t) => t.name)
-          const newNames = allTrainerNames.filter(
-            (n) => !knownNames.includes(n),
-          )
-          const existingWithoutUrl = dbTrainers.filter((t) => !t.profileUrl)
-
-          // Wie viele Trainer haben noch keine URL (weder in der DB noch als ganz neuer Trainer)?
-          const unmappedCount = newNames.length + existingWithoutUrl.length
-
-          if (unmappedCount === 1) {
-            if (existingWithoutUrl.length === 1) {
-              // TEST 6 & 7: Genau ein bestehender Trainer ohne URL -> gezieltes Update
-              await tx.trainer.update({
-                where: { name: existingWithoutUrl[0].name },
-                data: { profileUrl: finalTrainerUrl },
-              })
-            }
-            // Anmerkung: Wenn newNames.length === 1 ist, kümmert sich connectOrCreate
-            // später automatisch um das Speichern der URL beim Anlegen.
+          if (existingTrainerByUrl) {
+            // TEST 8: URL gehört wem anders -> Strikte Überschreibung aller Eingaben
+            allTrainerNames = [existingTrainerByUrl.name]
           } else {
-            // Zu viele Kandidaten (z.B. 2 komplett neue Trainer) -> URL verwerfen um falsche Zuordnungen zu vermeiden
-            finalTrainerUrl = undefined
+            finalTrainerUrl = parsedData.trainerUrl
+
+            const dbTrainers = await tx.trainer.findMany({
+              where: { name: { in: allTrainerNames } },
+              select: { name: true, profileUrl: true },
+            })
+
+            const knownNames = dbTrainers.map((t) => t.name)
+            const newNames = allTrainerNames.filter(
+              (n) => !knownNames.includes(n),
+            )
+            const existingWithoutUrl = dbTrainers.filter((t) => !t.profileUrl)
+
+            const unmappedCount = newNames.length + existingWithoutUrl.length
+
+            if (unmappedCount === 1) {
+              if (existingWithoutUrl.length === 1) {
+                // TEST 6 & 7: Genau ein bestehender Trainer ohne URL -> gezieltes Update
+                await tx.trainer.update({
+                  where: { name: existingWithoutUrl[0].name },
+                  data: { profileUrl: finalTrainerUrl },
+                })
+              }
+            } else {
+              finalTrainerUrl = undefined
+            }
           }
         }
-      }
-      // ---------------------------------------
 
-      // 2. Kurs laden (Der "Eiserne DNA-Check")
+        // Legacy-Trainer anlegen / referenzieren
+        for (const trainerName of allTrainerNames) {
+          const upsertedTrainer = await tx.trainer.upsert({
+            where: { name: trainerName },
+            update: {}, // Nichts überschreiben, wenn er nur über den Namen gefunden wurde
+            create: {
+              name: trainerName,
+              profileUrl: finalTrainerUrl,
+            },
+          })
+          trainerIdsToConnect.push(upsertedTrainer.id)
+        }
+      }
+
+      // ==========================================
+      // 2. KURS LADEN ("Eiserner DNA-Check")
+      // ==========================================
       let existingCourse = null
 
-      // KORREKTUR: Die courseId kommt aus dem form data Objekt (ImportFileSchema)
       if (parsedData.courseId) {
+        // 1. Check: Explizite interne ID (User hat einen bestehenden Kurs im UI zum Überschreiben gewählt)
         existingCourse = await tx.course.findFirst({
           where: { id: parsedData.courseId, userId },
           include: {
             tags: { include: { tag: true } },
-            trainers: { include: { trainer: true } },
+            trainers: true, // Wir brauchen nur die Relation für den Abgleich
           },
         })
-      } else {
-        existingCourse = await tx.course.findFirst({
-          where: { userId, title: parsedData.title },
+      } else if (parsedData.udemyCourseId) {
+        // 2. Check: Udemy Course ID (NEU - Erkennt Duplikate auch wenn der Titel auf Udemy geändert wurde)
+        existingCourse = await tx.course.findUnique({
+          where: {
+            userId_udemyCourseId: {
+              userId: userId,
+              udemyCourseId: parsedData.udemyCourseId,
+            },
+          },
           include: {
             tags: { include: { tag: true } },
-            trainers: { include: { trainer: true } },
+            trainers: true,
           },
         })
       }
 
-      // 3. Kurs-Tags verschmelzen
+      if (!existingCourse) {
+        // 3. Check: Legacy Fallback auf Titel (für alte HTMLs oder Markdown)
+        existingCourse = await tx.course.findFirst({
+          where: { userId, title: parsedData.title },
+          include: {
+            tags: { include: { tag: true } },
+            trainers: true,
+          },
+        })
+      }
+
+      // ==========================================
+      // 3. KURS-TAGS VERSCHMELZEN
+      // ==========================================
       let formTagIds = [...data.tagIds]
       if (data.newPrivateTags.length > 0) {
         const createdTags = await Promise.all(
@@ -450,23 +566,25 @@ export const syncCourseToDatabase = async (
         formTagIds = [...formTagIds, ...createdTags.map((t) => t.id)]
       }
 
-      // WICHTIG: tx als Argument übergeben!
       const resolvedParsedCourseTagIds = await resolveTagIds(
         parsedData.courseTags,
         userId,
         existingCourse?.tags || [],
-        tx, // <-- Der Transaktions-Client
+        tx,
       )
 
       const allCourseTagIds = Array.from(
         new Set([...formTagIds, ...resolvedParsedCourseTagIds]),
       )
 
+      // ==========================================
+      // 4. KURS UPSERT
+      // ==========================================
       let finishedCourse
       let existingNotes: any[] | null = null
 
-      // 4. Kurs Upsert
       if (existingCourse) {
+        // --- UPDATE EXISTIERENDER KURS ---
         existingNotes = await tx.note.findMany({
           where: { courseId: existingCourse.id },
           include: { tags: { include: { tag: true } } },
@@ -477,32 +595,25 @@ export const syncCourseToDatabase = async (
           (id) => !existingCourseTagIds.includes(id),
         )
 
-        const existingTrainerNames = existingCourse.trainers.map(
-          (t) => t.trainer.name,
+        const existingTrainerIds = existingCourse.trainers.map(
+          (t) => t.trainerId,
         )
-        const trainersToCreate = allTrainerNames.filter(
-          (name) => !existingTrainerNames.includes(name),
+        const trainersToCreate = trainerIdsToConnect.filter(
+          (id) => !existingTrainerIds.includes(id),
         )
 
         finishedCourse = await tx.course.update({
           where: { id: existingCourse.id },
           data: {
             title: parsedData.title,
+            udemyCourseId: parsedData.udemyCourseId, // Speichert die ID (wichtig falls sie bei alten Kursen fehlte!)
             description: parsedData.description,
             courseUrl: parsedData.courseUrl,
             imageUrl: parsedData.imageUrl,
             trainerUrl: parsedData.trainerUrl,
             trainers: {
-              create: trainersToCreate.map((trainerName) => ({
-                trainer: {
-                  connectOrCreate: {
-                    where: { name: trainerName },
-                    create: {
-                      name: trainerName,
-                      profileUrl: finalTrainerUrl,
-                    },
-                  },
-                },
+              create: trainersToCreate.map((id) => ({
+                trainer: { connect: { id } },
               })),
             },
             tags: {
@@ -511,25 +622,19 @@ export const syncCourseToDatabase = async (
           },
         })
       } else {
+        // --- CREATE NEUER KURS ---
         finishedCourse = await tx.course.create({
           data: {
             title: parsedData.title,
+            udemyCourseId: parsedData.udemyCourseId, // Neue Udemy ID speichern
             description: parsedData.description,
             courseUrl: parsedData.courseUrl,
             imageUrl: parsedData.imageUrl,
             trainerUrl: parsedData.trainerUrl,
             userId,
             trainers: {
-              create: allTrainerNames.map((trainerName) => ({
-                trainer: {
-                  connectOrCreate: {
-                    where: { name: trainerName },
-                    create: {
-                      name: trainerName,
-                      profileUrl: finalTrainerUrl,
-                    },
-                  },
-                },
+              create: trainerIdsToConnect.map((id) => ({
+                trainer: { connect: { id } },
               })),
             },
             tags: {
@@ -541,7 +646,9 @@ export const syncCourseToDatabase = async (
 
       const courseId = finishedCourse.id
 
-      // 5. Notizen-Verarbeitung
+      // ==========================================
+      // 5. NOTIZEN-VERARBEITUNG (Keine Änderungen nötig)
+      // ==========================================
       const notePromises = []
       let numberOfConflicts = 0
 
@@ -571,12 +678,11 @@ export const syncCourseToDatabase = async (
           note.timestamp,
         )
 
-        // WICHTIG: tx auch hier übergeben!
         const resolvedTagIds = await resolveTagIds(
           note.noteTags,
           userId,
           existingNote?.tags || [],
-          tx, // <-- Der Transaktions-Client
+          tx,
         )
 
         if (existingNote) {
@@ -625,9 +731,8 @@ export const syncCourseToDatabase = async (
       return { courseId, numberOfConflicts }
     },
     {
-      // Erhöhtes Timeout: Schützt vor Abbrüchen bei großen Kursen mit Hunderten von Notizen
-      maxWait: 5000, // Maximale Wartezeit auf eine Datenbank-Verbindung
-      timeout: 20000, // Maximale Ausführungszeit (20 Sekunden)
+      maxWait: 5000,
+      timeout: 20000,
     },
   )
 }
@@ -648,14 +753,16 @@ export const importHtmlFileLogic = async (
   payload: SaveParsedCourseSchema, // Der bestätigte State aus dem Frontend
   userId: string,
 ) => {
+  // console.log('importHtmlFileLogic,payload:', payload)
   // 1. Mappe den Payload aus dem Client-State zurück in das Format für syncCourseToDatabase
-  const parsedData: ParsedCourseData & { courseId?: string } = {
-    courseId: payload.parsedCourse.courseId,
+  const parsedData: ParsedCourseData = {
+    udemyCourseId: payload.parsedCourse.udemyCourseId,
     title: payload.parsedCourse.courseTitle,
     description: payload.parsedCourse.courseDescription,
     courseUrl: payload.parsedCourse.courseUrl,
     imageUrl: payload.parsedCourse.imageUrl,
     trainerUrl: payload.parsedCourse.trainerUrl,
+    extractedInstructors: payload.parsedCourse.extractedInstructors,
     courseTags: [], // Werden über die Meta-Daten unten verknüpft
     courseTrainers: [], // Werden über die Meta-Daten unten verknüpft
     notes: payload.parsedCourse.notes.map((note) => ({
