@@ -158,6 +158,7 @@ export async function getNotesLogic(data: NoteSearchInput, userId: string) {
         course: {
           select: {
             id: true,
+            udemyCourseId: true,
             title: true,
             userId: true, // Wichtig fürs Frontend, um zu erkennen, ob es ein fremder Kurs ist
             description: true,
@@ -243,6 +244,7 @@ export async function getNotesForCourseLogic(
         course: {
           select: {
             id: true,
+            udemyCourseId: true,
             title: true,
             userId: true,
             description: true,

@@ -145,6 +145,7 @@ export type VerificationScalarFieldEnum = (typeof VerificationScalarFieldEnum)[k
 
 export const CourseScalarFieldEnum = {
   id: 'id',
+  udemyCourseId: 'udemyCourseId',
   title: 'title',
   userId: 'userId',
   description: 'description',
@@ -182,6 +183,7 @@ export const TrainerScalarFieldEnum = {
   id: 'id',
   name: 'name',
   profileUrl: 'profileUrl',
+  imageUrl: 'imageUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

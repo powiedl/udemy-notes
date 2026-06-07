@@ -39,6 +39,7 @@ function createMockCourse(
 ): CourseWithRelations {
   return {
     id: 'default-id',
+    udemyCourseId: '1234567',
     title: 'Default Title',
     userId: 'user_123',
     trainers: [],

@@ -2,6 +2,9 @@ import { z } from 'zod'
 import { withLogging } from './api-utils.schema'
 import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants.lib'
 
+export const htmlFormatEnum = z.enum(['legacy', 'beta'])
+export type HtmlFormat = z.infer<typeof htmlFormatEnum> // Ergibt: 'legacy' | 'beta'
+
 export const importFileSchema = withLogging(
   z.object({
     content: z.string().min(1, 'Content is required'),
@@ -27,6 +30,26 @@ export const checkImportFileSchema = z.object({
 })
 export type CheckImportFileSchema = z.infer<typeof checkImportFileSchema>
 
+// --- NEU: Schema für die extrahierten Metadaten des Beta-Formats ---
+export const extractedCourseMetadataSchema = z.object({
+  udemyCourseId: z.string().optional(),
+  courseTitle: z.string().optional(),
+  instructors: z
+    .array(
+      z.object({
+        name: z.string(),
+        url: z.string().optional(),
+        image: z.string().optional(),
+      }),
+    )
+    .optional(),
+  images: z.record(z.string(), z.string()).optional(), // z.B. { "px480x270": "https://..." }
+  parsedTrainerUrl: z.string().optional(), // Fallback
+})
+export type ExtractedCourseMetadata = z.infer<
+  typeof extractedCourseMetadataSchema
+>
+
 export const analyzeHtmlPayloadSchema = withLogging(
   z.object({
     content: z.string(),
@@ -38,6 +61,11 @@ export const analyzeHtmlPayloadSchema = withLogging(
     tagIds: z.array(z.string()),
     newPrivateTags: z.array(z.string()),
     parsedTrainerUrl: z.string().optional(),
+
+    // NEU: Optionales Feld für die extrahierten Metadaten (wird nur vom Beta-Parser befüllt)
+    courseMetadata: extractedCourseMetadataSchema.optional(),
+    // Format zur Unterscheidung im Server-Log
+    format: htmlFormatEnum.optional(),
   }),
 )
 export type AnalyzeHtmlPayloadSchema = z.infer<typeof analyzeHtmlPayloadSchema>
@@ -52,13 +80,22 @@ export const importedNoteSchema = z.object({
 export type ImportedNoteSchema = z.infer<typeof importedNoteSchema>
 
 export const importedCourseSchema = z.object({
-  courseId: z.string().optional(),
+  udemyCourseId: z.string().optional(),
   courseTitle: z.string().min(1),
   courseDescription: z.string().optional(),
   // --- NEU: Diese Felder müssen die Reise ins Frontend und zurück überleben ---
   courseUrl: z.string().optional(),
   imageUrl: z.string().optional(),
   trainerUrl: z.string().optional(),
+  extractedInstructors: z
+    .array(
+      z.object({
+        name: z.string(),
+        url: z.string().optional(),
+        image: z.string().optional(),
+      }),
+    )
+    .optional(),
   notes: z
     .array(importedNoteSchema)
     .min(1, 'The file does not contain any valid notes'),
@@ -76,6 +113,7 @@ export const analyzeHtmlResponseSchema = z.object({
     url: z.string().optional(),
     isKnown: z.boolean(),
     existingCoursesCount: z.number().default(0),
+    nameInDb: z.string().optional(),
   }),
 })
 export type AnalyzeHtmlResponseSchema = z.infer<

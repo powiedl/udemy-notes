@@ -37,7 +37,8 @@ export type FlexibleNote = Omit<CourseNote, 'tags'> & {
   tags: FlexibleTag[]
   displayTags?: FlexibleTag[]
   // WICHTIG: Wir schließen 'trainers' aus dem alten Typ aus und definieren ihn neu
-  course?: Omit<NonNullable<GlobalNote['course']>, 'tags' | 'trainers'> & {
+  course: Omit<NonNullable<GlobalNote['course']>, 'tags' | 'trainers'> & {
+    udemyCourseId?: string | null
     tags: FlexibleTag[]
     trainers: { trainer: { id: string; name: string } }[] // <--- NEU: Die richtige Struktur!
   }
@@ -73,9 +74,8 @@ const NotesList = ({
             {showHeader && (
               <div className="col-span-1 6xl:col-span-2 mt-6 mb-2 first:mt-0">
                 <CourseHeader
-                  // Hier casten wir als 'any', weil CourseHeaderData
-                  // ein isolierter Prisma-Typ ist und wir hier eine "FlexibleNote" haben
-                  course={note.course /* as unknown as CourseHeaderData */}
+                  // Durch die Anpassung oben passt der Typ nun besser zu CourseHeader
+                  course={note.course}
                   variant="compact"
                   activeTagIds={activeTagIds}
                   singleCourse={false}

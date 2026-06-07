@@ -4,7 +4,7 @@ import * as cheerio from 'cheerio'
 // Konfiguration
 const TEMPLATE =
   '<!DOCTYPE html><html><head><title>__TITLE__</title>__META__</head><body><p>__TIMESTAMP__</p>__NOTES__<p>Skript</p>__SCRIPT__</body></html>'
-const INPUT_FILE = '../html-testfiles/html-css-course-min-new-format.html' // Name der eingelesenen Datei
+const INPUT_FILE = '../html-testfiles/the-modern-javascript-bootcamp.html'
 const BLOCK_SELECTOR = '#content-drawer-notes' // Der CSS-Selektor (z.B. .klasse, #id, tag)
 const SECTION_SELECTOR =
   '.section-group-module-scss-module__CmJ1TG__section-group__title'
@@ -14,7 +14,7 @@ const NOTE_SELECTOR = '.note-card-module-scss-module__PRvuDG__note-card'
 const TIMESTAMP_SELECTOR =
   '.timestamp-badge-module-scss-module__2naWnq__timestamp-badge'
 const OUTPUT_FILE =
-  '../html-testfiles/parsed-html-css-course-min-new-format.html' // Name der Ausgabedatei
+  '../html-testfiles/parsed-the-modern-javascript-bootcamp.html' // Name der Ausgabedatei
 
 async function extractElement() {
   try {
@@ -43,16 +43,16 @@ async function extractElement() {
       const $sectionContainer = $(sectionEl).closest('section')
 
       // Filter für Sektionen (Nur Abschnitt 7 und 20 behalten)
-      const isSection7 =
-        sectionText.includes('Abschnitt 7') || sectionText.includes('Section 7')
-      const isSection20 =
-        sectionText.includes('Abschnitt 20') ||
-        sectionText.includes('Section 20')
+      // const isSection7 =
+      //   sectionText.includes('Abschnitt 7') || sectionText.includes('Section 7')
+      // const isSection20 =
+      //   sectionText.includes('Abschnitt 20') ||
+      //   sectionText.includes('Section 20')
 
-      if (!isSection7 && !isSection20) {
-        $sectionContainer.remove()
-        return
-      }
+      // if (!isSection7 && !isSection20) {
+      //   $sectionContainer.remove()
+      //   return
+      // }
 
       console.log(`SECTION (${sectionText})`)
       const $lectures = $sectionContainer.find(LECTURE_SELECTOR)
@@ -65,14 +65,14 @@ async function extractElement() {
         )
 
         // Filter für Lektionen in Abschnitt 20
-        if (isSection20) {
-          const is171 = lectureText.includes('171')
-          const is173 = lectureText.includes('173')
-          if (!is171 && !is173) {
-            $lectureContainer.remove()
-            return
-          }
-        }
+        // if (isSection20) {
+        //   const is171 = lectureText.includes('171')
+        //   const is173 = lectureText.includes('173')
+        //   if (!is171 && !is173) {
+        //     $lectureContainer.remove()
+        //     return
+        //   }
+        // }
 
         console.log(`  LECTURE (${lectureText})`)
         const $notes = $lectureContainer.find(NOTE_SELECTOR)

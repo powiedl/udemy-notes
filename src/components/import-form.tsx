@@ -77,7 +77,8 @@ import { MAX_FILE_SIZE_UPLOAD } from '#/lib/constants.lib'
 import { PAGINATION_DEFAULTS } from '#/schemas/search-params.schema'
 import { prepareMdPayload, prepareHtmlPayload } from '#/lib/import-helpers.lib'
 import type { UdemySelectors } from '#/types/api.type'
-import type { AnalysisResult } from '#/types/import-export.type'
+// import type { AnalysisResult } from '#/types/import-export.type'
+import type { AnalyzeHtmlResponseSchema } from '#/schemas/import-file.schema'
 
 // --- TYPEN ---
 
@@ -118,9 +119,8 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
   // --- STATES ---
   // Workflow States
   const [step, setStep] = useState<'input' | 'preview'>('input')
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
-    null,
-  )
+  const [analysisResult, setAnalysisResult] =
+    useState<AnalyzeHtmlResponseSchema | null>(null)
   const [htmlImportCache, setHtmlImportCache] = useState<{
     content: string
     value: any
@@ -238,12 +238,13 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
               selectors,
             )
 
-            const analysis = await handleAction<AnalysisResult>(
+            const analysis = await handleAction<AnalyzeHtmlResponseSchema>(
               analyzeHtmlPayload({ data: payload }),
               { showSuccessToast: false, showErrorToast: true },
             )
 
             setAnalysisResult(analysis)
+            // console.log('ImportForm,analysis:', analysis)
             // Wir cachen die absolut frischen Daten
             setHtmlImportCache({ content: fileContent, value: currentValues })
             setStep('preview')
@@ -429,13 +430,13 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
         <CardFooter className="flex gap-3">
           <Button
             variant="outline"
-            className="flex-1"
+            className="flex-1 cursor-pointer"
             onClick={() => setStep('input')}
           >
             Back
           </Button>
           <Button
-            className="flex-1"
+            className="flex-1 cursor-pointer"
             onClick={() =>
               executeFinalImport(
                 htmlImportCache.content,
