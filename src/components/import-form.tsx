@@ -305,8 +305,13 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
   // --- RENDER PREVIEW STEP ---
   if (step === 'preview' && analysisResult && htmlImportCache) {
     const { parsedCourse, trainerMatch } = analysisResult
-    // Alle Trainernamen aus dem Cache holen
+    // Alle Trainernamen aus dem Cache holen (für Legacy)
     const trainersToShow = htmlImportCache.value.trainers
+
+    // Prüfen, ob wir im neuen Beta-Format sind und exakte Trainer-Daten haben
+    const hasExtractedInstructors =
+      parsedCourse.extractedInstructors &&
+      parsedCourse.extractedInstructors.length > 0
 
     return (
       <Card className="max-w-md w-full mx-auto shadow-lg">
@@ -357,11 +362,32 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
           <div className="space-y-3">
             <h4 className="text-sm font-semibold flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
-              Trainer Mapping
+              {hasExtractedInstructors
+                ? 'Instructors (Auto-Detected)'
+                : 'Trainer Mapping'}
             </h4>
 
-            {/* Beginn des Ternary-Operators – gibt ENTWEDER den Single-Block ODER den Multi-Block zurück */}
-            {htmlImportCache.value.trainers.length === 1 ? (
+            {hasExtractedInstructors ? (
+              /* --- NEU: Ansicht für das BETA-Format --- */
+              <div className="p-3 rounded-md border text-sm bg-blue-50 border-blue-200">
+                <div className="flex items-center gap-2 text-blue-800 font-bold mb-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Exact Instructors Found</span>
+                </div>
+                <p className="text-xs text-blue-700 leading-relaxed mb-2">
+                  The following instructors were automatically extracted from
+                  the course data. No manual mapping is required.
+                </p>
+                <ul className="list-disc list-inside text-xs text-blue-800 font-medium">
+                  {parsedCourse.extractedInstructors?.map(
+                    (inst: any, idx: number) => (
+                      <li key={idx}>{inst.name}</li>
+                    ),
+                  )}
+                </ul>
+              </div>
+            ) : /* --- ALT: Fallback für das LEGACY-Format --- */
+            htmlImportCache.value.trainers.length === 1 ? (
               <div
                 className={cn(
                   'p-3 rounded-md border text-sm',
@@ -423,7 +449,6 @@ export function ImportForm({ selectors }: { selectors: UdemySelectors }) {
                 </ul>
               </div>
             )}
-            {/* Ende des Ternary-Operators */}
           </div>
         </CardContent>
 

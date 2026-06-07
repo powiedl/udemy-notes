@@ -385,7 +385,7 @@ export const syncCourseToDatabase = async (
   data: ImportFileSchema,
   userId: string,
 ) => {
-  console.log('syncCourseToDatabase,parsedData:', parsedData)
+  // console.log('syncCourseToDatabase,parsedData:', parsedData)
   return await prisma.$transaction(
     async (tx) => {
       // ==========================================
@@ -397,24 +397,51 @@ export const syncCourseToDatabase = async (
         parsedData.extractedInstructors &&
         parsedData.extractedInstructors.length > 0
       ) {
-        // 🟢 NEUES BETA-FORMAT: Wir haben perfekte Daten, also direkt Upsert!
+        // 🟢 NEUES BETA-FORMAT: Wir haben perfekte Daten, also Smart-Lookup!
         for (const inst of parsedData.extractedInstructors) {
-          const upsertedTrainer = await tx.trainer.upsert({
-            // Wenn eine URL existiert, ist sie der sicherste Identifikator, sonst der Name
-            where: inst.url ? { profileUrl: inst.url } : { name: inst.name },
-            update: {
-              name: inst.name, // Falls der Trainer umbenannt wurde
-              imageUrl: inst.image && inst.image,
-              ...(inst.url && { profileUrl: inst.url }), // Falls er vorher keine URL hatte
-              ...(inst.image && { imageUrl: inst.image }),
-            },
-            create: {
-              name: inst.name,
-              profileUrl: inst.url,
-              imageUrl: inst.image,
-            },
-          })
-          trainerIdsToConnect.push(upsertedTrainer.id)
+          // 1. Smart-Lookup: Zuerst nach URL suchen (sicherster Match)
+          let existingTrainer = null
+
+          if (inst.url) {
+            existingTrainer = await tx.trainer.findUnique({
+              where: { profileUrl: inst.url },
+            })
+          }
+
+          // 2. Fallback-Lookup: Wenn die URL leicht anders war (z.B. fehlender Slash am Ende)
+          // oder noch gar keine URL in der DB war, suchen wir nach dem Namen.
+          if (!existingTrainer) {
+            existingTrainer = await tx.trainer.findUnique({
+              where: { name: inst.name },
+            })
+          }
+
+          let trainerId: string
+
+          if (existingTrainer) {
+            // 3a. Trainer gefunden -> Sanftes Update
+            const updatedTrainer = await tx.trainer.update({
+              where: { id: existingTrainer.id },
+              data: {
+                name: inst.name, // Name aktualisieren (falls Schreibweise geändert)
+                ...(inst.url && { profileUrl: inst.url }), // URL reparieren (z.B. Trailing-Slash korrigieren)
+                ...(inst.image && { imageUrl: inst.image }), // Bild ergänzen, falls neues da ist
+              },
+            })
+            trainerId = updatedTrainer.id
+          } else {
+            // 3b. Trainer ist komplett neu -> Create
+            const newTrainer = await tx.trainer.create({
+              data: {
+                name: inst.name,
+                profileUrl: inst.url,
+                imageUrl: inst.image,
+              },
+            })
+            trainerId = newTrainer.id
+          }
+
+          trainerIdsToConnect.push(trainerId)
         }
       } else {
         // 🟠 ALTES LEGACY-FORMAT (oder Markdown-Import): Die bekannte Logik
@@ -726,7 +753,7 @@ export const importHtmlFileLogic = async (
   payload: SaveParsedCourseSchema, // Der bestätigte State aus dem Frontend
   userId: string,
 ) => {
-  console.log('importHtmlFileLogic,payload:', payload)
+  // console.log('importHtmlFileLogic,payload:', payload)
   // 1. Mappe den Payload aus dem Client-State zurück in das Format für syncCourseToDatabase
   const parsedData: ParsedCourseData = {
     udemyCourseId: payload.parsedCourse.udemyCourseId,
