@@ -2,6 +2,8 @@
 
 This is a hobby project to work with your notes of your Udemy courses. To use this app you have to register with your email adress (right now also dummy mail addresses are working).
 
+By June 2026 it seems, that Udemy is changing it's web site (the layout of the course page, e. g. the notes are no longer under the video, but beside it). I'm happy, that this app already is able to process this new format. And the good news: Udemy added more data to the html, so we can scrape the complete trainer information (and you don't have to enter the trainer names manually anymore).
+
 You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.vercel.app)
 
 ## Current project status
@@ -17,7 +19,7 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 - You can create tag suggestions with an AI auto tagging feature
 - You can create a public link (which works for 7 days) of your course - so you can share your notes with your friends
 - You can create your own tags, rename and delete them
-- You can create trainers and assign them to your courses (but you cannot delete or rename them as they are shared between all users)
+- You can create trainers and assign them to your courses (but you cannot delete or rename them as they are shared between all users - with the new format of the Udemy HTML it is no longer needed)
 - You can get a list of all notes from all your courses (and have multiple filtering and sorting options for this list)
 
 ## Next steps
