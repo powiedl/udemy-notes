@@ -4,7 +4,8 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils.lib'
 import { cva } from 'class-variance-authority'
-import { DEFAULT_TAG_COLOR, TagColor } from '#/schemas/tag.schema'
+import { DEFAULT_TAG_COLOR } from '#/schemas/tag.schema'
+import type { TagColor } from '#/schemas/tag.schema'
 
 // 1. Die CVA Definition mit Compound Variants
 export const tagBadgeVariants = cva(
@@ -187,7 +188,7 @@ const TagBadge = ({
   // Das cn() ist jetzt massiv aufgeräumt
   const badgeClassName = cn(
     tagBadgeVariants({
-      variant: badgeVariant as any, // Casten für TypeScript
+      variant: badgeVariant, // Casten für TypeScript
       size,
       isInherited: !!isInherited,
       isHighlighted: !!isHighlighted,

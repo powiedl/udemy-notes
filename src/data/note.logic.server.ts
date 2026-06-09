@@ -4,19 +4,35 @@ import type {
   CourseNotesSearchInput,
   NoteSearchInput,
 } from '#/schemas/search-params.schema'
+import { DEFAULT_TAG_COLOR } from '#/schemas/tag.schema'
+import type { TagColor } from '#/schemas/tag.schema'
 import { ServerActionError } from '#/types/errors.type'
 import type { UpdateNoteContentInput } from './note.data'
 
 // Hilfstyp, um TypeScript glücklich zu machen, egal aus welcher Query die Notiz kommt
-// Minimale Anforderung an ein Tag-Item, das aus der DB kommt
-type MinimalTagRelation = {
-  tag: { id: string; name: string }
+
+// --- INPUT TYPES (Was Prisma uns liefert) ---
+export type RawTagRelation = {
+  tag: {
+    id: string
+    name: string
+    color?: string | null
+    userId?: string | null
+  }
+  status?: string // Optional, da nur bei NoteTag vorhanden
 }
 
-// Minimale Anforderung an die Notiz, damit das Mapping funktioniert
-type NoteWithTagsConstraint = {
-  tags: MinimalTagRelation[]
-  course?: { tags?: MinimalTagRelation[] } | null
+export type NoteWithTagsConstraint = {
+  tags: RawTagRelation[]
+  course?: { tags?: RawTagRelation[] } | null
+}
+
+// --- OUTPUT TYPE (Was die UI braucht) ---
+export type DisplayTag = {
+  tag: { id: string; name: string; color: TagColor; userId: string | null }
+  status: string
+  isDirect: boolean
+  isFromCourse: boolean
 }
 
 /**
@@ -36,33 +52,46 @@ type NoteWithTagsConstraint = {
  */
 export function mapNoteDisplayTags<T extends NoteWithTagsConstraint>(note: T) {
   // 1. Erstelle Sets für blitzschnellen O(1) Abgleich
-  const directTagIds = new Set(note.tags.map((t: any) => t.tag.id))
+  const directTagIds = new Set(note.tags.map((t: RawTagRelation) => t.tag.id))
   const courseTagIds = new Set(
-    note.course?.tags?.map((t: any) => t.tag.id) || [],
+    note.course?.tags?.map((t: RawTagRelation) => t.tag.id) || [],
   )
 
   // 2. Map bauen, die die relation-Daten NICHT wegwirft
   const allTagsMap = new Map()
 
   // Zuerst Kurs-Tags rein (sind immer regulär APPROVED)
-  note.course?.tags?.forEach((t: any) => {
+  note.course?.tags?.forEach((t: RawTagRelation) => {
     allTagsMap.set(t.tag.id, { tag: t.tag, status: 'APPROVED' })
   })
 
   // Dann direkte Notiz-Tags rein (die haben einen echten status in t.status!)
   // Überschreibt Kurs-Tags, falls es als direct-Tag SUGGESTION oder APPROVED ist
-  note.tags.forEach((t: any) => {
+  note.tags.forEach((t: RawTagRelation) => {
     allTagsMap.set(t.tag.id, { tag: t.tag, status: t.status || 'APPROVED' })
   })
 
   // 3. Neues logisches Format bilden und den geretteten Status anfügen
-  const displayTags = Array.from(allTagsMap.values())
-    .map(({ tag, status }) => ({
-      tag,
-      status, // <--- BINGO! Der Status ist jetzt direkt Teil der displayTags
-      isDirect: directTagIds.has(tag.id),
-      isFromCourse: courseTagIds.has(tag.id),
-    }))
+  const displayTags: DisplayTag[] = Array.from(allTagsMap.values())
+    .map(({ tag, status }) => {
+      // HIER PASSIERT DIE TYP-UMWANDLUNG:
+      // Wir prüfen, ob es ein privates Tag ist (userId).
+      // Wenn ja, zwingen wir es auf Typ TagColor oder Default.
+      const strictColor = tag.userId
+        ? ((tag.color ?? DEFAULT_TAG_COLOR) as TagColor)
+        : null
+
+      return {
+        tag: {
+          ...tag,
+          color: strictColor, // color ist jetzt garantiert vom Typ TagColor oder null (bei public tags)
+          userId: tag.userId ?? null,
+        },
+        status: status === 'SUGGESTION' ? 'SUGGESTION' : 'APPROVED',
+        isDirect: directTagIds.has(tag.id),
+        isFromCourse: courseTagIds.has(tag.id),
+      }
+    })
     .sort((a, b) => a.tag.name.localeCompare(b.tag.name))
 
   return {
@@ -167,21 +196,32 @@ export async function getNotesLogic(data: NoteSearchInput, userId: string) {
             trainerUrl: true,
             trainers: { include: { trainer: true } },
             tags: {
-              include: { tag: true },
+              // NEU: Selektion von userId und color hinzugefügt
+              select: {
+                tag: {
+                  select: { id: true, name: true, userId: true, color: true },
+                },
+              },
               orderBy: { tag: { name: 'asc' } },
             },
           },
         },
         tags: {
-          include: { tag: true },
+          // NEU: Select explizit gemacht, um color und userId zu holen
+          select: {
+            status: true,
+            tag: {
+              select: { id: true, name: true, userId: true, color: true },
+            },
+          },
           orderBy: { tag: { name: 'asc' } },
         },
       },
     }),
     prisma.note.count({ where }),
   ])
-  // throw new ServerActionError('This is a test Server Action Error')
 
+  // Die mappedItems haben nun dank mapNoteDisplayTags perfekt typisierte Farben
   const mappedItems = items.map(mapNoteDisplayTags)
   return { items: mappedItems, totalCount }
 }
@@ -235,11 +275,14 @@ export async function getNotesForCourseLogic(
         tags: {
           select: {
             status: true,
-            tag: { select: { id: true, name: true, userId: true } },
+            // NEU: color hinzugefügt
+            tag: {
+              select: { id: true, name: true, userId: true, color: true },
+            },
           },
           orderBy: { tag: { name: 'asc' } },
         },
-        // NEU: Wir laden die Kurs-Daten für DIESE Notizen mit,
+        // Wir laden die Kurs-Daten für DIESE Notizen mit,
         // damit wir die Tag-Vererbung berechnen können!
         course: {
           select: {
@@ -254,7 +297,10 @@ export async function getNotesForCourseLogic(
             trainers: { include: { trainer: true } },
             tags: {
               select: {
-                tag: { select: { id: true, name: true, userId: true } },
+                // NEU: color hinzugefügt
+                tag: {
+                  select: { id: true, name: true, userId: true, color: true },
+                },
               },
             },
           },

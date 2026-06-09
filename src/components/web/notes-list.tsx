@@ -6,6 +6,8 @@ import type {
   AwaitedReturnTypeGetNotes,
   getNotesForCourseFn,
 } from '#/data/note.data'
+// import { TagColor } from '#/schemas/tag.schema'
+import type { DisplayTag } from '#/data/note.logic.server'
 // import { CourseHeaderData } from '#/data/course'
 
 type GlobalNote = ExtractData<AwaitedReturnTypeGetNotes>['items'][number]
@@ -15,33 +17,41 @@ type CourseNote = ServerFnData<typeof getNotesForCourseFn>['items'][number]
 //   tags?: GlobalNote['tags']
 // }
 
-export type FlexibleTag = {
-  tag: {
-    id: string
-    name: string
-    userId: string | null
-    createdAt?: Date // Optional!
-    updatedAt?: Date // Optional!
-  }
-  // Join-Tabellen-Felder (optional)
-  courseId?: string
-  tagId?: string
-  noteId?: string
-  // Unsere Frontend-Flags aus dem Mapper
-  isInherited?: boolean
-  isAlsoInherited?: boolean
+// export type FlexibleTag = {
+//   tag: {
+//     id: string
+//     name: string
+//     userId: string | null
+//     color: TagColor | null
+//     createdAt?: Date // Optional!
+//     updatedAt?: Date // Optional!
+//   }
+//   // Join-Tabellen-Felder (optional)
+//   courseId?: string
+//   tagId?: string
+//   noteId?: string
+//   status?: 'APPROVED' | 'SUGGESTION'
+//   // Unsere Frontend-Flags aus dem Mapper
+//   isInherited?: boolean
+//   isAlsoInherited?: boolean
+// }
+
+// Hilfstyp, um den status-String vom Server in die erwartete Union zu zwingen
+type RefinedDisplayTag = Omit<DisplayTag, 'status'> & {
+  status?: 'APPROVED' | 'SUGGESTION'
 }
 
 // 2. Wir bauen die FlexibleNote zusammen
 export type FlexibleNote = Omit<CourseNote, 'tags'> & {
-  tags: FlexibleTag[]
-  displayTags?: FlexibleTag[]
-  // WICHTIG: Wir schließen 'trainers' aus dem alten Typ aus und definieren ihn neu
-  course: Omit<NonNullable<GlobalNote['course']>, 'tags' | 'trainers'> & {
-    udemyCourseId?: string | null
-    tags: FlexibleTag[]
-    trainers: { trainer: { id: string; name: string } }[] // <--- NEU: Die richtige Struktur!
-  }
+  tags: any[]
+  displayTags: RefinedDisplayTag[]
+  course:
+    | (Omit<NonNullable<GlobalNote['course']>, 'tags' | 'trainers'> & {
+        udemyCourseId?: string | null
+        tags: any[]
+        trainers: { trainer: { id: string; name: string } }[]
+      })
+    | any
 }
 
 interface NotesListProps {
@@ -74,7 +84,6 @@ const NotesList = ({
             {showHeader && (
               <div className="col-span-1 6xl:col-span-2 mt-6 mb-2 first:mt-0">
                 <CourseHeader
-                  // Durch die Anpassung oben passt der Typ nun besser zu CourseHeader
                   course={note.course}
                   variant="compact"
                   activeTagIds={activeTagIds}

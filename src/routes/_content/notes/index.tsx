@@ -246,7 +246,7 @@ function NotesRouteComponent() {
           {deferredData.success ? (
             <>
               <NotesList
-                notes={deferredData.data.items}
+                notes={deferredData.data.items as any}
                 sortBy={searchParams.sortBy}
                 activeTagIds={tagIds}
                 from="notes"

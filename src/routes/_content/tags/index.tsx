@@ -5,7 +5,7 @@ import { Button } from '#/components/ui/button' // NEU: Button Import für das M
 import {
   deleteTagFn,
   getAvailableTagsFn,
-  renameTagFn,
+  updateTagFn,
   getTagUsageCountFn, // NEU: Statistik-Funktion
 } from '#/data/tag.data'
 import { handleAction } from '#/lib/client-utils.lib'
@@ -50,7 +50,7 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
 
   // Server Functions
   const deleteTag = useServerFn(deleteTagFn)
-  const renameTag = useServerFn(renameTagFn)
+  const updateTag = useServerFn(updateTagFn)
   const getTagUsage = useServerFn(getTagUsageCountFn) // NEU
 
   // UI State
@@ -141,7 +141,7 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
     }
 
     const res = await handleAction(
-      renameTag({ data: { id, newName: newName.trim() } }),
+      updateTag({ data: { id, newName: newName.trim() } }),
       { successToast: 'Tag renamed successfully' },
     )
 

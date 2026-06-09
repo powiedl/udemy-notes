@@ -1,57 +1,26 @@
 import { authFn, authGetFn } from '#/lib/rpc.lib'
-import { withLogging } from '#/schemas/api-utils.schema'
+import type { z } from 'zod'
+
+// 1. Wir importieren NUR noch die Schemata aus der zentralen Schema-Datei!
+// (Keine Definitionen mehr in dieser Datei!)
 import {
-  TAG_PAGINATION_DEFAULTS,
-  tagPaginationSchema,
-} from '#/schemas/search-params.schema'
-import { z } from 'zod'
+  getAvailableTagsSchema,
+  getTagsForSelectorSchema,
+  deleteTagSchema,
+  getTagsUsageCountSchema,
+  createAndLinkTagToTargetSchema,
+  updateTagSchema, // <- Beachte den neuen Namen (früher renameTagSchema)
+  autoTagCourseBatchSchema,
+  approveCourseTagsBatchSchema,
+  noteTagActionSchema,
+} from '#/schemas/tag.schema'
 
-// #region validation schemas
-export const getAvailableTagsSchema = withLogging(tagPaginationSchema).default(
-  TAG_PAGINATION_DEFAULTS,
-)
-export const getTagsForSelectorSchema = withLogging(z.object({}))
-export const deleteTagSchema = withLogging(z.object({ id: z.string() }))
-export const getTagsUsageCountSchema = withLogging(z.object({ id: z.string() }))
+// 2. Export eines Typs, der für Loaders/Frontend nützlich sein könnte
+export type GetTagUsageCountInput = z.infer<typeof getTagsUsageCountSchema>
 
-export const createAndLinkTagToTargetSchema = withLogging(
-  z.object({
-    targetId: z.string(),
-    targetType: z.enum(['course', 'note']),
-    tagName: z.string().min(1),
-  }),
-)
-export type CreateAndLinkTagToTargetInput = z.infer<
-  typeof createAndLinkTagToTargetSchema
->
-
-export const renameTagSchema = withLogging(
-  z.object({
-    id: z.string(),
-    newName: z.string().min(1),
-  }),
-)
-
-export const autoTagCourseBatchSchema = withLogging(
-  z.object({ courseId: z.string().min(1, 'courseId must not be empty') }),
-)
-
-export const approveCourseTagsBatchSchema = withLogging(
-  z.object({
-    courseId: z.string().min(1, 'courseId must not be empty'),
-    tagNames: z.array(z.string()),
-  }),
-)
-
-export const noteTagActionSchema = withLogging(
-  z.object({
-    noteId: z.string().min(1, 'noteId must not be empty'),
-    tagId: z.string().min(1, 'tagId must not be emtpy'),
-  }),
-)
-// #endregion
-
-export type GetTagUsageCountInput = z.infer<typeof getTagUsageCountFn>
+// ==========================================
+// SERVER FUNCTIONS (Transport Layer)
+// ==========================================
 
 export const createDefaultTagsFn = authFn.handler(async ({ context }) => {
   const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
@@ -105,23 +74,28 @@ export const deleteTagFn = authFn
   })
 
 export const createAndLinkTagToTargetFn = authFn
-  .inputValidator(createAndLinkTagToTargetSchema)
+  .inputValidator(createAndLinkTagToTargetSchema) // Schema erlaubt nun auch color!
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
-    const { createAndLinkTagLogic } = await import('./tag.logic.server') // Pfad anpassen
+    const { createAndLinkTagLogic } = await import('./tag.logic.server')
 
     return await wrapServerAction('createAndLinkTagFn', context, data, () =>
       createAndLinkTagLogic(data, context.session.user.id),
     )
   })
 
-export const renameTagFn = authFn
-  .inputValidator(renameTagSchema)
+// UMBENANNT: Hier nutzen wir nun updateTagSchema (und rufen gleich eine updateTagLogic auf)
+export const updateTagFn = authFn
+  .inputValidator(updateTagSchema) // Schema prüft: Entweder newName ODER color ODER beides
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
-    const { renameTagLogic } = await import('./tag.logic.server')
-    return await wrapServerAction('renameTag', context, data, () =>
-      renameTagLogic(data, context.session.user.id),
+
+    // Hinweis: Du musst diese Funktion in deiner Logic-Datei noch von
+    // renameTagLogic zu updateTagLogic umbenennen (das machen wir gleich!)
+    const { updateTagLogic } = await import('./tag.logic.server')
+
+    return await wrapServerAction('updateTag', context, data, () =>
+      updateTagLogic(data, context.session.user.id),
     )
   })
 
@@ -142,11 +116,9 @@ export const getTagUsageCountFn = authGetFn
 export const autoTagCourseBatchFn = authFn
   .inputValidator(autoTagCourseBatchSchema)
   .handler(async ({ data, context }) => {
-    // 3. Dynamische Imports schützen das Client-Bundle!
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { autoTagCourseBatchLogic } = await import('./tag.logic.server')
 
-    // 4. Das Sicherheitsnetz (Error Handling & Logging)
     return await wrapServerAction(
       'autoTagCourseBatchFn',
       context,
@@ -156,21 +128,18 @@ export const autoTagCourseBatchFn = authFn
         },
       },
       async () => {
-        // Aufruf der reinen Business-Logik
         return autoTagCourseBatchLogic(data, context.session.user.id)
       },
-      'AI tagging for for course completed', // Erfolg-Nachricht für den Frontend-Toast
+      'AI tagging for for course completed',
     )
   })
 
 export const approveCourseTagsBatchFn = authFn
   .inputValidator(approveCourseTagsBatchSchema)
   .handler(async ({ data, context }) => {
-    // 1. Dynamische Imports schützen das Client-Bundle!
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { approveCourseTagsBatchLogic } = await import('./tag.logic.server')
 
-    // 2. Das Sicherheitsnetz
     return await wrapServerAction(
       'approveCourseTagsBatchFn',
       context,
@@ -181,10 +150,9 @@ export const approveCourseTagsBatchFn = authFn
         },
       },
       async () => {
-        // 3. Reiner Aufruf der Business-Logik
         return approveCourseTagsBatchLogic(data, context.session.user.id)
       },
-      'Tags successfully saved to course', // Erfolg-Toast
+      'Tags successfully saved to course',
     )
   })
 
@@ -203,7 +171,6 @@ export const approveNoteTagFn = authFn
     )
   })
 
-// --- REJECT ---
 export const rejectNoteTagFn = authFn
   .inputValidator(noteTagActionSchema)
   .handler(async ({ data, context }) => {
@@ -215,6 +182,6 @@ export const rejectNoteTagFn = authFn
       context,
       { loggingMetadata: { feature: 'AI-Tagging-Note-Reject' } },
       async () => rejectNoteTagLogic(data, context.session.user.id),
-      'Tag verworfen', // Optional: Man könnte diesen Toast auch weglassen, wenn er stört
+      'Tag verworfen',
     )
   })

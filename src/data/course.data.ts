@@ -29,6 +29,7 @@ export type CourseHeaderData = Prisma.CourseGetPayload<{
             id: true
             name: true
             userId: true
+            color: true
           }
         }
       }

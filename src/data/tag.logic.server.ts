@@ -1,16 +1,17 @@
 // src/data/tag.logic.server.ts
 import { prisma } from '#/lib/db.lib.server'
-import { isEmpty } from '#/lib/utils.lib'
 import { suggestTagsWithAIBatch } from '#/lib/ai.lib.server'
 import { ServerActionError } from '#/types/errors.type'
-import type { CreateAndLinkTagToTargetInput } from './tag.data'
+import { DEFAULT_TAG_COLOR } from '#/schemas/tag.schema'
 import type {
+  CreateAndLinkTagToTargetInput,
   AutoTagCourseBatchInput,
   DeleteTagInput,
   GetAvailableTagsInput,
   GetTagsForSelectorInput,
   NoteTagActionInput,
-  RenameTagInput,
+  UpdateTagInput,
+  TagColor,
 } from '#/schemas/tag.schema'
 
 const defaultTags = [
@@ -80,7 +81,13 @@ export const getAvailableTagsLogic = async (
     prisma.tag.count({ where: whereClause }),
   ])
 
-  return { items, totalCount }
+  // WASCHANLAGE: Typisierung und Fallback der Farbe für das Frontend
+  const mappedItems = items.map((tag) => ({
+    ...tag,
+    color: tag.userId ? ((tag.color ?? DEFAULT_TAG_COLOR) as TagColor) : null,
+  }))
+
+  return { items: mappedItems, totalCount }
 }
 
 /**
@@ -113,21 +120,18 @@ export const getTagsForSelectorLogic = async (
     const lowerName = tag.name.toLowerCase()
     const existing = uniqueTagsMap.get(lowerName)
 
-    // Logik:
-    // - Wenn wir den Namen noch nicht haben: hinzufügen.
-    // - Wenn wir schon ein globales Tag (userId === null) haben,
-    //   aber das aktuelle Tag privat ist (userId !== null): ersetzen!
     if (!existing || (existing.userId === null && tag.userId !== null)) {
       uniqueTagsMap.set(lowerName, tag)
     }
   }
 
-  // 3. Zurück in ein Array verwandeln
-  // Wir sortieren am Ende noch einmal, da die Map-Reihenfolge durch das
-  // Ersetzen der privaten Tags durcheinandergekommen sein könnte.
-  return Array.from(uniqueTagsMap.values()).sort((a, b) =>
-    a.name.localeCompare(b.name),
-  )
+  // 3. Zurück in ein Array verwandeln, Waschanlage anwenden und sortieren
+  return Array.from(uniqueTagsMap.values())
+    .map((tag) => ({
+      ...tag,
+      color: tag.userId ? ((tag.color ?? DEFAULT_TAG_COLOR) as TagColor) : null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /**
@@ -156,7 +160,7 @@ export const deleteTagLogic = async (data: DeleteTagInput, userId: string) => {
  * Prüft die Berechtigungen für das Zielobjekt, bevor die Verknüpfung erstellt wird.
  * Nutzt `connectOrCreate` für den Tag, um Duplikate zu vermeiden.
  *
- * @param data - Ziel-ID, Ziel-Typ und der Tag-Name.
+ * @param data - Ziel-ID, Ziel-Typ, Tag-Name und ggf. Farbe.
  * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
  * @returns Ein Promise mit `success: true`.
  * @throws ServerActionError wenn das Ziel nicht gefunden wurde oder der Zugriff verweigert wird.
@@ -165,6 +169,9 @@ export async function createAndLinkTagLogic(
   data: CreateAndLinkTagToTargetInput,
   userId: string,
 ) {
+  // NEU: Gewünschte Farbe auslesen oder auf Default zurückgreifen
+  const tagColor = data.color || DEFAULT_TAG_COLOR
+
   // FALL 1: KURS
   if (data.targetType === 'course') {
     const course = await prisma.course.findUnique({
@@ -178,7 +185,8 @@ export async function createAndLinkTagLogic(
         tag: {
           connectOrCreate: {
             where: { name_userId: { name: data.tagName, userId: userId } },
-            create: { name: data.tagName, userId: userId },
+            // NEU: Farbe mitspeichern
+            create: { name: data.tagName, userId: userId, color: tagColor },
           },
         },
       },
@@ -200,7 +208,8 @@ export async function createAndLinkTagLogic(
         tag: {
           connectOrCreate: {
             where: { name_userId: { name: data.tagName, userId: userId } },
-            create: { name: data.tagName, userId: userId },
+            // NEU: Farbe mitspeichern
+            create: { name: data.tagName, userId: userId, color: tagColor },
           },
         },
       },
@@ -211,17 +220,16 @@ export async function createAndLinkTagLogic(
 }
 
 /**
- * Benennt einen existierenden privaten Tag um.
+ * Ändert den Namen und/oder die Farbe eines existierenden privaten Tags.
  *
- * @param data - Objekt mit der `id` und dem `newName`.
+ * @param data - Objekt mit der `id`, dem optionalen `newName` und der optionalen `color`.
  * @param userId - Die ID des Benutzers zur Berechtigungsprüfung.
  * @returns Ein Promise mit dem aktualisierten Tag.
  * @throws ServerActionError wenn der Tag nicht gefunden wurde oder der neue Name bereits vergeben ist.
  */
-export const renameTagLogic = async (data: RenameTagInput, userId: string) => {
-  const { id, newName } = data
-  const trimmedNewName = newName.trim().toLowerCase()
-  // console.log('--- RENAME REQUEST ---', { id, trimmedNewName, userId })
+export const updateTagLogic = async (data: UpdateTagInput, userId: string) => {
+  const { id, newName, color } = data
+
   const existingTag = await prisma.tag.findUnique({
     where: {
       userId: userId,
@@ -230,21 +238,45 @@ export const renameTagLogic = async (data: RenameTagInput, userId: string) => {
   })
 
   if (!existingTag) throw new ServerActionError('Tag not found or unauthorized')
-  const conflictingTag = await prisma.tag.findMany({
-    where: {
-      userId,
-      name: trimmedNewName,
-    },
-  })
-  if (!isEmpty(conflictingTag)) {
-    // console.log('conflictingTag:', conflictingTag)
-    throw new ServerActionError(`Tag '${data.newName}' already exists`)
+
+  // Wir sammeln hier alle Felder, die aktualisiert werden sollen
+  const updateData: any = {}
+
+  // 1. Wurde ein neuer Name übergeben?
+  if (newName !== undefined) {
+    const trimmedNewName = newName.trim().toLowerCase()
+
+    // Prüfen, ob der Name sich überhaupt geändert hat
+    if (trimmedNewName !== existingTag.name) {
+      const conflictingTag = await prisma.tag.findFirst({
+        where: {
+          userId,
+          name: trimmedNewName,
+        },
+      })
+      if (conflictingTag) {
+        throw new ServerActionError(`Tag '${newName}' already exists`)
+      }
+      updateData.name = trimmedNewName
+    }
   }
-  const updatedTag = await prisma.tag.update({
-    where: { id },
-    data: { name: trimmedNewName },
-  })
-  return { success: true, tag: updatedTag }
+
+  // 2. Wurde eine Farbe übergeben?
+  if (color !== undefined) {
+    updateData.color = color
+  }
+
+  // 3. Prisma-Update nur ausführen, wenn es Änderungen gibt
+  if (Object.keys(updateData).length > 0) {
+    const updatedTag = await prisma.tag.update({
+      where: { id },
+      data: updateData,
+    })
+    return { success: true, tag: updatedTag }
+  }
+
+  // Fallback: Wenn Name/Farbe gesendet wurden, aber exakt den bisherigen entsprachen
+  return { success: true, tag: existingTag }
 }
 
 /**

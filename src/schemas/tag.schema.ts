@@ -7,7 +7,7 @@ import {
 
 export const tagColorEnum = z.enum(['blue', 'cyan', 'green', 'red', 'yellow'])
 export type TagColor = z.infer<typeof tagColorEnum>
-export const DEFAULT_TAG_COLOR = 'blue'
+export const DEFAULT_TAG_COLOR: TagColor = 'blue'
 
 // #region validation schemas
 export const getAvailableTagsSchema = withLogging(tagPaginationSchema).default(
@@ -22,17 +22,27 @@ export const createAndLinkTagToTargetSchema = withLogging(
     targetId: z.string(),
     targetType: z.enum(['course', 'note']),
     tagName: z.string().min(1),
+    // NEU: Optionale Farbe beim direkten Erstellen mitgeben
+    color: tagColorEnum.optional().nullable(),
   }),
 )
 export type CreateAndLinkTagToTargetInput = z.infer<
   typeof createAndLinkTagToTargetSchema
 >
 
-export const renameTagSchema = withLogging(
-  z.object({
-    id: z.string(),
-    newName: z.string().min(1),
-  }),
+// UMBENANNT: Von renameTagSchema zu updateTagSchema
+export const updateTagSchema = withLogging(
+  z
+    .object({
+      id: z.string(),
+      // Beide Felder sind optional...
+      newName: z.string().min(1).optional(),
+      color: tagColorEnum.optional().nullable(),
+    })
+    .refine((data) => data.newName !== undefined || data.color !== undefined, {
+      message: 'You must provide at least a new tag name or a new tag color',
+      path: ['newName'], // Hängt den Fehler an newName an, falls beides fehlt
+    }),
 )
 
 export const autoTagCourseBatchSchema = withLogging(
@@ -59,7 +69,8 @@ export const noteTagActionSchema = withLogging(
 export type GetAvailableTagsInput = z.infer<typeof getAvailableTagsSchema>
 export type GetTagsForSelectorInput = z.infer<typeof getTagsForSelectorSchema>
 export type DeleteTagInput = z.infer<typeof deleteTagSchema>
-export type RenameTagInput = z.infer<typeof renameTagSchema>
+// UMBENANNT: rename -> update
+export type UpdateTagInput = z.infer<typeof updateTagSchema>
 export type AutoTagCourseBatchInput = z.infer<typeof autoTagCourseBatchSchema>
 export type ApproveCourseTagsBatchInput = z.infer<
   typeof approveCourseTagsBatchSchema

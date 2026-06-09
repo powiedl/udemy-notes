@@ -23,6 +23,7 @@ import { updateNoteContentFn } from '#/data/note.data'
 import { useServerFn } from '@tanstack/react-start'
 // rejectNoteTagFn können wir entfernen, da onRemoveTag (handleDelete) exakt denselben Job macht!
 import { approveNoteTagFn } from '#/data/tag.data'
+import type { TagColor } from '#/schemas/tag.schema'
 
 const MarkdownEditor = lazy(() => import('./markdown-editor'))
 
@@ -53,6 +54,7 @@ interface NoteProps {
         id: string
         name: string
         userId?: string | null
+        color?: TagColor
       }
     }[]
   }
@@ -102,6 +104,7 @@ const Note = ({
       id: dt.tag.id,
       name: dt.tag.name,
       userId: dt.tag.userId,
+      color: dt.tag.color,
       status: dt.status as 'APPROVED' | 'SUGGESTION', // Kommt jetzt direkt sauber aus dem Backend!
       isInherited: !dt.isDirect && dt.isFromCourse,
       isDeletable: dt.isDirect, // Auch Suggestions sind direkt und damit löschbar
