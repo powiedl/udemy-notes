@@ -65,7 +65,7 @@ export default function TagColorPicker({
     setTempColor(color)
     clearTimer() // Alten Timer löschen, falls Benutzer schnell klickt
 
-    if (color === currentColor) {
+    if (color === tempColor) {
       // Wenn der User die aktuelle Farbe erneut klickt, sofort speichern
       onColorChange(color)
       setIsOpen(false)
