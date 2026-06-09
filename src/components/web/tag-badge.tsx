@@ -331,6 +331,7 @@ const TagBadge = ({
             currentColor={currentTagColor}
             onColorChange={onChangeColor}
             disabled={isDeleting || isApproving} // ggf. auch isChangingColor hier rein
+            isLoading={isChangingColor}
           />
         )}
     </div>

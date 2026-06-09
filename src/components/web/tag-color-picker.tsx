@@ -15,13 +15,16 @@ interface TagColorPickerProps {
   currentColor: TagColor
   onColorChange: (newColor: TagColor) => void
   disabled?: boolean
+  isLoading?: boolean
 }
 
 export default function TagColorPicker({
   currentColor,
   onColorChange,
   disabled,
+  isLoading,
 }: TagColorPickerProps) {
+  console.log('TagColorPicker,isLoading:', isLoading)
   const [isOpen, setIsOpen] = useState(false)
   const [tempColor, setTempColor] = useState<TagColor>(currentColor)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -93,32 +96,44 @@ export default function TagColorPicker({
       )}
     >
       {isOpen ? (
-        tagColorEnum.options.map((color, index) => (
-          <button
-            key={color}
-            type="button"
-            onClick={(e) => handleCircleClick(e, color)}
-            className={cn(
-              'relative rounded-full transition-all shrink-0 cursor-pointer',
-              // ANIMATION: Die Kreise fliegen von links ein, vergrößern sich aus dem Nichts und faden ein
-              'animate-in zoom-in-0 fade-in slide-in-from-left-2 duration-300',
-              tempColor === color
-                ? 'w-4 h-4 ring-2 ring-primary ring-offset-1'
-                : 'w-3.5 h-3.5 hover:scale-110',
-              colorMap[color],
-            )}
-            // STAGGER-EFFEKT: Jeder Kreis wartet (Index * 35 Millisekunden), bevor er herauswächst
-            style={{
-              animationDelay: `${index * 35}ms`,
-              animationFillMode: 'both',
-            }}
-            title={color}
-          >
-            {tempColor === color && (
-              <Check className="absolute inset-0 m-auto size-2.5 text-white drop-shadow-md" />
-            )}
-          </button>
-        ))
+        isLoading ? (
+          <div className="flex items-center justify-center gap-1 w-full h-full">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="size-1.5 bg-muted-foreground rounded-full animate-pulse"
+                style={{ animationDelay: `${i * 200}ms` }}
+              />
+            ))}
+          </div>
+        ) : (
+          tagColorEnum.options.map((color, index) => (
+            <button
+              key={color}
+              type="button"
+              onClick={(e) => handleCircleClick(e, color)}
+              className={cn(
+                'relative rounded-full transition-all shrink-0 cursor-pointer',
+                // ANIMATION: Die Kreise fliegen von links ein, vergrößern sich aus dem Nichts und faden ein
+                'animate-in zoom-in-0 fade-in slide-in-from-left-2 duration-300',
+                tempColor === color
+                  ? 'w-4 h-4 ring-2 ring-primary ring-offset-1'
+                  : 'w-3.5 h-3.5 hover:scale-110',
+                colorMap[color],
+              )}
+              // STAGGER-EFFEKT: Jeder Kreis wartet (Index * 35 Millisekunden), bevor er herauswächst
+              style={{
+                animationDelay: `${index * 35}ms`,
+                animationFillMode: 'both',
+              }}
+              title={color}
+            >
+              {tempColor === color && (
+                <Check className="absolute inset-0 m-auto size-2.5 text-white drop-shadow-md" />
+              )}
+            </button>
+          ))
+        )
       ) : (
         <button
           type="button"
