@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { cn } from '#/lib/utils.lib'
-import { TagColor, tagColorEnum } from '#/schemas/tag.schema'
+import { tagColorEnum } from '#/schemas/tag.schema'
+import type { TagColor } from '#/schemas/tag.schema'
 import { Check } from 'lucide-react'
 
 const colorMap: Record<TagColor, string> = {

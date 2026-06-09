@@ -244,7 +244,7 @@ const TagBadge = ({
   const isClickable =
     !!onClick || (isPrivate && !!onRename && !isEditing && !isSuggestion)
 
-  const currentTagColor = (tag.color as TagColor) || DEFAULT_TAG_COLOR
+  const currentTagColor = tag.color ?? DEFAULT_TAG_COLOR
 
   return (
     <div

@@ -173,7 +173,7 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
         successToast: 'Tag color updated',
       })
 
-      if (res && res.success) {
+      if (res.success) {
         await queryClient.invalidateQueries({ queryKey: ['availableTags'] })
         router.clearCache()
         router.invalidate()
