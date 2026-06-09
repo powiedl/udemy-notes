@@ -30,6 +30,7 @@ export type TagMinAggregateOutputType = {
   userId: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  color: string | null
 }
 
 export type TagMaxAggregateOutputType = {
@@ -38,6 +39,7 @@ export type TagMaxAggregateOutputType = {
   userId: string | null
   createdAt: Date | null
   updatedAt: Date | null
+  color: string | null
 }
 
 export type TagCountAggregateOutputType = {
@@ -46,6 +48,7 @@ export type TagCountAggregateOutputType = {
   userId: number
   createdAt: number
   updatedAt: number
+  color: number
   _all: number
 }
 
@@ -56,6 +59,7 @@ export type TagMinAggregateInputType = {
   userId?: true
   createdAt?: true
   updatedAt?: true
+  color?: true
 }
 
 export type TagMaxAggregateInputType = {
@@ -64,6 +68,7 @@ export type TagMaxAggregateInputType = {
   userId?: true
   createdAt?: true
   updatedAt?: true
+  color?: true
 }
 
 export type TagCountAggregateInputType = {
@@ -72,6 +77,7 @@ export type TagCountAggregateInputType = {
   userId?: true
   createdAt?: true
   updatedAt?: true
+  color?: true
   _all?: true
 }
 
@@ -153,6 +159,7 @@ export type TagGroupByOutputType = {
   userId: string | null
   createdAt: Date
   updatedAt: Date
+  color: string | null
   _count: TagCountAggregateOutputType | null
   _min: TagMinAggregateOutputType | null
   _max: TagMaxAggregateOutputType | null
@@ -182,6 +189,7 @@ export type TagWhereInput = {
   userId?: Prisma.StringNullableFilter<"Tag"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
+  color?: Prisma.StringNullableFilter<"Tag"> | string | null
   notes?: Prisma.NoteTagListRelationFilter
   user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   courses?: Prisma.CourseTagListRelationFilter
@@ -193,6 +201,7 @@ export type TagOrderByWithRelationInput = {
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  color?: Prisma.SortOrderInput | Prisma.SortOrder
   notes?: Prisma.NoteTagOrderByRelationAggregateInput
   user?: Prisma.UserOrderByWithRelationInput
   courses?: Prisma.CourseTagOrderByRelationAggregateInput
@@ -208,6 +217,7 @@ export type TagWhereUniqueInput = Prisma.AtLeast<{
   userId?: Prisma.StringNullableFilter<"Tag"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
+  color?: Prisma.StringNullableFilter<"Tag"> | string | null
   notes?: Prisma.NoteTagListRelationFilter
   user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   courses?: Prisma.CourseTagListRelationFilter
@@ -219,6 +229,7 @@ export type TagOrderByWithAggregationInput = {
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  color?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.TagCountOrderByAggregateInput
   _max?: Prisma.TagMaxOrderByAggregateInput
   _min?: Prisma.TagMinOrderByAggregateInput
@@ -233,6 +244,7 @@ export type TagScalarWhereWithAggregatesInput = {
   userId?: Prisma.StringNullableWithAggregatesFilter<"Tag"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Tag"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Tag"> | Date | string
+  color?: Prisma.StringNullableWithAggregatesFilter<"Tag"> | string | null
 }
 
 export type TagCreateInput = {
@@ -240,6 +252,7 @@ export type TagCreateInput = {
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  color?: string | null
   notes?: Prisma.NoteTagCreateNestedManyWithoutTagInput
   user?: Prisma.UserCreateNestedOneWithoutTagsInput
   courses?: Prisma.CourseTagCreateNestedManyWithoutTagInput
@@ -251,6 +264,7 @@ export type TagUncheckedCreateInput = {
   userId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  color?: string | null
   notes?: Prisma.NoteTagUncheckedCreateNestedManyWithoutTagInput
   courses?: Prisma.CourseTagUncheckedCreateNestedManyWithoutTagInput
 }
@@ -260,6 +274,7 @@ export type TagUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NoteTagUpdateManyWithoutTagNestedInput
   user?: Prisma.UserUpdateOneWithoutTagsNestedInput
   courses?: Prisma.CourseTagUpdateManyWithoutTagNestedInput
@@ -271,6 +286,7 @@ export type TagUncheckedUpdateInput = {
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NoteTagUncheckedUpdateManyWithoutTagNestedInput
   courses?: Prisma.CourseTagUncheckedUpdateManyWithoutTagNestedInput
 }
@@ -281,6 +297,7 @@ export type TagCreateManyInput = {
   userId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  color?: string | null
 }
 
 export type TagUpdateManyMutationInput = {
@@ -288,6 +305,7 @@ export type TagUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type TagUncheckedUpdateManyInput = {
@@ -296,6 +314,7 @@ export type TagUncheckedUpdateManyInput = {
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type TagListRelationFilter = {
@@ -319,6 +338,7 @@ export type TagCountOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  color?: Prisma.SortOrder
 }
 
 export type TagMaxOrderByAggregateInput = {
@@ -327,6 +347,7 @@ export type TagMaxOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  color?: Prisma.SortOrder
 }
 
 export type TagMinOrderByAggregateInput = {
@@ -335,6 +356,7 @@ export type TagMinOrderByAggregateInput = {
   userId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  color?: Prisma.SortOrder
 }
 
 export type TagScalarRelationFilter = {
@@ -417,6 +439,7 @@ export type TagCreateWithoutUserInput = {
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  color?: string | null
   notes?: Prisma.NoteTagCreateNestedManyWithoutTagInput
   courses?: Prisma.CourseTagCreateNestedManyWithoutTagInput
 }
@@ -426,6 +449,7 @@ export type TagUncheckedCreateWithoutUserInput = {
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  color?: string | null
   notes?: Prisma.NoteTagUncheckedCreateNestedManyWithoutTagInput
   courses?: Prisma.CourseTagUncheckedCreateNestedManyWithoutTagInput
 }
@@ -465,6 +489,7 @@ export type TagScalarWhereInput = {
   userId?: Prisma.StringNullableFilter<"Tag"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Tag"> | Date | string
+  color?: Prisma.StringNullableFilter<"Tag"> | string | null
 }
 
 export type TagCreateWithoutNotesInput = {
@@ -472,6 +497,7 @@ export type TagCreateWithoutNotesInput = {
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  color?: string | null
   user?: Prisma.UserCreateNestedOneWithoutTagsInput
   courses?: Prisma.CourseTagCreateNestedManyWithoutTagInput
 }
@@ -482,6 +508,7 @@ export type TagUncheckedCreateWithoutNotesInput = {
   userId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  color?: string | null
   courses?: Prisma.CourseTagUncheckedCreateNestedManyWithoutTagInput
 }
 
@@ -506,6 +533,7 @@ export type TagUpdateWithoutNotesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   user?: Prisma.UserUpdateOneWithoutTagsNestedInput
   courses?: Prisma.CourseTagUpdateManyWithoutTagNestedInput
 }
@@ -516,6 +544,7 @@ export type TagUncheckedUpdateWithoutNotesInput = {
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   courses?: Prisma.CourseTagUncheckedUpdateManyWithoutTagNestedInput
 }
 
@@ -524,6 +553,7 @@ export type TagCreateWithoutCoursesInput = {
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  color?: string | null
   notes?: Prisma.NoteTagCreateNestedManyWithoutTagInput
   user?: Prisma.UserCreateNestedOneWithoutTagsInput
 }
@@ -534,6 +564,7 @@ export type TagUncheckedCreateWithoutCoursesInput = {
   userId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  color?: string | null
   notes?: Prisma.NoteTagUncheckedCreateNestedManyWithoutTagInput
 }
 
@@ -558,6 +589,7 @@ export type TagUpdateWithoutCoursesInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NoteTagUpdateManyWithoutTagNestedInput
   user?: Prisma.UserUpdateOneWithoutTagsNestedInput
 }
@@ -568,6 +600,7 @@ export type TagUncheckedUpdateWithoutCoursesInput = {
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NoteTagUncheckedUpdateManyWithoutTagNestedInput
 }
 
@@ -576,6 +609,7 @@ export type TagCreateManyUserInput = {
   name: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  color?: string | null
 }
 
 export type TagUpdateWithoutUserInput = {
@@ -583,6 +617,7 @@ export type TagUpdateWithoutUserInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NoteTagUpdateManyWithoutTagNestedInput
   courses?: Prisma.CourseTagUpdateManyWithoutTagNestedInput
 }
@@ -592,6 +627,7 @@ export type TagUncheckedUpdateWithoutUserInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   notes?: Prisma.NoteTagUncheckedUpdateManyWithoutTagNestedInput
   courses?: Prisma.CourseTagUncheckedUpdateManyWithoutTagNestedInput
 }
@@ -601,6 +637,7 @@ export type TagUncheckedUpdateManyWithoutUserInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -649,6 +686,7 @@ export type TagSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  color?: boolean
   notes?: boolean | Prisma.Tag$notesArgs<ExtArgs>
   user?: boolean | Prisma.Tag$userArgs<ExtArgs>
   courses?: boolean | Prisma.Tag$coursesArgs<ExtArgs>
@@ -661,6 +699,7 @@ export type TagSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extension
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  color?: boolean
   user?: boolean | Prisma.Tag$userArgs<ExtArgs>
 }, ExtArgs["result"]["tag"]>
 
@@ -670,6 +709,7 @@ export type TagSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extension
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  color?: boolean
   user?: boolean | Prisma.Tag$userArgs<ExtArgs>
 }, ExtArgs["result"]["tag"]>
 
@@ -679,9 +719,10 @@ export type TagSelectScalar = {
   userId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  color?: boolean
 }
 
-export type TagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "userId" | "createdAt" | "updatedAt", ExtArgs["result"]["tag"]>
+export type TagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "userId" | "createdAt" | "updatedAt" | "color", ExtArgs["result"]["tag"]>
 export type TagInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   notes?: boolean | Prisma.Tag$notesArgs<ExtArgs>
   user?: boolean | Prisma.Tag$userArgs<ExtArgs>
@@ -708,6 +749,7 @@ export type $TagPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     userId: string | null
     createdAt: Date
     updatedAt: Date
+    color: string | null
   }, ExtArgs["result"]["tag"]>
   composites: {}
 }
@@ -1139,6 +1181,7 @@ export interface TagFieldRefs {
   readonly userId: Prisma.FieldRef<"Tag", 'String'>
   readonly createdAt: Prisma.FieldRef<"Tag", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Tag", 'DateTime'>
+  readonly color: Prisma.FieldRef<"Tag", 'String'>
 }
     
 
