@@ -1,5 +1,6 @@
 import { DataTablePagination } from '#/components/web/data-table-pagination'
 import { DataTableSearch } from '#/components/web/data-table-search'
+import type { TagColor } from '#/schemas/tag.schema'
 import TagBadge from '#/components/web/tag-badge'
 import { Button } from '#/components/ui/button' // NEU: Button Import für das Modal
 import {
@@ -56,6 +57,7 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
   // UI State
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [changingColorId, setChangingColorId] = useState<string | null>(null)
 
   // Modal State
   const [deleteCandidate, setDeleteCandidate] = useState<{
@@ -153,6 +155,34 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
     }
   }
 
+  const handleChangeTagColor = async (id: string, color: TagColor) => {
+    if (!result.success) return
+    const originalTag = result.data.items.find((t) => t.id === id)
+
+    // Nichts tun, wenn sich die Farbe nicht wirklich geändert hat
+    if (
+      color === originalTag?.color ||
+      (color === 'blue' && !originalTag?.color)
+    ) {
+      return
+    }
+
+    setChangingColorId(id)
+    try {
+      const res = await handleAction(updateTag({ data: { id, color } }), {
+        successToast: 'Tag color updated',
+      })
+
+      if (res && res.success) {
+        await queryClient.invalidateQueries({ queryKey: ['availableTags'] })
+        router.clearCache()
+        router.invalidate()
+      }
+    } finally {
+      setChangingColorId(null)
+    }
+  }
+
   if (!result.success)
     return (
       <div className="p-4 border border-red-500 bg-red-50 text-red-700 rounded">
@@ -170,13 +200,18 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
           <TagBadge
             key={t.id}
             tag={t}
-            // Trigger das Modal statt direktem Löschen
             onDelete={t.userId ? () => initiateDelete(t) : undefined}
             isDeleting={deletingId === t.id}
             isEditing={editingId === t.id}
             onStartEdit={() => setEditingId(t.id)}
             onCancelEdit={() => setEditingId(null)}
             onRename={(newName) => handleRenameTag(t.id, newName)}
+            onChangeColor={
+              t.userId
+                ? (color) => handleChangeTagColor(t.id, color)
+                : undefined
+            }
+            isChangingColor={changingColorId === t.id}
             DeleteIcon={Trash2}
           />
         ))}

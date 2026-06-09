@@ -6,6 +6,7 @@ import { cn } from '#/lib/utils.lib'
 import { cva } from 'class-variance-authority'
 import { DEFAULT_TAG_COLOR } from '#/schemas/tag.schema'
 import type { TagColor } from '#/schemas/tag.schema'
+import TagColorPicker from './tag-color-picker'
 
 // 1. Die CVA Definition mit Compound Variants
 export const tagBadgeVariants = cva(
@@ -129,6 +130,8 @@ export interface TagBadgeProps {
   onCancelEdit?: () => void
   onApprove?: () => void
   onClick?: () => void
+  onChangeColor?: (newColor: TagColor) => void
+  isChangingColor?: boolean
   isEditing?: boolean
   isApproving?: boolean
   isDeleting?: boolean
@@ -147,6 +150,8 @@ const TagBadge = ({
   isEditing,
   onStartEdit,
   onCancelEdit,
+  onChangeColor,
+  isChangingColor,
   className,
   title,
   size,
@@ -222,7 +227,7 @@ const TagBadge = ({
   const checkLeft = size === 'sm' ? '-left-1.5' : '-left-2.5'
 
   const handleBadgeClick = () => {
-    if (isEditing) return
+    if (isEditing || isChangingColor) return
 
     // Wenn ein externer Link hinterlegt ist
     if (onClick) {
@@ -238,6 +243,8 @@ const TagBadge = ({
 
   const isClickable =
     !!onClick || (isPrivate && !!onRename && !isEditing && !isSuggestion)
+
+  const currentTagColor = (tag.color as TagColor) || DEFAULT_TAG_COLOR
 
   return (
     <div
@@ -316,6 +323,16 @@ const TagBadge = ({
           </Button>
         )}
       </Badge>
+      {typeof onChangeColor === 'function' &&
+        !isEditing &&
+        !isSuggestion &&
+        isPrivate && (
+          <TagColorPicker
+            currentColor={currentTagColor}
+            onColorChange={onChangeColor}
+            disabled={isDeleting || isApproving} // ggf. auch isChangingColor hier rein
+          />
+        )}
     </div>
   )
 }
