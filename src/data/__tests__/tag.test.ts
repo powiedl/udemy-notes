@@ -9,6 +9,7 @@ import {
   getTagsForSelectorLogic,
   deleteTagLogic,
 } from '../tag.logic.server'
+import { DEFAULT_TAG_COLOR } from '#/schemas/tag.schema'
 
 // 1. Prisma Client mocken
 vi.mock('#/lib/db.lib.server', () => ({
@@ -30,6 +31,7 @@ describe('Tag Logik Funktionen', () => {
     userId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    color: null,
   }
   const privateTag: Tag = {
     id: 'tag_private_1',
@@ -37,6 +39,7 @@ describe('Tag Logik Funktionen', () => {
     userId: userId,
     createdAt: new Date(),
     updatedAt: new Date(),
+    color: DEFAULT_TAG_COLOR,
   }
 
   beforeEach(() => {
