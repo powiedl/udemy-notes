@@ -24,11 +24,19 @@ export default function TagColorPicker({
   disabled,
   isLoading,
 }: TagColorPickerProps) {
-  console.log('TagColorPicker,isLoading:', isLoading)
   const [isOpen, setIsOpen] = useState(false)
   const [tempColor, setTempColor] = useState<TagColor>(currentColor)
   const containerRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null) // NEU: Timer Referenz
+  const wasLoading = useRef(isLoading)
+
+  // Schließt den Picker automatisch, wenn der Ladevorgang abgeschlossen ist
+  useEffect(() => {
+    if (wasLoading.current && !isLoading && isOpen) {
+      setIsOpen(false)
+    }
+    wasLoading.current = isLoading
+  }, [isLoading, isOpen])
 
   // Hilfsfunktion zum Aufräumen des Timers
   const clearTimer = () => {
@@ -38,6 +46,9 @@ export default function TagColorPicker({
   // Schließt den Picker bei Klick außerhalb
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Während des Speicherns lassen wir den Picker offen für visuelles Feedback
+      if (isLoading) return
+
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
@@ -49,13 +60,13 @@ export default function TagColorPicker({
     }
     if (isOpen) document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isOpen, currentColor])
+  }, [isOpen, currentColor, isLoading])
 
   const handleCircleClick = (e: React.MouseEvent, color: TagColor) => {
     e.preventDefault()
     e.stopPropagation()
 
-    if (disabled) return
+    if (disabled || isLoading) return
 
     // 1. Klick: Öffnen
     if (!isOpen) {
@@ -71,12 +82,10 @@ export default function TagColorPicker({
     if (color === tempColor) {
       // Wenn der User die aktuelle Farbe erneut klickt, sofort speichern
       onColorChange(color)
-      setIsOpen(false)
     } else {
       // NEU: Timer starten (2 Sekunden)
       timerRef.current = setTimeout(() => {
         onColorChange(color)
-        setIsOpen(false)
       }, 2000)
     }
   }
