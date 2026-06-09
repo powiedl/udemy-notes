@@ -334,6 +334,23 @@ function RouteComponent() {
                   warning will inform you about the exact number of courses and
                   notes currently associated with that tag.
                 </li>
+                <li>
+                  <strong>Changing a tag's color:</strong> To change the color
+                  of a private tag, go to the <strong>"Tags"</strong> page.
+                  Click the colored circle{' '}
+                  <div
+                    className={cn(
+                      'inline-block w-3.5 h-3.5 rounded-full border border-background shadow-sm hover:scale-110 transition-transform shrink-0',
+                      // BUNTER KREIS: Nutzt das Tailwind Theme um ein fließendes Farbrad zu generieren
+                      'bg-[conic-gradient(from_0deg,var(--color-blue-500),var(--color-cyan-500),var(--color-green-500),var(--color-yellow-400),var(--color-red-500),var(--color-blue-500))]',
+                    )}
+                  />{' '}
+                  in the bottom-left corner of the tag to open the color picker.
+                  Select a new color to pre-select it; it will automatically
+                  save after two seconds. Alternatively, click the color a
+                  second time to save it instantly. To cancel, simply click
+                  anywhere outside the picker.
+                </li>
               </ol>
             </div>
           </CardContent>

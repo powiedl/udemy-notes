@@ -80,6 +80,7 @@ describe('Public Course Logic', () => {
           userId: null,
           createdAt: new Date(Date.now()),
           updatedAt: new Date(Date.now()),
+          color: null,
         },
         {
           id: 'tag2',
@@ -87,6 +88,7 @@ describe('Public Course Logic', () => {
           userId: null,
           createdAt: new Date(Date.now()),
           updatedAt: new Date(Date.now()),
+          color: null,
         },
       ])
 

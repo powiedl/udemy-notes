@@ -38,6 +38,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '#/components/ui/alert-dialog'
+import type { TagColor } from '#/schemas/tag.schema'
 
 interface CourseHeaderProps {
   course: Omit<CourseHeaderData, 'createdAt' | 'updatedAt'>
@@ -421,6 +422,7 @@ const CourseHeader = (props: CourseHeaderProps) => {
     name: t.tag.name,
     userId: t.tag.userId,
     status: 'APPROVED',
+    color: t.tag.color as TagColor,
     isDeletable: variant === 'default' ? true : false,
     isInherited: false,
     isHighlighted: activeTagIds.includes(t.tag.id),

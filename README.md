@@ -21,6 +21,7 @@ You find the hosted app at [https://udemy-notes.vercel.app](https://udemy-notes.
 - You can create your own tags, rename and delete them
 - You can create trainers and assign them to your courses (but you cannot delete or rename them as they are shared between all users - with the new format of the Udemy HTML it is no longer needed)
 - You can get a list of all notes from all your courses (and have multiple filtering and sorting options for this list)
+- You can change the color of private tags (in the Tags page) - by clicking the colorful circle in the left bottom corner of the tag and then selecting a different color by clicking the correct circle.
 
 ## Next steps
 

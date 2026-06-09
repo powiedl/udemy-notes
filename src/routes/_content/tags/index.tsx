@@ -1,11 +1,12 @@
 import { DataTablePagination } from '#/components/web/data-table-pagination'
 import { DataTableSearch } from '#/components/web/data-table-search'
+import type { TagColor } from '#/schemas/tag.schema'
 import TagBadge from '#/components/web/tag-badge'
 import { Button } from '#/components/ui/button' // NEU: Button Import für das Modal
 import {
   deleteTagFn,
   getAvailableTagsFn,
-  renameTagFn,
+  updateTagFn,
   getTagUsageCountFn, // NEU: Statistik-Funktion
 } from '#/data/tag.data'
 import { handleAction } from '#/lib/client-utils.lib'
@@ -50,12 +51,13 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
 
   // Server Functions
   const deleteTag = useServerFn(deleteTagFn)
-  const renameTag = useServerFn(renameTagFn)
+  const updateTag = useServerFn(updateTagFn)
   const getTagUsage = useServerFn(getTagUsageCountFn) // NEU
 
   // UI State
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [changingColorId, setChangingColorId] = useState<string | null>(null)
 
   // Modal State
   const [deleteCandidate, setDeleteCandidate] = useState<{
@@ -141,7 +143,7 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
     }
 
     const res = await handleAction(
-      renameTag({ data: { id, newName: newName.trim() } }),
+      updateTag({ data: { id, newName: newName.trim() } }),
       { successToast: 'Tag renamed successfully' },
     )
 
@@ -150,6 +152,34 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
       await queryClient.invalidateQueries({ queryKey: ['availableTags'] })
       router.clearCache()
       router.invalidate()
+    }
+  }
+
+  const handleChangeTagColor = async (id: string, color: TagColor) => {
+    if (!result.success) return
+    const originalTag = result.data.items.find((t) => t.id === id)
+
+    // Nichts tun, wenn sich die Farbe nicht wirklich geändert hat
+    if (
+      color === originalTag?.color ||
+      (color === 'blue' && !originalTag?.color)
+    ) {
+      return
+    }
+
+    setChangingColorId(id)
+    try {
+      const res = await handleAction(updateTag({ data: { id, color } }), {
+        successToast: 'Tag color updated',
+      })
+
+      if (res.success) {
+        await queryClient.invalidateQueries({ queryKey: ['availableTags'] })
+        router.clearCache()
+        router.invalidate()
+      }
+    } finally {
+      setChangingColorId(null)
     }
   }
 
@@ -170,13 +200,18 @@ function Tags({ data }: { data: ReturnType<typeof getAvailableTagsFn> }) {
           <TagBadge
             key={t.id}
             tag={t}
-            // Trigger das Modal statt direktem Löschen
             onDelete={t.userId ? () => initiateDelete(t) : undefined}
             isDeleting={deletingId === t.id}
             isEditing={editingId === t.id}
             onStartEdit={() => setEditingId(t.id)}
             onCancelEdit={() => setEditingId(null)}
             onRename={(newName) => handleRenameTag(t.id, newName)}
+            onChangeColor={
+              t.userId
+                ? (color) => handleChangeTagColor(t.id, color)
+                : undefined
+            }
+            isChangingColor={changingColorId === t.id}
             DeleteIcon={Trash2}
           />
         ))}

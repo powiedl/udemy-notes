@@ -12,6 +12,8 @@ import type {
   TrainerToCourseInput,
   CreateShareLinkInput,
 } from '#/schemas/course.schema'
+import { DEFAULT_TAG_COLOR } from '#/schemas/tag.schema'
+import type { TagColor } from '#/schemas/tag.schema'
 import { env } from '#/lib/env.lib.server'
 // import { mapNoteDisplayTags } from './note.logic.server'
 
@@ -21,9 +23,9 @@ import { env } from '#/lib/env.lib.server'
  * Diese Funktion führt folgende Schritte aus:
  * 1. Berechnung der Pagination-Parameter (skip/take).
  * 2. Aufbau einer komplexen Where-Bedingung:
- *    - Filtert strikt nach der `userId`.
- *    - Implementiert eine case-insensitive Suche über den Kurs-Titel ODER den Namen der Trainer.
- *    - Filtert optional nach einer Liste von Tags (OR-Logik).
+ * - Filtert strikt nach der `userId`.
+ * - Implementiert eine case-insensitive Suche über den Kurs-Titel ODER den Namen der Trainer.
+ * - Filtert optional nach einer Liste von Tags (OR-Logik).
  * 3. Parallele Ausführung der Datenbankabfragen (Datenabruf + Zählung der Gesamtergebnisse) zur Performance-Optimierung.
  *
  * @param data - Objekt mit den Feldern `page`, `pageSize`, `search` und `tagIds`.
@@ -39,7 +41,6 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
   // 1. Basis-Where-Bedingung erstellen
   const where: Prisma.CourseWhereInput = {
     userId: userId,
-    // title: { contains: search, mode: 'insensitive' },
     OR: [
       { title: { contains: search, mode: 'insensitive' } },
       {
@@ -73,7 +74,10 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
         _count: { select: { notes: true } },
         tags: {
           select: {
-            tag: { select: { id: true, name: true, userId: true } },
+            // NEU: color: true hinzugefügt
+            tag: {
+              select: { id: true, name: true, userId: true, color: true },
+            },
           },
           orderBy: { tag: { name: 'asc' } },
         },
@@ -87,7 +91,21 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
     prisma.course.count({ where }),
   ])
 
-  return { items: courses, totalCount }
+  // WASCHANLAGE: Wir mappen die Kurse und deren Tags, um die Farbe strikt zu typisieren
+  const mappedCourses = courses.map((course) => ({
+    ...course,
+    tags: course.tags.map((ct) => ({
+      ...ct,
+      tag: {
+        ...ct.tag,
+        color: ct.tag.userId
+          ? ((ct.tag.color ?? DEFAULT_TAG_COLOR) as TagColor)
+          : null,
+      },
+    })),
+  }))
+
+  return { items: mappedCourses, totalCount }
 }
 
 /**
@@ -106,10 +124,10 @@ export async function getCourseByIdLogic(data: CourseIdInput, userId: string) {
   const course = await prisma.course.findUnique({
     where: { userId, id },
     include: {
-      // WICHTIG: Die notes-Relation ist hier komplett verschwunden!
       tags: {
         select: {
-          tag: { select: { id: true, name: true, userId: true } },
+          // NEU: color: true hinzugefügt
+          tag: { select: { id: true, name: true, userId: true, color: true } },
         },
         orderBy: { tag: { name: 'asc' } },
       },
@@ -126,8 +144,21 @@ export async function getCourseByIdLogic(data: CourseIdInput, userId: string) {
 
   if (!course) throw new ServerActionError('Course not found')
 
-  // Keine Notiz-Mappings mehr hier. Wir geben den reinen Kurs zurück.
-  return course
+  // WASCHANLAGE für die Tags dieses einen Kurses
+  const mappedTags = course.tags.map((ct) => ({
+    ...ct,
+    tag: {
+      ...ct.tag,
+      color: ct.tag.userId
+        ? ((ct.tag.color ?? DEFAULT_TAG_COLOR) as TagColor)
+        : null,
+    },
+  }))
+
+  return {
+    ...course,
+    tags: mappedTags,
+  }
 }
 
 /**
@@ -279,13 +310,17 @@ export async function createAndLinkTagToCourseLogic(
   })
   if (!course) throw new ServerActionError('Course not found')
 
+  // Farbe auslesen (falls im Schema vorhanden) oder auf Default zurückgreifen
+  const tagColor = (data as any).color || DEFAULT_TAG_COLOR
+
   await prisma.courseTag.create({
     data: {
       course: { connect: { id: data.courseId } },
       tag: {
         connectOrCreate: {
           where: { name_userId: { name: data.tagName, userId: userId } },
-          create: { name: data.tagName, userId: userId },
+          // NEU: Farbe wird hier mitgeschrieben
+          create: { name: data.tagName, userId: userId, color: tagColor },
         },
       },
     },

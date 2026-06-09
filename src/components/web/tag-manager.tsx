@@ -12,11 +12,13 @@ import {
 import TagBadge from './tag-badge'
 import { useState } from 'react'
 import { ActionIconButton } from '../ui/action-icon-button'
+import type { TagColor } from '#/schemas/tag.schema'
 
 export interface TagDisplay {
   id: string
   name: string
   userId?: string | null
+  color?: TagColor
   status?: 'APPROVED' | 'SUGGESTION'
   isInherited?: boolean
   isDeletable?: boolean

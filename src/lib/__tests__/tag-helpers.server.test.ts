@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { resolveTagIds } from '../tag-helpers.lib.server'
 import { prisma } from '#/lib/db.lib.server'
+import { DEFAULT_TAG_COLOR } from '#/schemas/tag.schema'
 
 // 1. Prisma Modul mocken
 vi.mock('#/lib/db.lib.server', () => ({
@@ -42,6 +43,7 @@ describe('resolveTagIds', () => {
         userId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        color: null,
       },
     ])
 
@@ -61,6 +63,7 @@ describe('resolveTagIds', () => {
         userId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        color: null,
       },
       {
         id: 'private-tag',
@@ -68,6 +71,7 @@ describe('resolveTagIds', () => {
         userId: userId,
         createdAt: new Date(),
         updatedAt: new Date(),
+        color: DEFAULT_TAG_COLOR,
       },
     ])
 
@@ -108,6 +112,7 @@ describe('resolveTagIds', () => {
         userId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
+        color: null,
       },
     ])
 

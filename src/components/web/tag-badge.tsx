@@ -3,21 +3,135 @@ import { X, Check, Loader2 } from 'lucide-react'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils.lib'
+import { cva } from 'class-variance-authority'
+import { DEFAULT_TAG_COLOR } from '#/schemas/tag.schema'
+import type { TagColor } from '#/schemas/tag.schema'
+import TagColorPicker from './tag-color-picker'
+
+// 1. Die CVA Definition mit Compound Variants
+export const tagBadgeVariants = cva(
+  'inline-flex items-center uppercase gap-1 transition-all',
+  {
+    variants: {
+      // "variant" vereint hier Public/Private und die Farben
+      variant: {
+        public:
+          'bg-slate-200/80 text-slate-800 dark:bg-white/10 dark:text-white/80 border-transparent',
+        blue: 'border-blue-200 dark:border-blue-800',
+        cyan: 'border-cyan-200 dark:border-cyan-800', // Tailwind Amber als "Brown"
+        red: 'border-red-200 dark:border-red-800',
+        green: 'border-green-200 dark:border-green-800',
+        yellow: 'border-yellow-200 dark:border-yellow-800',
+      },
+      size: {
+        default: 'text-xs px-2.5 py-0.5 h-6',
+        sm: 'text-xxs! px-1.5 py-0 h-4',
+      },
+      // Diese Boolean-Flags triggern nun CVA-Klassen
+      isInherited: { true: '', false: '' },
+      isHighlighted: { true: 'ring-2 ring-lagoon-deep shadow-sm' },
+      isDeleting: { true: 'opacity-50 pointer-events-none' },
+      isEditing: { true: 'ring-2 ring-primary/50 border-primary' },
+      isSuggestion: { true: 'border-dashed' },
+    },
+    // HIER passiert die Magie: Die Kombination aus Farbe und Vererbung
+    compoundVariants: [
+      // BLUE
+      {
+        variant: 'blue',
+        isInherited: false,
+        className:
+          'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+      },
+      {
+        variant: 'blue',
+        isInherited: true,
+        className:
+          'bg-blue-100/80 text-blue-700/80 dark:bg-blue-900/30 dark:text-blue-300/80',
+      },
+      // BROWN (Amber)
+      {
+        variant: 'cyan',
+        isInherited: false,
+        className:
+          'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+      },
+      {
+        variant: 'cyan',
+        isInherited: true,
+        className:
+          'bg-cyan-100/80 text-cyan-700/80 dark:bg-cyan-900/30 dark:text-cyan-300/80',
+      },
+      // RED
+      {
+        variant: 'red',
+        isInherited: false,
+        className:
+          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+      },
+      {
+        variant: 'red',
+        isInherited: true,
+        className:
+          'bg-red-100/80 text-red-700/80 dark:bg-red-900/30 dark:text-red-300/80',
+      },
+      // GREEN
+      {
+        variant: 'green',
+        isInherited: false,
+        className:
+          'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+      },
+      {
+        variant: 'green',
+        isInherited: true,
+        className:
+          'bg-green-100/80 text-green-700/80 dark:bg-green-900/30 dark:text-green-300/80',
+      },
+      // YELLOW
+      {
+        variant: 'yellow',
+        isInherited: false,
+        className:
+          'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+      },
+      {
+        variant: 'yellow',
+        isInherited: true,
+        className:
+          'bg-yellow-100/80 text-yellow-700/80 dark:bg-yellow-900/30 dark:text-yellow-300/80',
+      },
+    ],
+    defaultVariants: {
+      variant: 'public',
+      size: 'default',
+      isInherited: false,
+      isHighlighted: false,
+      isDeleting: false,
+      isEditing: false,
+      isSuggestion: false,
+    },
+  },
+)
 
 export interface TagBadgeProps {
   tag: {
     id: string
     name: string
     userId?: string | null
+    color?: TagColor | null
     status?: 'APPROVED' | 'SUGGESTION'
   }
+  // ... restliche Props unverändert
   className?: string
   onDelete?: () => void
   onRename?: (newName: string) => void
   onStartEdit?: () => void
   onCancelEdit?: () => void
   onApprove?: () => void
-  onClick?: () => void // Der Handler für externe Links
+  onClick?: () => void
+  onChangeColor?: (newColor: TagColor) => void
+  isChangingColor?: boolean
   isEditing?: boolean
   isApproving?: boolean
   isDeleting?: boolean
@@ -36,6 +150,8 @@ const TagBadge = ({
   isEditing,
   onStartEdit,
   onCancelEdit,
+  onChangeColor,
+  isChangingColor,
   className,
   title,
   size,
@@ -69,24 +185,24 @@ const TagBadge = ({
     }
   }
 
+  // Bestimme die CVA Variante ("public" oder die konkrete Farbe, Fallback "blue")
+  const badgeVariant: TagColor | 'public' = isPrivate
+    ? tag.color || DEFAULT_TAG_COLOR
+    : 'public'
+
+  // Das cn() ist jetzt massiv aufgeräumt
   const badgeClassName = cn(
-    'inline-flex items-center uppercase gap-1 transition-all',
-    size === 'sm' ? 'text-xxs! px-1.5 py-0 h-4' : 'text-xs px-2.5 py-0.5 h-6',
-    isHighlighted && 'ring-2 ring-lagoon-deep shadow-sm',
-
-    isSuggestion && 'border-dashed',
+    tagBadgeVariants({
+      variant: badgeVariant, // Casten für TypeScript
+      size,
+      isInherited: !!isInherited,
+      isHighlighted: !!isHighlighted,
+      isDeleting: !!isDeleting,
+      isEditing: !!isEditing,
+      isSuggestion: !!isSuggestion,
+    }),
+    // Sehr spezifische Edge-Cases, die in CVA schwer abzubilden sind, bleiben hier:
     isSuggestion && !onApprove && 'border-[3px]',
-    isPrivate
-      ? cn(
-          'border-blue-200 dark:border-blue-800',
-          isInherited
-            ? 'bg-blue-100/80 text-blue-700/80 dark:bg-blue-900/30 dark:text-blue-300/80'
-            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-        )
-      : 'bg-slate-200/80 text-slate-800 dark:bg-white/10 dark:text-white/80 border-transparent',
-
-    isDeleting && 'opacity-50 pointer-events-none',
-    isEditing && 'ring-2 ring-primary/50 border-primary',
     className,
   )
 
@@ -111,7 +227,7 @@ const TagBadge = ({
   const checkLeft = size === 'sm' ? '-left-1.5' : '-left-2.5'
 
   const handleBadgeClick = () => {
-    if (isEditing) return
+    if (isEditing || isChangingColor) return
 
     // Wenn ein externer Link hinterlegt ist
     if (onClick) {
@@ -127,6 +243,8 @@ const TagBadge = ({
 
   const isClickable =
     !!onClick || (isPrivate && !!onRename && !isEditing && !isSuggestion)
+
+  const currentTagColor = tag.color ?? DEFAULT_TAG_COLOR
 
   return (
     <div
@@ -205,6 +323,17 @@ const TagBadge = ({
           </Button>
         )}
       </Badge>
+      {typeof onChangeColor === 'function' &&
+        !isEditing &&
+        !isSuggestion &&
+        isPrivate && (
+          <TagColorPicker
+            currentColor={currentTagColor}
+            onColorChange={onChangeColor}
+            disabled={isDeleting || isApproving} // ggf. auch isChangingColor hier rein
+            isLoading={isChangingColor}
+          />
+        )}
     </div>
   )
 }
