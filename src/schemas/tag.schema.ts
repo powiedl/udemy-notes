@@ -5,6 +5,9 @@ import {
   tagPaginationSchema,
 } from './search-params.schema'
 
+export const tagColorEnum = z.enum(['blue', 'brown', 'red', 'green', 'yellow'])
+export type TagColor = z.infer<typeof tagColorEnum>
+
 // #region validation schemas
 export const getAvailableTagsSchema = withLogging(tagPaginationSchema).default(
   TAG_PAGINATION_DEFAULTS,
