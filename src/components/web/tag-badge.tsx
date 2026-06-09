@@ -4,7 +4,7 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils.lib'
 import { cva } from 'class-variance-authority'
-import { DEFAULT_TAG_COLOR } from '#/schemas/tag.schema'
+import { DEFAULT_TAG_COLOR, TagColor } from '#/schemas/tag.schema'
 
 // 1. Die CVA Definition mit Compound Variants
 export const tagBadgeVariants = cva(
@@ -16,7 +16,7 @@ export const tagBadgeVariants = cva(
         public:
           'bg-slate-200/80 text-slate-800 dark:bg-white/10 dark:text-white/80 border-transparent',
         blue: 'border-blue-200 dark:border-blue-800',
-        brown: 'border-amber-200 dark:border-amber-800', // Tailwind Amber als "Brown"
+        cyan: 'border-cyan-200 dark:border-cyan-800', // Tailwind Amber als "Brown"
         red: 'border-red-200 dark:border-red-800',
         green: 'border-green-200 dark:border-green-800',
         yellow: 'border-yellow-200 dark:border-yellow-800',
@@ -49,16 +49,16 @@ export const tagBadgeVariants = cva(
       },
       // BROWN (Amber)
       {
-        variant: 'brown',
+        variant: 'cyan',
         isInherited: false,
         className:
-          'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+          'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
       },
       {
-        variant: 'brown',
+        variant: 'cyan',
         isInherited: true,
         className:
-          'bg-amber-100/80 text-amber-700/80 dark:bg-amber-900/30 dark:text-amber-300/80',
+          'bg-cyan-100/80 text-cyan-700/80 dark:bg-cyan-900/30 dark:text-cyan-300/80',
       },
       // RED
       {
@@ -117,7 +117,7 @@ export interface TagBadgeProps {
     id: string
     name: string
     userId?: string | null
-    color?: string | null // <-- Das fügen wir hier dem Type hinzu!
+    color?: TagColor | null
     status?: 'APPROVED' | 'SUGGESTION'
   }
   // ... restliche Props unverändert
@@ -180,7 +180,9 @@ const TagBadge = ({
   }
 
   // Bestimme die CVA Variante ("public" oder die konkrete Farbe, Fallback "blue")
-  const badgeVariant = isPrivate ? tag.color || DEFAULT_TAG_COLOR : 'public'
+  const badgeVariant: TagColor | 'public' = isPrivate
+    ? tag.color || DEFAULT_TAG_COLOR
+    : 'public'
 
   // Das cn() ist jetzt massiv aufgeräumt
   const badgeClassName = cn(
