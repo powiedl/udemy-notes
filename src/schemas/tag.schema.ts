@@ -7,6 +7,7 @@ import {
 
 export const tagColorEnum = z.enum(['blue', 'brown', 'red', 'green', 'yellow'])
 export type TagColor = z.infer<typeof tagColorEnum>
+export const DEFAULT_TAG_COLOR = 'blue'
 
 // #region validation schemas
 export const getAvailableTagsSchema = withLogging(tagPaginationSchema).default(
