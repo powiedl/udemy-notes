@@ -8,3 +8,4 @@ allowBuilds:
   unrs-resolver: false
 overrides:
   '@hono/node-server': '>=1.19.13'
+  'shell-quote': '^1.8.4'
