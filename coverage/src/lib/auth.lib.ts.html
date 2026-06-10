@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">91.66% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/12</span>
+                <span class='fraction'>11/12</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -125,23 +125,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -180,23 +180,23 @@ import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { env } from '#/lib/env.lib.server'
 &nbsp;
 // Hilfsfunktion zur Ermittlung der korrekten URL (lokal vs. Vercel Preview vs. Vercel Prod)
-const <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >getBaseUrl = () =&gt; {</span></span>
-<span class="cstat-no" title="statement not covered" >  if (env.VERCEL_ENV === 'preview' &amp;&amp; env.VERCEL_URL) {</span>
-<span class="cstat-no" title="statement not covered" >    return `https://${env.VERCEL_URL}`</span>
+const getBaseUrl = () =&gt; {
+  if (env.VERCEL_ENV === 'preview' &amp;&amp; env.VERCEL_URL) {
+    return `https://${env.VERCEL_URL}`
   }
-<span class="cstat-no" title="statement not covered" >  return env.BETTER_AUTH_URL || 'http://localhost:3000'</span>
+  return env.BETTER_AUTH_URL || 'http://localhost:3000'
 }
 &nbsp;
-const <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >getTrustedOrigins = () =&gt; {</span></span>
-<span class="cstat-no" title="statement not covered" >  if (env.VERCEL_ENV === 'preview') {</span>
-<span class="cstat-no" title="statement not covered" >    return [</span>
+const getTrustedOrigins = () =&gt; {
+  if (env.VERCEL_ENV === 'preview') {
+    return [
       env.VERCEL_BRANCH_URL ? `https://${env.VERCEL_BRANCH_URL}` : '',
-      env.VERCEL_URL ? `https://${env.VERCEL_URL}` : '',
+      env.VERCEL_URL ? `https://${env.VERCEL_URL}` : <span class="branch-1 cbranch-no" title="branch not covered" >'',</span>
     ].filter(Boolean) // Filtert leere Strings heraus
   }
-<span class="cstat-no" title="statement not covered" >  return []</span>
+  return []
 }
-export const <span class="cstat-no" title="statement not covered" >auth = betterAuth({</span>
+export const auth = betterAuth({
   // Hier übergeben wir unsere dynamische URL:
   baseURL: getBaseUrl(),
   trustedOrigins: getTrustedOrigins(),
@@ -235,7 +235,7 @@ export type Session = typeof auth.$Infer.Session
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-10T05:13:42.050Z
+                at 2026-06-10T06:58:33.115Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
