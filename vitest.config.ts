@@ -36,7 +36,7 @@ export default defineConfig({
       reporter: ['text', 'html'],
       include: ['src/**/*.ts', 'src/**/*.tsx'],
       exclude: [
-        'src/**/*.types.ts',
+        'src/**/*.type.ts',
         'src/**/*.schema.ts',
         'src/**/*.d.ts',
         'src/routeTree.gen.ts',
