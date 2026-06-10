@@ -8,12 +8,22 @@ import {
   getAvailableTagsLogic,
   getTagsForSelectorLogic,
   deleteTagLogic,
+  createAndLinkTagLogic,
+  updateTagLogic,
+  getTagUsageCountLogic,
+  approveNoteTagLogic,
+  rejectNoteTagLogic,
 } from '../tag.logic.server'
 import { DEFAULT_TAG_COLOR } from '#/schemas/tag.schema'
 
 // 1. Prisma Client mocken
 vi.mock('#/lib/db.lib.server', () => ({
   prisma: mockDeep<PrismaClient>(),
+}))
+
+// AI Service mocken (wird in der Datei importiert, auch wenn wir die Batch-Logik hier nicht voll durchtesten)
+vi.mock('#/lib/ai.lib.server', () => ({
+  suggestTagsWithAIBatch: vi.fn(),
 }))
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>
@@ -197,6 +207,190 @@ describe('Tag Logik Funktionen', () => {
       )
 
       expect(prismaMock.tag.delete).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('createAndLinkTagLogic', () => {
+    it('verknüpft ein Tag erfolgreich mit einem Kurs', async () => {
+      prismaMock.course.findUnique.mockResolvedValue({
+        id: 'course1',
+        userId,
+      } as any)
+      prismaMock.courseTag.create.mockResolvedValue({} as any)
+
+      await createAndLinkTagLogic(
+        {
+          targetId: 'course1',
+          targetType: 'course',
+          tagName: 'NewTag',
+          color: 'red',
+        },
+        userId,
+      )
+
+      expect(prismaMock.courseTag.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            tag: {
+              connectOrCreate: expect.objectContaining({
+                create: { name: 'NewTag', userId: userId, color: 'red' },
+              }),
+            },
+          }),
+        }),
+      )
+    })
+
+    it('verknüpft ein Tag erfolgreich mit einer Notiz und nutzt Default-Farbe', async () => {
+      // Mock: Notiz gehört zu einem Kurs, der dem User gehört
+      prismaMock.note.findUnique.mockResolvedValue({
+        id: 'note1',
+        course: { userId },
+      } as any)
+      prismaMock.noteTag.create.mockResolvedValue({} as any)
+
+      await createAndLinkTagLogic(
+        { targetId: 'note1', targetType: 'note', tagName: 'NewTag' },
+        userId,
+      )
+
+      expect(prismaMock.noteTag.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            tag: {
+              connectOrCreate: expect.objectContaining({
+                create: {
+                  name: 'NewTag',
+                  userId: userId,
+                  color: DEFAULT_TAG_COLOR,
+                },
+              }),
+            },
+          }),
+        }),
+      )
+    })
+
+    it('wirft einen Fehler, wenn die Ziel-Notiz einem anderen User gehört', async () => {
+      prismaMock.note.findUnique.mockResolvedValue({
+        id: 'note1',
+        course: { userId: 'anderer-user' },
+      } as any)
+
+      await expect(
+        createAndLinkTagLogic(
+          { targetId: 'note1', targetType: 'note', tagName: 'NewTag' },
+          userId,
+        ),
+      ).rejects.toThrow('Note not found or unauthorized')
+    })
+  })
+
+  describe('updateTagLogic', () => {
+    it('aktualisiert Name und Farbe erfolgreich', async () => {
+      prismaMock.tag.findUnique.mockResolvedValue(privateTag)
+      prismaMock.tag.findFirst.mockResolvedValue(null) // Kein Namenskonflikt
+      prismaMock.tag.update.mockResolvedValue({
+        ...privateTag,
+        name: 'neu',
+        color: 'red',
+      })
+
+      const result = await updateTagLogic(
+        { id: privateTag.id, newName: 'Neu ', color: 'red' },
+        userId,
+      )
+
+      expect(result.success).toBe(true)
+      expect(prismaMock.tag.update).toHaveBeenCalledWith({
+        where: { id: privateTag.id },
+        data: { name: 'neu', color: 'red' },
+      })
+    })
+
+    it('wirft einen Fehler bei Namenskollision', async () => {
+      prismaMock.tag.findUnique.mockResolvedValue(privateTag)
+      // Simuliere: Ein anderes Tag mit diesem Namen existiert bereits
+      prismaMock.tag.findFirst.mockResolvedValue({ id: 'anderes-tag' } as any)
+
+      await expect(
+        updateTagLogic(
+          { id: privateTag.id, newName: 'existiert-schon' },
+          userId,
+        ),
+      ).rejects.toThrow("Tag 'existiert-schon' already exists")
+    })
+
+    it('führt kein Datenbank-Update durch, wenn sich nichts geändert hat', async () => {
+      prismaMock.tag.findUnique.mockResolvedValue(privateTag)
+
+      const result = await updateTagLogic(
+        { id: privateTag.id, newName: 'my-custom-tag' }, // Name ist identisch
+        userId,
+      )
+
+      expect(result.success).toBe(true)
+      expect(prismaMock.tag.update).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getTagUsageCountLogic', () => {
+    it('gibt die Zähler für Kurse und Notizen zurück', async () => {
+      prismaMock.tag.findUnique.mockResolvedValue({
+        ...privateTag,
+        _count: { courses: 5, notes: 12 },
+      } as any)
+
+      const result = await getTagUsageCountLogic(privateTag.id, userId)
+
+      expect(result).toEqual({ courses: 5, notes: 12 })
+    })
+
+    it('wirft einen Fehler, wenn der Tag dem User nicht gehört', async () => {
+      prismaMock.tag.findUnique.mockResolvedValue(null)
+
+      await expect(
+        getTagUsageCountLogic('fremdes-tag', userId),
+      ).rejects.toThrow('Tag not found or unauthorized')
+    })
+  })
+
+  describe('approveNoteTagLogic & rejectNoteTagLogic', () => {
+    it('approveNoteTagLogic aktualisiert den Status auf APPROVED', async () => {
+      prismaMock.note.findUnique.mockResolvedValue({
+        id: 'note1',
+        userId,
+      } as any)
+      prismaMock.noteTag.update.mockResolvedValue({} as any)
+
+      const result = await approveNoteTagLogic(
+        { noteId: 'note1', tagId: 'tag1' },
+        userId,
+      )
+
+      expect(result.success).toBe(true)
+      expect(prismaMock.noteTag.update).toHaveBeenCalledWith({
+        where: { noteId_tagId: { noteId: 'note1', tagId: 'tag1' } },
+        data: { status: 'APPROVED' },
+      })
+    })
+
+    it('rejectNoteTagLogic löscht die Verknüpfung', async () => {
+      prismaMock.note.findUnique.mockResolvedValue({
+        id: 'note1',
+        userId,
+      } as any)
+      prismaMock.noteTag.delete.mockResolvedValue({} as any)
+
+      const result = await rejectNoteTagLogic(
+        { noteId: 'note1', tagId: 'tag1' },
+        userId,
+      )
+
+      expect(result.success).toBe(true)
+      expect(prismaMock.noteTag.delete).toHaveBeenCalledWith({
+        where: { noteId_tagId: { noteId: 'note1', tagId: 'tag1' } },
+      })
     })
   })
 })

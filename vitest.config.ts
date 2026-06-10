@@ -31,5 +31,20 @@ export default defineConfig({
       BETTER_AUTH_URL: 'http://localhost:3000',
       OPENROUTER_API_KEY: 'sk-or-dummy-key-for-tests',
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: [
+        'src/**/*.types.ts',
+        'src/**/*.schema.ts',
+        'src/**/*.d.ts',
+        'src/routeTree.gen.ts',
+        '**/node_modules/**',
+        'src/generated/**',
+        'src/components/ui/**',
+        'src/routes/**', // sollten eher mit End2End Tests wie Playwright oder Cypress getestet werden
+      ],
+    },
   },
 })
