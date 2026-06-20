@@ -5,7 +5,7 @@ import {
 } from '#/schemas/course-public.schema'
 
 export const getCourseByTokenIdFn = publicGetFn
-  .inputValidator(tokenIdSchema)
+  .validator(tokenIdSchema)
   .handler(async ({ context, data }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getCourseByTokenIdLogic } =
@@ -16,7 +16,7 @@ export const getCourseByTokenIdFn = publicGetFn
   })
 
 export const getNotesByTokenIdFn = publicGetFn
-  .inputValidator(getNotesByTokenIdInputSchema)
+  .validator(getNotesByTokenIdInputSchema)
   .handler(async ({ context, data }) => {
     const { tokenId, searchParams } = data
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')

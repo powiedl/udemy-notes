@@ -5,7 +5,7 @@ import z from 'zod'
 import { queryOptions } from '@tanstack/react-query'
 
 export const getUserSettingsFn = authGetFn({ method: 'GET' })
-  .inputValidator(withLogging(z.object()))
+  .validator(withLogging(z.object()))
   .handler(async ({ context, data }) => {
     // 1. Auth-Check: Hole userId aus der Session/Middleware (context)
     const userId = context.session.user.id
@@ -21,7 +21,7 @@ export const getUserSettingsFn = authGetFn({ method: 'GET' })
   })
 
 export const updateUserSettingsFn = authFn({ method: 'POST' })
-  .inputValidator(withLogging(updateUserSettingsSchema))
+  .validator(withLogging(updateUserSettingsSchema))
   .handler(async ({ context, data }) => {
     const userId = context.session.user.id
 

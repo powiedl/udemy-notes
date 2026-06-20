@@ -130,7 +130,7 @@ export async function getCoursesLogic(data: GetCoursesInput, userId: string) {
 
 // 2. The Server Function (RPC Entrypoint)
 export const getCoursesFn = authGetFn
-  .inputValidator(paginationSchema)
+  .validator(paginationSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     return await wrapServerAction('getCoursesFn', context, data, async () => {
@@ -268,7 +268,7 @@ function RouteComponent() {
 To apply this pattern to other pages (e.g., `/tags` or `/notes`):
 
 1. **Schema Architecture:** Was the base schema (`paginationSchema`) correctly extended using `.extend()` for specific routes?
-2. **Server Function:** Does it return `{ items, totalCount }` within `wrapServerAction`? Is the schema passed directly into `.inputValidator()`?
+2. **Server Function:** Does it return `{ items, totalCount }` within `wrapServerAction`? Is the schema passed directly into `.validator()`?
 3. **Loader:** Are `loaderDeps` set to the `search` params?
 4. **DeferredValue:** Is `useDeferredValue` being used in the main component for the loader promise?
 5. **Suspense:** Is the fallback set to `null` so that the `opacity-50` feedback takes the lead?

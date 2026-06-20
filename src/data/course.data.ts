@@ -44,7 +44,7 @@ export type CourseHeaderData = Prisma.CourseGetPayload<{
 // #endregion
 
 export const getCoursesFn = authGetFn
-  .inputValidator(getCoursesSchema)
+  .validator(getCoursesSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getCoursesLogic } = await import('./course.logic.server')
@@ -54,7 +54,7 @@ export const getCoursesFn = authGetFn
   })
 
 export const getCourseByIdFn = authGetFn
-  .inputValidator(courseIdSchema)
+  .validator(courseIdSchema)
   .handler(async ({ context, data }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getCourseByIdLogic } = await import('./course.logic.server')
@@ -67,7 +67,7 @@ export type AwaitedReturnTypeGetCourseById = Awaited<
   ReturnType<typeof getCourseByIdFn>
 >
 export const deleteCourseByIdFn = authFn
-  .inputValidator(courseIdSchema)
+  .validator(courseIdSchema)
   .handler(async ({ context, data }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { deleteCourseByIdLogic } = await import('./course.logic.server')
@@ -77,7 +77,7 @@ export const deleteCourseByIdFn = authFn
   })
 
 export const getTrainerSuggestionsFn = authFn // eigentlich würde authGetFn reichen - aber da cached der Browser das Ergebnis und unterbindet nachfolgende gleiche Requests
-  .inputValidator(getTrainerSuggestionsSchema)
+  .validator(getTrainerSuggestionsSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getTrainerSuggestionsLogic } = await import('./course.logic.server')
@@ -90,7 +90,7 @@ export const getTrainerSuggestionsFn = authFn // eigentlich würde authGetFn rei
   })
 
 export const removeTagFromCourseFn = authFn
-  .inputValidator(removeTagFromCourseSchema)
+  .validator(removeTagFromCourseSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { removeTagFromCourseLogic } = await import('./course.logic.server')
@@ -100,7 +100,7 @@ export const removeTagFromCourseFn = authFn
   })
 
 export const linkTagToCourseFn = authFn
-  .inputValidator(linkTagToCourseSchema)
+  .validator(linkTagToCourseSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { linkTagToCourseLogic } = await import('./course.logic.server')
@@ -110,7 +110,7 @@ export const linkTagToCourseFn = authFn
   })
 
 export const createAndLinkTagToCourseFn = authFn
-  .inputValidator(createAndLinkTagToCourseSchema)
+  .validator(createAndLinkTagToCourseSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { createAndLinkTagToCourseLogic } =
@@ -124,7 +124,7 @@ export const createAndLinkTagToCourseFn = authFn
   })
 
 export const addTrainerToCourseFn = authFn
-  .inputValidator(trainerToCourseSchema)
+  .validator(trainerToCourseSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { addTrainerToCourseLogic } = await import('./course.logic.server')
@@ -134,7 +134,7 @@ export const addTrainerToCourseFn = authFn
   })
 
 export const removeTrainerFromCourseFn = authFn
-  .inputValidator(trainerToCourseSchema)
+  .validator(trainerToCourseSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { removeTrainerFromCourseLogic } =
@@ -145,7 +145,7 @@ export const removeTrainerFromCourseFn = authFn
   })
 
 export const createAndLinkTrainerToCourseFn = authFn
-  .inputValidator(createAndLinkTrainerToCourseSchema)
+  .validator(createAndLinkTrainerToCourseSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { createAndLinkTrainerToCourseLogic } =
@@ -159,7 +159,7 @@ export const createAndLinkTrainerToCourseFn = authFn
   })
 
 export const createShareLinkFn = authFn
-  .inputValidator(createShareLinkSchema)
+  .validator(createShareLinkSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { createShareLinkLogic } = await import('./course.logic.server')

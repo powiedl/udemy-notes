@@ -33,7 +33,7 @@ export const createDefaultTagsFn = authFn.handler(async ({ context }) => {
 })
 
 export const getAvailableTagsFn = authGetFn
-  .inputValidator(getAvailableTagsSchema)
+  .validator(getAvailableTagsSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getAvailableTagsLogic } = await import('./tag.logic.server')
@@ -49,7 +49,7 @@ export const getAvailableTagsFn = authGetFn
   })
 
 export const getTagsForSelectorFn = authGetFn
-  .inputValidator(getTagsForSelectorSchema)
+  .validator(getTagsForSelectorSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getTagsForSelectorLogic } = await import('./tag.logic.server')
@@ -63,7 +63,7 @@ export const getTagsForSelectorFn = authGetFn
   })
 
 export const deleteTagFn = authFn
-  .inputValidator(deleteTagSchema)
+  .validator(deleteTagSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { deleteTagLogic } = await import('./tag.logic.server')
@@ -74,7 +74,7 @@ export const deleteTagFn = authFn
   })
 
 export const createAndLinkTagToTargetFn = authFn
-  .inputValidator(createAndLinkTagToTargetSchema) // Schema erlaubt nun auch color!
+  .validator(createAndLinkTagToTargetSchema) // Schema erlaubt nun auch color!
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { createAndLinkTagLogic } = await import('./tag.logic.server')
@@ -86,7 +86,7 @@ export const createAndLinkTagToTargetFn = authFn
 
 // UMBENANNT: Hier nutzen wir nun updateTagSchema (und rufen gleich eine updateTagLogic auf)
 export const updateTagFn = authFn
-  .inputValidator(updateTagSchema) // Schema prüft: Entweder newName ODER color ODER beides
+  .validator(updateTagSchema) // Schema prüft: Entweder newName ODER color ODER beides
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
 
@@ -100,7 +100,7 @@ export const updateTagFn = authFn
   })
 
 export const getTagUsageCountFn = authGetFn
-  .inputValidator(getTagsUsageCountSchema)
+  .validator(getTagsUsageCountSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getTagUsageCountLogic } = await import('./tag.logic.server')
@@ -114,7 +114,7 @@ export const getTagUsageCountFn = authGetFn
   })
 
 export const autoTagCourseBatchFn = authFn
-  .inputValidator(autoTagCourseBatchSchema)
+  .validator(autoTagCourseBatchSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { autoTagCourseBatchLogic } = await import('./tag.logic.server')
@@ -135,7 +135,7 @@ export const autoTagCourseBatchFn = authFn
   })
 
 export const approveCourseTagsBatchFn = authFn
-  .inputValidator(approveCourseTagsBatchSchema)
+  .validator(approveCourseTagsBatchSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { approveCourseTagsBatchLogic } = await import('./tag.logic.server')
@@ -157,7 +157,7 @@ export const approveCourseTagsBatchFn = authFn
   })
 
 export const approveNoteTagFn = authFn
-  .inputValidator(noteTagActionSchema)
+  .validator(noteTagActionSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { approveNoteTagLogic } = await import('./tag.logic.server')
@@ -172,7 +172,7 @@ export const approveNoteTagFn = authFn
   })
 
 export const rejectNoteTagFn = authFn
-  .inputValidator(noteTagActionSchema)
+  .validator(noteTagActionSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { rejectNoteTagLogic } = await import('./tag.logic.server')

@@ -24,7 +24,7 @@ export type AwaitedReturnTypeImportHtmlFile = Awaited<
 >
 
 export const checkImportFileFn = authFn
-  .inputValidator(checkImportFileValidationSchema)
+  .validator(checkImportFileValidationSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { checkImportFileLogic } =
@@ -45,7 +45,7 @@ export const checkImportFileFn = authFn
  * delegiert die Verarbeitung an `importHtmlFileLogic`.
  */
 export const importHtmlFileFn = authFn
-  .inputValidator(saveParsedCourseSchema)
+  .validator(saveParsedCourseSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { importHtmlFileLogic } =
@@ -57,7 +57,7 @@ export const importHtmlFileFn = authFn
   })
 
 export const analyzeHtmlPayloadFn = authFn
-  .inputValidator(analyzeHtmlPayloadSchema)
+  .validator(analyzeHtmlPayloadSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { analyzeHtmlPayloadLogic } =
@@ -80,7 +80,7 @@ export const analyzeHtmlPayloadFn = authFn
   })
 
 export const importMdFileFn = authFn
-  .inputValidator(importFileValidationSchema)
+  .validator(importFileValidationSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { importMdFileLogic } =
@@ -96,7 +96,7 @@ export const importMdFileFn = authFn
  * nutzt `exportMdFileLogic` zur Generierung des Inhalts.
  */
 export const exportMdFileFn = authFn
-  .inputValidator(exportMdFileValidationSchema)
+  .validator(exportMdFileValidationSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { exportMdFileLogic } =

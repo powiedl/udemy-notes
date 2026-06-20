@@ -15,7 +15,7 @@ export type UpdateNoteContentInput = z.infer<typeof updateNoteContentSchema>
  * RPC-Endpunkt zum Abrufen der globalen Notiz-Liste (paginiert, gefiltert, sortiert).
  */
 export const getNotesFn = authGetFn
-  .inputValidator(getNotesSchema)
+  .validator(getNotesSchema)
   .handler(async ({ data, context }) => {
     // Dynamischer Import schützt den Client-Bundle!
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
@@ -28,7 +28,7 @@ export const getNotesFn = authGetFn
 
 export const getNotesForCourseFn = authGetFn
   // Wir nutzen hier ein Zod-Objekt, das courseId UND die searchParams vereint
-  .inputValidator(getNotesForCourseInputSchema)
+  .validator(getNotesForCourseInputSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { getNotesForCourseLogic } = await import('./note.logic.server')
@@ -48,7 +48,7 @@ export const getNotesForCourseFn = authGetFn
   })
 
 export const toggleNoteTagFn = authFn
-  .inputValidator(toggleNoteTagSchema)
+  .validator(toggleNoteTagSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { toggleNoteTagLogic } = await import('./note.logic.server')
@@ -65,7 +65,7 @@ export const toggleNoteTagFn = authFn
   })
 
 export const updateNoteContentFn = authFn
-  .inputValidator(updateNoteContentSchema)
+  .validator(updateNoteContentSchema)
   .handler(async ({ data, context }) => {
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
     const { updateNoteContentLogic } = await import('./note.logic.server')

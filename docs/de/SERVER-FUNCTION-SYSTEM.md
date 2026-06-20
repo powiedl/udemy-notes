@@ -100,7 +100,7 @@ export const getNotesInputSchema = withLogging(
 
 // 2. Server Function zusammenbauen
 export const getNotesFn = authGetFn
-  .inputValidator(getNotesInputSchema)
+  .validator(getNotesInputSchema)
   .handler(async ({ data, context }) => {
     // Dynamischer Import schützt das Client-Bundle!
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')

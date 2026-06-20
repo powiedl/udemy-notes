@@ -85,7 +85,7 @@ So that our execution wrapper (`wrapServerAction`, see Layer 2) can log detailed
 
 To achieve this, we wrap **every** Zod schema in the transport file (`*.ts`) with our `withLogging` helper function. This automatically extends the base schema with the optional `loggingMetadata` field (`component`, `feature`, `actionSource`).
 
-_Example of creating a function in the transport file (`_.ts`):_
+_Example of creating a function in the transport file (`_.ts`):\_
 
 ```typescript
 import { z } from 'zod'
@@ -101,7 +101,7 @@ export const getNotesInputSchema = withLogging(
 
 // 2. Assemble Server Function
 export const getNotesFn = authGetFn
-  .inputValidator(getNotesInputSchema)
+  .validator(getNotesInputSchema)
   .handler(async ({ data, context }) => {
     // Dynamic import protects the client bundle!
     const { wrapServerAction } = await import('#/lib/server-utils.lib.server')
