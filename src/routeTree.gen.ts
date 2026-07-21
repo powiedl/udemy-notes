@@ -9,32 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as DocumentationRouteImport } from './routes/documentation'
-import { Route as ContentRouteRouteImport } from './routes/_content/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ContentRouteRouteImport } from './routes/_content/route'
+import { Route as DocumentationRouteImport } from './routes/documentation'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as SharePublicTokenIdIndexRouteImport } from './routes/share-public/$tokenId.index'
-import { Route as ContentTagsIndexRouteImport } from './routes/_content/tags/index'
-import { Route as ContentNotesIndexRouteImport } from './routes/_content/notes/index'
-import { Route as ContentCoursesIndexRouteImport } from './routes/_content/courses/index'
-import { Route as AuthSignupIndexRouteImport } from './routes/_auth/signup.index'
 import { Route as AuthLoginIndexRouteImport } from './routes/_auth/login.index'
+import { Route as AuthSignupIndexRouteImport } from './routes/_auth/signup.index'
+import { Route as ContentCoursesIndexRouteImport } from './routes/_content/courses/index'
+import { Route as ContentNotesIndexRouteImport } from './routes/_content/notes/index'
+import { Route as ContentTagsIndexRouteImport } from './routes/_content/tags/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ContentCoursesImportIndexRouteImport } from './routes/_content/courses/import.index'
+import { Route as SharePublicTokenIdIndexRouteImport } from './routes/share-public/$tokenId.index'
 import { Route as ContentCoursesCourseIdIndexRouteImport } from './routes/_content/courses/$courseId.index'
+import { Route as ContentCoursesImportIndexRouteImport } from './routes/_content/courses/import.index'
 
-const DocumentationRoute = DocumentationRouteImport.update({
-  id: '/documentation',
-  path: '/documentation',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContentRouteRoute = ContentRouteRouteImport.update({
   id: '/_content',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DocumentationRoute = DocumentationRouteImport.update({
+  id: '/documentation',
+  path: '/documentation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
@@ -42,14 +42,19 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: '/dashboard/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SharePublicTokenIdIndexRoute = SharePublicTokenIdIndexRouteImport.update({
-  id: '/share-public/$tokenId/',
-  path: '/share-public/$tokenId/',
+const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
+  id: '/_auth/login/',
+  path: '/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ContentTagsIndexRoute = ContentTagsIndexRouteImport.update({
-  id: '/tags/',
-  path: '/tags/',
+const AuthSignupIndexRoute = AuthSignupIndexRouteImport.update({
+  id: '/_auth/signup/',
+  path: '/signup/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContentCoursesIndexRoute = ContentCoursesIndexRouteImport.update({
+  id: '/courses/',
+  path: '/courses/',
   getParentRoute: () => ContentRouteRoute,
 } as any)
 const ContentNotesIndexRoute = ContentNotesIndexRouteImport.update({
@@ -57,36 +62,31 @@ const ContentNotesIndexRoute = ContentNotesIndexRouteImport.update({
   path: '/notes/',
   getParentRoute: () => ContentRouteRoute,
 } as any)
-const ContentCoursesIndexRoute = ContentCoursesIndexRouteImport.update({
-  id: '/courses/',
-  path: '/courses/',
+const ContentTagsIndexRoute = ContentTagsIndexRouteImport.update({
+  id: '/tags/',
+  path: '/tags/',
   getParentRoute: () => ContentRouteRoute,
-} as any)
-const AuthSignupIndexRoute = AuthSignupIndexRouteImport.update({
-  id: '/_auth/signup/',
-  path: '/signup/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthLoginIndexRoute = AuthLoginIndexRouteImport.update({
-  id: '/_auth/login/',
-  path: '/login/',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ContentCoursesImportIndexRoute =
-  ContentCoursesImportIndexRouteImport.update({
-    id: '/courses/import/',
-    path: '/courses/import/',
-    getParentRoute: () => ContentRouteRoute,
-  } as any)
+const SharePublicTokenIdIndexRoute = SharePublicTokenIdIndexRouteImport.update({
+  id: '/share-public/$tokenId/',
+  path: '/share-public/$tokenId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContentCoursesCourseIdIndexRoute =
   ContentCoursesCourseIdIndexRouteImport.update({
     id: '/courses/$courseId/',
     path: '/courses/$courseId/',
+    getParentRoute: () => ContentRouteRoute,
+  } as any)
+const ContentCoursesImportIndexRoute =
+  ContentCoursesImportIndexRouteImport.update({
+    id: '/courses/import/',
+    path: '/courses/import/',
     getParentRoute: () => ContentRouteRoute,
   } as any)
 
@@ -193,11 +193,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/documentation': {
-      id: '/documentation'
-      path: '/documentation'
-      fullPath: '/documentation'
-      preLoaderRoute: typeof DocumentationRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_content': {
@@ -207,11 +207,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContentRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/documentation': {
+      id: '/documentation'
+      path: '/documentation'
+      fullPath: '/documentation'
+      preLoaderRoute: typeof DocumentationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/': {
@@ -221,18 +221,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/share-public/$tokenId/': {
-      id: '/share-public/$tokenId/'
-      path: '/share-public/$tokenId'
-      fullPath: '/share-public/$tokenId/'
-      preLoaderRoute: typeof SharePublicTokenIdIndexRouteImport
+    '/_auth/login/': {
+      id: '/_auth/login/'
+      path: '/login'
+      fullPath: '/login/'
+      preLoaderRoute: typeof AuthLoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_content/tags/': {
-      id: '/_content/tags/'
-      path: '/tags'
-      fullPath: '/tags/'
-      preLoaderRoute: typeof ContentTagsIndexRouteImport
+    '/_auth/signup/': {
+      id: '/_auth/signup/'
+      path: '/signup'
+      fullPath: '/signup/'
+      preLoaderRoute: typeof AuthSignupIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_content/courses/': {
+      id: '/_content/courses/'
+      path: '/courses'
+      fullPath: '/courses/'
+      preLoaderRoute: typeof ContentCoursesIndexRouteImport
       parentRoute: typeof ContentRouteRoute
     }
     '/_content/notes/': {
@@ -242,26 +249,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContentNotesIndexRouteImport
       parentRoute: typeof ContentRouteRoute
     }
-    '/_content/courses/': {
-      id: '/_content/courses/'
-      path: '/courses'
-      fullPath: '/courses/'
-      preLoaderRoute: typeof ContentCoursesIndexRouteImport
+    '/_content/tags/': {
+      id: '/_content/tags/'
+      path: '/tags'
+      fullPath: '/tags/'
+      preLoaderRoute: typeof ContentTagsIndexRouteImport
       parentRoute: typeof ContentRouteRoute
-    }
-    '/_auth/signup/': {
-      id: '/_auth/signup/'
-      path: '/signup'
-      fullPath: '/signup/'
-      preLoaderRoute: typeof AuthSignupIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_auth/login/': {
-      id: '/_auth/login/'
-      path: '/login'
-      fullPath: '/login/'
-      preLoaderRoute: typeof AuthLoginIndexRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -270,18 +263,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_content/courses/import/': {
-      id: '/_content/courses/import/'
-      path: '/courses/import'
-      fullPath: '/courses/import/'
-      preLoaderRoute: typeof ContentCoursesImportIndexRouteImport
-      parentRoute: typeof ContentRouteRoute
+    '/share-public/$tokenId/': {
+      id: '/share-public/$tokenId/'
+      path: '/share-public/$tokenId'
+      fullPath: '/share-public/$tokenId/'
+      preLoaderRoute: typeof SharePublicTokenIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_content/courses/$courseId/': {
       id: '/_content/courses/$courseId/'
       path: '/courses/$courseId'
       fullPath: '/courses/$courseId/'
       preLoaderRoute: typeof ContentCoursesCourseIdIndexRouteImport
+      parentRoute: typeof ContentRouteRoute
+    }
+    '/_content/courses/import/': {
+      id: '/_content/courses/import/'
+      path: '/courses/import'
+      fullPath: '/courses/import/'
+      preLoaderRoute: typeof ContentCoursesImportIndexRouteImport
       parentRoute: typeof ContentRouteRoute
     }
   }
