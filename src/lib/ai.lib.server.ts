@@ -1,6 +1,6 @@
 // src/lib/ai.server.ts
 import { ServerActionError } from '#/types/errors.type'
-import type { ChatResult } from '@openrouter/sdk/models'
+// import type { ChatResult } from '@openrouter/sdk/models'
 import { sanitizeAITags } from './ai-sanitize.lib'
 import { openrouter } from './openrouter-client.lib.server'
 import { aiBatchTagResponseSchema } from '#/schemas/ai.schema'
@@ -120,7 +120,7 @@ export async function suggestTagsWithAIBatch(
     return []
   }
 
-  let response: ChatResult
+  let response: Awaited<ReturnType<typeof openrouter.chat.send>>
 
   // --- TELEMETRIE STATE ---
   const startTime = performance.now()
@@ -138,28 +138,35 @@ export async function suggestTagsWithAIBatch(
     response = await openrouter.chat.send({
       chatRequest: {
         model: requestedModel,
+        stream: false,
         messages: [
           { role: 'system', content: systemInstruction },
           { role: 'user', content: userContent },
         ],
       },
     })
+    const nonStreamResponse = response as Extract<
+      typeof response,
+      { model?: string }
+    >
 
     const durationMs = Math.round(performance.now() - startTime)
 
     // Telemetrie-Daten auslesen (OpenRouter packt diese oft in response.usage)
     // Wenn das 'free' Modell umleitet, steht das echte Modell in response.model
-    actualModel = response.model || requestedModel
-    promptTokens = response.usage?.promptTokens || null
-    completionTokens = response.usage?.completionTokens || null
+    actualModel = nonStreamResponse.model || requestedModel
+    promptTokens = nonStreamResponse.usage?.promptTokens || null
+    completionTokens = nonStreamResponse.usage?.completionTokens || null
     metadata = JSON.stringify({
-      completionTokenDetails: response.usage?.completionTokensDetails || {},
+      completionTokenDetails:
+        nonStreamResponse.usage?.completionTokensDetails || {},
       systemInstructionLength,
       userContentLength,
     })
 
-    const rawContent = response.choices[0]?.message?.content
-    if (!rawContent) throw new Error('KI hat keine Antwort geliefert')
+    const rawContent = nonStreamResponse.choices[0]?.message?.content
+    if (!rawContent || typeof rawContent !== 'string')
+      throw new Error('KI hat keine Antwort geliefert')
 
     let sanitizedContent = rawContent.trim()
 
@@ -200,7 +207,7 @@ export async function suggestTagsWithAIBatch(
 
     getNodeEnv('development') &&
       console.log(
-        `zodSchema passed successful (${parsedJson === JSON.parse(debugJSON) ? 'debug content used' : `AI content used (model:${response.model})`})`,
+        `zodSchema passed successful (${parsedJson === JSON.parse(debugJSON) ? 'debug content used' : `AI content used (model:${nonStreamResponse.model})`})`,
       )
 
     const existingGlobals = input.globalTags
