@@ -1,20 +1,16 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, act } from '@testing-library/react' // <-- 'act' importieren
 import CourseHeader from '../course-header'
-import type * as ReactRouter from '@tanstack/react-router'
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+  RouterProvider,
+} from '@tanstack/react-router'
 import type * as ReactStart from '@tanstack/react-start'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // --- MOCKS ---
-vi.mock('@tanstack/react-router', async (importOriginal) => {
-  const actual = await importOriginal<typeof ReactRouter>()
-  return {
-    ...actual,
-    useRouter: () => ({ invalidate: vi.fn() }),
-    Link: ({ children }: any) => <a>{children}</a>,
-  }
-})
-
 vi.mock('@tanstack/react-start', async (importOriginal) => {
   const actual = await importOriginal<typeof ReactStart>()
   return {
@@ -23,7 +19,6 @@ vi.mock('@tanstack/react-start', async (importOriginal) => {
   }
 })
 
-// Wir mocken unseren eigenen Hook, damit wir uns rein auf die UI konzentrieren können
 vi.mock('#/hooks/use-tag-management', () => ({
   useTagManagement: () => ({
     availableTags: [],
@@ -36,16 +31,6 @@ vi.mock('#/hooks/use-tag-management', () => ({
 }))
 
 describe('CourseHeader Component', () => {
-  // --- NEU: Wir erstellen einen frischen QueryClient für die Tests ---
-  // Wir schalten 'retry' ab, damit fehlschlagende Queries im Test nicht in Endlosschleifen hängen
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  })
-
   const mockCourse = {
     id: 'course-1',
     title: 'Advanced React',
@@ -54,43 +39,66 @@ describe('CourseHeader Component', () => {
     _count: { notes: 5 },
   } as any
 
-  it('renders all action buttons in EDIT mode (readOnly = false)', () => {
-    // --- NEU: Wir wrappen die Komponente in den QueryClientProvider ---
-    render(
-      <QueryClientProvider client={queryClient}>
-        <CourseHeader
-          course={mockCourse}
-          readOnly={false}
-          onExport={vi.fn()}
-          onDelete={vi.fn()}
-          onShare={vi.fn()}
-        />
-      </QueryClientProvider>,
+  async function renderWithProviders(ui: React.ReactElement) {
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    })
+
+    const rootRoute = createRootRoute({
+      component: () => ui,
+    })
+
+    const router = createRouter({
+      routeTree: rootRoute,
+      history: createMemoryHistory({ initialEntries: ['/'] }),
+    })
+
+    await router.load()
+
+    // Render-Vorgang in act() verpacken, um die internen Router-Transitions abzufangen
+    let renderResult: ReturnType<typeof render>
+    await act(async () => {
+      renderResult = render(
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>,
+      )
+    })
+
+    return renderResult!
+  }
+
+  it('renders all action buttons in EDIT mode (readOnly = false)', async () => {
+    await renderWithProviders(
+      <CourseHeader
+        course={mockCourse}
+        readOnly={false}
+        onExport={vi.fn()}
+        onDelete={vi.fn()}
+        onShare={vi.fn()}
+      />,
     )
 
-    // Alle Admin/Edit-Aktionen sollten sichtbar sein
     expect(screen.getByTitle('Share Course')).toBeInTheDocument()
-    // Auto-Tag, Export und Delete haben Text-Spans, die auf größeren Screens sichtbar sind
     expect(screen.getByText('Auto-Tag')).toBeInTheDocument()
     expect(screen.getByText('Export')).toBeInTheDocument()
     expect(screen.getByText('Delete')).toBeInTheDocument()
   })
 
-  it('hides all action buttons in READ-ONLY mode (readOnly = true)', () => {
-    // --- NEU: Wir wrappen die Komponente in den QueryClientProvider ---
-    render(
-      <QueryClientProvider client={queryClient}>
-        <CourseHeader course={mockCourse} readOnly={true} />
-      </QueryClientProvider>,
+  it('hides all action buttons in READ-ONLY mode (readOnly = true)', async () => {
+    await renderWithProviders(
+      <CourseHeader course={mockCourse} readOnly={true} />,
     )
 
-    // Elementarer Check: Sind die Daten trotzdem da?
     expect(
       screen.getByRole('heading', { name: 'Advanced React' }),
     ).toBeInTheDocument()
     expect(screen.getByText('5 notes')).toBeInTheDocument()
 
-    // Sicherheits-Check: Sind die Buttons weg?
     expect(screen.queryByTitle('Share Course')).not.toBeInTheDocument()
     expect(screen.queryByText('Auto-Tag')).not.toBeInTheDocument()
     expect(screen.queryByText('Export')).not.toBeInTheDocument()
