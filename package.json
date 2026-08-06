@@ -76,7 +76,7 @@
     "@tanstack/devtools-vite": "latest",
     "@tanstack/eslint-config": "latest",
     "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^26.1.2",
@@ -90,9 +90,9 @@
     "prettier": "^3.9.6",
     "tsx": "^4.23.5",
     "typescript": "^6.0.3",
-    "vite": "^8.1.5",
+    "vite": "^8.2.0",
     "vitest": "^4.1.10",
-    "vitest-mock-extended": "^4.0.0"
+    "vitest-mock-extended": "^5.1.1"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
